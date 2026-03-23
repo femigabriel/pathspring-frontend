@@ -81,19 +81,19 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     {
       name: "Classes",
       icon: School,
-      href: "/dashboard/classes",
+      href: "/admin/classes",
       roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
       name: "Messages",
       icon: MessageSquare,
-      href: "/dashboard/messages",
+      href: "/admin/messages",
       roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
       name: "Settings",
       icon: Settings,
-      href: "/dashboard/settings",
+      href: "/admin/settings",
       roles: ["SCHOOL_ADMIN", "TEACHER", "STUDENT"],
     },
   ];
