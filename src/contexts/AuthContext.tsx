@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      console.log("Fetching user data from:", `${API_BASE_URL}/api/v1/auth/me`);
+      // console.log("Fetching user data from:", `${API_BASE_URL}/api/v1/auth/me`);
       
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
         headers: {

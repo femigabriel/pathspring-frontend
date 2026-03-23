@@ -57,25 +57,25 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     {
       name: "Students",
       icon: GraduationCap,
-      href: "/dashboard/students",
+      href: "/admin/students",
       roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
       name: "Teachers",
       icon: Users,
-      href: "/dashboard/teachers",
+      href: "/admin/teachers",
       roles: ["SCHOOL_ADMIN"],
     },
     {
       name: "Stories",
       icon: BookOpen,
-      href: "/dashboard/stories",
+      href: "/admin/stories",
       roles: ["SCHOOL_ADMIN", "TEACHER", "STUDENT"],
     },
     {
       name: "Analytics",
       icon: BarChart3,
-      href: "/dashboard/analytics",
+      href: "/admin/analytics",
       roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
