@@ -5,31 +5,62 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle, RefreshCw, X, Sparkles, BookOpen, Users, Star, TrendingUp, Award } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  ArrowRight,
+  AlertCircle,
+  RefreshCw,
+  X,
+  Sparkles,
+  BookOpen,
+  Users,
+  Star,
+  TrendingUp,
+  Award,
+  Cloud,
+  Rocket,
+  Flower2,
+  Rainbow,
+} from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 // ============ API CONFIGURATION ============
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // ============ DESIGN SYSTEM ============
-const INPUT_STYLE = "w-full p-5 text-lg border-2 rounded-xl focus:outline-none focus:ring-2 transition-all";
+const INPUT_STYLE =
+  "w-full p-5 text-lg border-2 rounded-xl focus:outline-none focus:ring-2 transition-all bg-slate-800/50 border-slate-700 focus:border-purple-500 focus:ring-purple-500/20 text-white placeholder:text-slate-500";
 
 // ============ NOTIFICATION COMPONENT ============
-const Notification = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
+const Notification = ({
+  message,
+  type,
+  onClose,
+}: {
+  message: string;
+  type: "success" | "error";
+  onClose: () => void;
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, x: 100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 100 }}
       className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-lg border-2 ${
-        type === "success" 
-          ? "bg-green-500 border-green-600 text-white" 
+        type === "success"
+          ? "bg-green-500 border-green-600 text-white"
           : "bg-red-500 border-red-600 text-white"
       }`}
     >
       <span className="text-2xl">{type === "success" ? "✅" : "⚠️"}</span>
       <p className="font-bold text-lg">{message}</p>
-      <button onClick={onClose} className="ml-4 hover:scale-110 transition-transform">
+      <button
+        onClick={onClose}
+        className="ml-4 hover:scale-110 transition-transform"
+      >
         <X size={20} />
       </button>
     </motion.div>
@@ -58,6 +89,7 @@ const LoginHero = () => {
       animate={{ opacity: 1, y: 0 }}
       className="text-center mb-12"
     >
+      {/* Stats Badge */}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -68,33 +100,39 @@ const LoginHero = () => {
         <span className="font-bold">Join 50,000+ happy readers</span>
         <Star className="text-yellow-300" size={18} fill="currentColor" />
       </motion.div>
-      
+
+      {/* PathSpring Logo with Dark Theme */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <Link href="/" className="inline-block mb-6">
-          <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent hover:scale-105 transition-transform">
-            PathSpring
-          </h1>
+        <Link href="/" className="inline-block mb-6 group">
+          <div className="flex items-center justify-center gap-3">
+            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl transform group-hover:scale-110 transition-all duration-300 shadow-lg">
+              <BookOpen className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
+              PathSpring
+            </h1>
+          </div>
         </Link>
       </motion.div>
-      
+
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="text-4xl md:text-5xl font-black text-gray-900 mb-4"
+        className="text-4xl md:text-5xl font-black text-white mb-4"
       >
         Welcome Back! 👋
       </motion.h2>
-      
+
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="text-xl text-gray-600 max-w-2xl mx-auto"
+        className="text-xl text-slate-300 max-w-2xl mx-auto"
       >
         Sign in to continue your reading adventure and discover amazing stories!
       </motion.p>
@@ -105,10 +143,30 @@ const LoginHero = () => {
 // ============ FEATURE CARDS ============
 const FeatureCards = () => {
   const features = [
-    { icon: BookOpen, title: "1000+ Stories", description: "Explore our library", color: "from-blue-500 to-cyan-500" },
-    { icon: Sparkles, title: "Fun Games", description: "Learn while playing", color: "from-purple-500 to-pink-500" },
-    { icon: TrendingUp, title: "Track Progress", description: "See your growth", color: "from-green-500 to-emerald-500" },
-    { icon: Award, title: "Earn Badges", description: "Celebrate achievements", color: "from-orange-500 to-red-500" },
+    {
+      icon: BookOpen,
+      title: "1000+ Stories",
+      description: "Explore our library",
+      color: "from-blue-500 to-cyan-500",
+    },
+    {
+      icon: Sparkles,
+      title: "Fun Games",
+      description: "Learn while playing",
+      color: "from-purple-500 to-pink-500",
+    },
+    {
+      icon: TrendingUp,
+      title: "Track Progress",
+      description: "See your growth",
+      color: "from-green-500 to-emerald-500",
+    },
+    {
+      icon: Award,
+      title: "Earn Badges",
+      description: "Celebrate achievements",
+      color: "from-orange-500 to-red-500",
+    },
   ];
 
   return (
@@ -124,13 +182,17 @@ const FeatureCards = () => {
           whileHover={{ y: -5 }}
           className="relative group"
         >
-          <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl`} />
-          <div className="relative bg-white rounded-xl p-4 text-center border border-gray-200 shadow-sm hover:shadow-lg transition-all">
-            <div className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mx-auto mb-2`}>
+          <div
+            className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl`}
+          />
+          <div className="relative bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 text-center border border-slate-700 shadow-sm hover:shadow-lg transition-all">
+            <div
+              className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mx-auto mb-2`}
+            >
               <feature.icon className="text-white" size={24} />
             </div>
-            <p className="text-sm font-bold text-gray-700">{feature.title}</p>
-            <p className="text-xs text-gray-500">{feature.description}</p>
+            <p className="text-sm font-bold text-white">{feature.title}</p>
+            <p className="text-xs text-slate-400">{feature.description}</p>
           </div>
         </motion.div>
       ))}
@@ -154,10 +216,13 @@ const StatsSection = () => {
       className="grid grid-cols-3 gap-4 mb-8"
     >
       {stats.map((stat, index) => (
-        <div key={index} className="text-center p-3 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
-          <stat.icon className="w-5 h-5 text-purple-600 mx-auto mb-2" />
-          <p className="text-xl font-black text-gray-900">{stat.value}</p>
-          <p className="text-xs text-gray-500">{stat.label}</p>
+        <div
+          key={index}
+          className="text-center p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700"
+        >
+          <stat.icon className="w-5 h-5 text-purple-400 mx-auto mb-2" />
+          <p className="text-xl font-black text-white">{stat.value}</p>
+          <p className="text-xs text-slate-400">{stat.label}</p>
         </div>
       ))}
     </motion.div>
@@ -165,28 +230,30 @@ const StatsSection = () => {
 };
 
 // ============ LOGIN FORM ============
-const LoginForm = ({ 
-  onSubmit, 
-  isLoading 
-}: { 
+const LoginForm = ({
+  onSubmit,
+  isLoading,
+}: {
   onSubmit: (email: string, password: string) => void;
   isLoading: boolean;
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {},
+  );
   const [focused, setFocused] = useState<string>("");
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
-    
+
     if (!email.trim()) {
       newErrors.email = "Email address is required";
     } else if (!email.includes("@")) {
       newErrors.email = "Please enter a valid email address";
     }
-    
+
     if (!password.trim()) {
       newErrors.password = "Password is required";
     }
@@ -211,11 +278,14 @@ const LoginForm = ({
       className="space-y-5"
     >
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-slate-300 mb-2">
           Email Address
         </label>
         <div className="relative group">
-          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors" size={20} />
+          <Mail
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-400 transition-colors"
+            size={20}
+          />
           <input
             type="email"
             value={email}
@@ -228,13 +298,12 @@ const LoginForm = ({
             placeholder="admin@school.com"
             className={`
               ${INPUT_STYLE} pl-12
-              border-gray-200 
-              focus:border-purple-500 
-              focus:ring-2 focus:ring-purple-100
-              bg-gray-50
-              transition-all duration-200
-              ${errors.email ? "border-red-300 bg-red-50" : ""}
-              ${focused === "email" ? "bg-white shadow-lg border-purple-500" : ""}
+              ${errors.email ? "border-red-500 bg-red-500/10" : ""}
+              ${
+                focused === "email"
+                  ? "shadow-lg border-purple-500 bg-slate-700/50"
+                  : ""
+              }
             `}
           />
         </div>
@@ -242,7 +311,7 @@ const LoginForm = ({
           <motion.p
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-red-500 text-sm font-medium mt-1"
+            className="text-red-400 text-sm font-medium mt-1"
           >
             {errors.email}
           </motion.p>
@@ -250,36 +319,39 @@ const LoginForm = ({
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-slate-300 mb-2">
           Password
         </label>
         <div className="relative group">
-          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors" size={20} />
+          <Lock
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-400 transition-colors"
+            size={20}
+          />
           <input
             type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
-              if (errors.password) setErrors({ ...errors, password: undefined });
+              if (errors.password)
+                setErrors({ ...errors, password: undefined });
             }}
             onFocus={() => setFocused("password")}
             onBlur={() => setFocused("")}
             placeholder="Enter your password"
             className={`
               ${INPUT_STYLE} pl-12 pr-12
-              border-gray-200 
-              focus:border-purple-500 
-              focus:ring-2 focus:ring-purple-100
-              bg-gray-50
-              transition-all duration-200
-              ${errors.password ? "border-red-300 bg-red-50" : ""}
-              ${focused === "password" ? "bg-white shadow-lg border-purple-500" : ""}
+              ${errors.password ? "border-red-500 bg-red-500/10" : ""}
+              ${
+                focused === "password"
+                  ? "shadow-lg border-purple-500 bg-slate-700/50"
+                  : ""
+              }
             `}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
@@ -288,7 +360,7 @@ const LoginForm = ({
           <motion.p
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-red-500 text-sm font-medium mt-1"
+            className="text-red-400 text-sm font-medium mt-1"
           >
             {errors.password}
           </motion.p>
@@ -297,10 +369,18 @@ const LoginForm = ({
 
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" className="w-4 h-4 rounded border-2 border-gray-300 group-hover:border-purple-500 transition-colors" />
-          <span className="text-sm text-gray-600 group-hover:text-gray-800">Remember me</span>
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded border-2 border-slate-600 bg-slate-800 group-hover:border-purple-500 transition-colors"
+          />
+          <span className="text-sm text-slate-400 group-hover:text-slate-300">
+            Remember me
+          </span>
         </label>
-        <Link href="/forgot-password" className="text-sm text-purple-600 font-semibold hover:text-purple-700 transition-colors">
+        <Link
+          href="/forgot-password"
+          className="text-sm text-purple-400 font-semibold hover:text-purple-300 transition-colors"
+        >
           Forgot password?
         </Link>
       </div>
@@ -314,7 +394,9 @@ const LoginForm = ({
       >
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         <span className="relative">
-          {isLoading ? <LoadingSpinner /> : (
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : (
             <>
               Sign In
               <ArrowRight size={18} className="inline ml-2" />
@@ -332,7 +414,10 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
-  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const showNotification = (message: string, type: "success" | "error") => {
     setNotification({ message, type });
@@ -342,18 +427,18 @@ export default function LoginPage() {
   const handleLogin = async (email: string, password: string) => {
     setIsLoading(true);
     setError("");
-    
+
     try {
       console.log("Attempting login to:", `${API_BASE_URL}/api/v1/auth/login`);
-      
+
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          email, 
-          passwordOrPin: password 
+        body: JSON.stringify({
+          email,
+          passwordOrPin: password,
         }),
       });
 
@@ -367,7 +452,7 @@ export default function LoginPage() {
       login(data.accessToken, data.refreshToken, data.user, data.school);
 
       showNotification("Welcome back! Logging in... 🎉", "success");
-      
+
       // Redirect based on user role
       setTimeout(() => {
         if (data.user.role === "SCHOOL_ADMIN") {
@@ -378,20 +463,23 @@ export default function LoginPage() {
           router.push("/student/dashboard");
         }
       }, 1500);
-      
     } catch (err: any) {
       console.error("Login error:", err);
-      
+
       let errorMsg = "";
-      
-      if (err.message?.includes("ERR_CONNECTION_REFUSED") || err.message?.includes("Failed to fetch")) {
-        errorMsg = "Unable to connect to the server. Please make sure the backend server is running on port 5000.";
+
+      if (
+        err.message?.includes("ERR_CONNECTION_REFUSED") ||
+        err.message?.includes("Failed to fetch")
+      ) {
+        errorMsg =
+          "Unable to connect to the server. Please check your internet connection and try again.";
       } else if (err.message) {
         errorMsg = err.message;
       } else {
         errorMsg = "Login failed! Please check your email and password.";
       }
-      
+
       setError(errorMsg);
       showNotification(errorMsg, "error");
     } finally {
@@ -403,9 +491,110 @@ export default function LoginPage() {
     setError("");
   };
 
+  // Floating elements for hero section
+  const floatingElements = [
+    {
+      icon: BookOpen,
+      color: "text-purple-400",
+      delay: 0,
+      top: "5%",
+      left: "2%",
+      size: 28,
+    },
+    {
+      icon: Star,
+      color: "text-yellow-400",
+      delay: 1,
+      top: "8%",
+      right: "3%",
+      size: 24,
+    },
+    {
+      icon: Cloud,
+      color: "text-blue-400",
+      delay: 2,
+      top: "70%",
+      left: "1%",
+      size: 40,
+    },
+    {
+      icon: Rocket,
+      color: "text-pink-400",
+      delay: 1.5,
+      bottom: "15%",
+      right: "2%",
+      size: 32,
+    },
+    {
+      icon: Flower2,
+      color: "text-green-400",
+      delay: 2.5,
+      top: "80%",
+      right: "8%",
+      size: 26,
+    },
+    {
+      icon: Rainbow,
+      color: "text-purple-400",
+      delay: 1.8,
+      bottom: "25%",
+      left: "5%",
+      size: 35,
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50">
-      <div className="container mx-auto px-4 py-12">
+    <main className="min-h-screen bg-slate-950">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl animate-pulse animation-delay-2000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse animation-delay-4000" />
+      </div>
+
+      {/* Grid Overlay */}
+      <div
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
+                           linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
+        }}
+      />
+
+      {/* Floating Elements */}
+      {floatingElements.map((element, index) => {
+        const Icon = element.icon;
+        return (
+          <motion.div
+            key={index}
+            className="absolute hidden lg:block"
+            style={{
+              top: element.top,
+              left: element.left,
+              right: element.right,
+              bottom: element.bottom,
+            }}
+            animate={{
+              y: [0, -20, 0],
+              rotate: [0, 10, -10, 0],
+            }}
+            transition={{
+              duration: 4,
+              delay: element.delay,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <Icon
+              className={`${element.color} opacity-30`}
+              size={element.size}
+            />
+          </motion.div>
+        );
+      })}
+
+      <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-3xl mx-auto">
           {/* Notification */}
           <AnimatePresence>
@@ -436,18 +625,24 @@ export default function LoginPage() {
           >
             {/* Animated Gradient Border */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient" />
-            
+
             {/* Card Content */}
-            <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10">
               <div className="p-8">
                 {/* Decorative Header */}
                 <div className="text-center mb-6">
-                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-pink-100 px-4 py-2 rounded-full mb-4">
-                    <Sparkles className="text-purple-600" size={16} />
-                    <span className="text-sm font-semibold text-purple-900">Secure Login</span>
+                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 px-4 py-2 rounded-full mb-4 border border-purple-500/30">
+                    <Sparkles className="text-purple-400" size={16} />
+                    <span className="text-sm font-semibold text-purple-300">
+                      Secure Login
+                    </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">Access Your Account</h3>
-                  <p className="text-gray-500 text-sm mt-1">Enter your credentials to continue</p>
+                  <h3 className="text-2xl font-bold text-white">
+                    Access Your Account
+                  </h3>
+                  <p className="text-slate-400 text-sm mt-1">
+                    Enter your credentials to continue
+                  </p>
                 </div>
 
                 {/* Error Message */}
@@ -455,9 +650,9 @@ export default function LoginPage() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6"
+                    className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6"
                   >
-                    <p className="text-red-700 font-medium flex items-center gap-2">
+                    <p className="text-red-400 font-medium flex items-center gap-2">
                       <AlertCircle size={18} /> {error}
                     </p>
                     {error.includes("Unable to connect") && (
@@ -485,9 +680,12 @@ export default function LoginPage() {
             transition={{ delay: 0.7 }}
             className="text-center mt-8"
           >
-            <p className="text-gray-600">
+            <p className="text-slate-400">
               New to PathSpring?{" "}
-              <Link href="/register" className="text-purple-600 font-semibold hover:text-purple-700 transition-colors">
+              <Link
+                href="/register"
+                className="text-purple-400 font-semibold hover:text-purple-300 transition-colors"
+              >
                 Create your school account
               </Link>
             </p>
@@ -496,6 +694,26 @@ export default function LoginPage() {
       </div>
 
       <style jsx>{`
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.4;
+            transform: scale(1.05);
+          }
+        }
+        .animate-pulse {
+          animation: pulse 4s ease-in-out infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 1s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 2s;
+        }
         @keyframes gradient {
           0% {
             background-position: 0% 50%;
