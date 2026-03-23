@@ -1,4 +1,4 @@
-// contexts/AuthContext.tsx
+// src/contexts/AuthContext.tsx
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
@@ -42,6 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("refreshToken", refreshToken);
     setUser(userData);
     if (schoolData) setSchool(schoolData);
+    
+    // Also store in localStorage for persistence
+    localStorage.setItem("user", JSON.stringify(userData));
+    if (schoolData) localStorage.setItem("school", JSON.stringify(schoolData));
   };
 
   const logout = () => {
@@ -63,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      console.log("Fetching user data from:", `${API_BASE_URL}/api/v1/auth/me`);
+      
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -70,25 +76,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch user data");
+        // If token is invalid, clear storage
+        if (response.status === 401) {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+          localStorage.removeItem("school");
+          setUser(null);
+          setSchool(null);
+        }
+        throw new Error(`Failed to fetch user data: ${response.status}`);
       }
 
       const data = await response.json();
       
-      // Store user data
+      // Set user data
       setUser(data.user);
       if (data.school) setSchool(data.school);
       
-      // Also store in localStorage for persistence
+      // Update localStorage
       localStorage.setItem("user", JSON.stringify(data.user));
       if (data.school) localStorage.setItem("school", JSON.stringify(data.school));
       
     } catch (error) {
       console.error("Error fetching user data:", error);
-      // If token is invalid, logout
-      if (localStorage.getItem("accessToken")) {
-        logout();
-      }
+      // Don't logout on network errors, just keep existing data
     } finally {
       setIsLoading(false);
     }
@@ -96,18 +108,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load user from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedSchool = localStorage.getItem("school");
-    const token = localStorage.getItem("accessToken");
+    const initializeAuth = async () => {
+      const storedUser = localStorage.getItem("user");
+      const storedSchool = localStorage.getItem("school");
+      const token = localStorage.getItem("accessToken");
 
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-      if (storedSchool) setSchool(JSON.parse(storedSchool));
-      // Fetch fresh user data in background
-      fetchUserData();
-    } else {
-      setIsLoading(false);
-    }
+      if (token && storedUser) {
+        // Set initial user from localStorage
+        setUser(JSON.parse(storedUser));
+        if (storedSchool) setSchool(JSON.parse(storedSchool));
+        
+        // Fetch fresh user data in background
+        await fetchUserData();
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const value = {
