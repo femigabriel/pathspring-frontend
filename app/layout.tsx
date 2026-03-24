@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Quicksand } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { ThemeProvider } from "@/src/contexts/ThemeContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -29,11 +30,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${quicksand.variable}`}>
+    <html lang="en">
       <body className="font-sans">
-         <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

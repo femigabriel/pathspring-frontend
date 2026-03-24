@@ -1,5 +1,36 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --background: 255, 255, 255;
+    --foreground: 15, 23, 42;
+  }
+
+  .dark {
+    --background: 15, 23, 42;
+    --foreground: 255, 255, 255;
+  }
+
+  body {
+    @apply bg-[#E7E7E7] text-gray-900;
+  }
+
+  .dark body {
+    @apply bg-slate-950 text-white;
+  }
+}
+
+@layer utilities {
+  /* Smooth transitions */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+}
+
 
 
 :root {

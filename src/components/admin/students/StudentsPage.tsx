@@ -26,13 +26,13 @@ import {
   User,
   Clock,
   CheckCircle,
-  AlertCircle,
+  Lock,
   TrendingUp,
   Award,
   School,
   Filter,
-  Download,
-  Lock,
+  Save,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -151,12 +151,10 @@ const StudentCard = ({ student, classes, onEdit, onDelete, onView }: any) => {
 
         <div className="pt-3 border-t border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <div className="flex items-center gap-1">
-              <CheckCircle size={14} className={student.enrollmentStatus !== "Inactive" ? "text-green-400" : "text-yellow-400"} />
-              <span className="text-xs text-slate-400">
-                {student.enrollmentStatus || "Enrolled"}
-              </span>
-            </div>
+            <CheckCircle size={14} className={student.isActive !== false ? "text-green-400" : "text-gray-400"} />
+            <span className="text-xs text-slate-400">
+              {student.isActive !== false ? "Active" : "Inactive"}
+            </span>
           </div>
           <Link href={`/dashboard/students/${student.id}`} className="text-blue-400 text-sm hover:text-blue-300">
             View Profile →
@@ -194,18 +192,18 @@ const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, index }: 
             <p className="text-xs text-slate-400">@{student.username || student.fullName?.toLowerCase().replace(" ", ".")}</p>
           </div>
         </div>
-        </td>
+         </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
           <Mail size={14} className="text-slate-400" />
           <span className="text-slate-300 text-sm">{student.parentEmail || "—"}</span>
         </div>
-        </td>
+         </td>
       <td className="px-6 py-4">
         <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
           {student.gradeLevel || "Not set"}
         </span>
-        </td>
+         </td>
       <td className="px-6 py-4">
         {studentClass ? (
           <div className="flex items-center gap-2">
@@ -215,7 +213,7 @@ const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, index }: 
         ) : (
           <span className="text-slate-400 text-sm">Not assigned</span>
         )}
-        </td>
+         </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-1">
           <CheckCircle size={14} className={student.isActive !== false ? "text-green-400" : "text-gray-400"} />
@@ -223,7 +221,7 @@ const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, index }: 
             {student.isActive !== false ? "Active" : "Inactive"}
           </span>
         </div>
-        </td>
+         </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
           <button
@@ -248,7 +246,7 @@ const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, index }: 
             <Trash2 size={16} className="text-slate-400 hover:text-red-400" />
           </button>
         </div>
-        </td>
+         </td>
     </motion.tr>
   );
 };
@@ -379,6 +377,7 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate, classes, showNotificati
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Form fields same as before */}
           <div>
             <label className="block text-sm font-semibold text-slate-300 mb-2">
               Full Name *
@@ -408,9 +407,6 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate, classes, showNotificati
               placeholder="1234"
             />
             {errors.pin && <p className="text-red-400 text-xs mt-1">{errors.pin}</p>}
-            <p className="text-slate-500 text-xs mt-1">
-              Used for student login
-            </p>
           </div>
 
           <div>
@@ -449,11 +445,6 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate, classes, showNotificati
               ))}
             </select>
             {errors.classroom && <p className="text-red-400 text-xs mt-1">{errors.classroom}</p>}
-            {classes.length === 0 && (
-              <p className="text-yellow-400 text-xs mt-1">
-                No classes available. Please create a class first.
-              </p>
-            )}
           </div>
 
           <div>
@@ -520,13 +511,243 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate, classes, showNotificati
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <Loader2 size={18} className="animate-spin" />
                   Creating...
                 </>
               ) : (
                 <>
                   <UserPlus size={18} />
                   Create Student
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+// ============ EDIT STUDENT MODAL ============
+const EditStudentModal = ({ isOpen, onClose, onUpdate, student, classes, showNotification }: any) => {
+  const [formData, setFormData] = useState({
+    fullName: "",
+    gradeLevel: "",
+    classroom: "",
+    isActive: true,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (student) {
+      setFormData({
+        fullName: student.fullName || "",
+        gradeLevel: student.gradeLevel || "",
+        classroom: student.classroom || "",
+        isActive: student.isActive !== false,
+      });
+    }
+  }, [student]);
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
+    if (!formData.gradeLevel.trim()) newErrors.gradeLevel = "Grade level is required";
+    if (!formData.classroom) newErrors.classroom = "Please select a class";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/students/${student.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          gradeLevel: formData.gradeLevel,
+          classroom: formData.classroom,
+          isActive: formData.isActive,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update student");
+      }
+      
+      showNotification(`Student "${formData.fullName}" updated successfully! ✨`, "success");
+      onUpdate(data.student || data);
+      onClose();
+    } catch (error: any) {
+      console.error("Error updating student:", error);
+      setErrors({ submit: error.message });
+      showNotification(error.message || "Failed to update student", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen || !student) return null;
+
+  const gradeLevels = [
+    "Preschool",
+    "Kindergarten",
+    "Primary 1",
+    "Primary 2",
+    "Primary 3",
+    "Primary 4",
+    "Primary 5",
+    "Primary 6",
+    "Junior Secondary 1",
+    "Junior Secondary 2",
+    "Junior Secondary 3",
+    "Senior Secondary 1",
+    "Senior Secondary 2",
+    "Senior Secondary 3",
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-slate-900 rounded-2xl max-w-md w-full border border-purple-500/30"
+      >
+        <div className="sticky top-0 bg-slate-900 p-6 border-b border-slate-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl">
+                <Edit size={20} className="text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Edit Student</h2>
+            </div>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
+              <X size={20} className="text-slate-400" />
+            </button>
+          </div>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Full Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              className={`w-full p-3 bg-slate-800 border ${errors.fullName ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+              placeholder="e.g., John Doe"
+            />
+            {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Grade Level *
+            </label>
+            <select
+              required
+              value={formData.gradeLevel}
+              onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
+              className={`w-full p-3 bg-slate-800 border ${errors.gradeLevel ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+            >
+              <option value="">Select Grade Level</option>
+              {gradeLevels.map(grade => (
+                <option key={grade} value={grade}>{grade}</option>
+              ))}
+            </select>
+            {errors.gradeLevel && <p className="text-red-400 text-xs mt-1">{errors.gradeLevel}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Class *
+            </label>
+            <select
+              required
+              value={formData.classroom}
+              onChange={(e) => setFormData({ ...formData, classroom: e.target.value })}
+              className={`w-full p-3 bg-slate-800 border ${errors.classroom ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+            >
+              <option value="">Select Class</option>
+              {classes.map((cls: any) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name} - {cls.gradeLevel}
+                </option>
+              ))}
+            </select>
+            {errors.classroom && <p className="text-red-400 text-xs mt-1">{errors.classroom}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Status
+            </label>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={formData.isActive === true}
+                  onChange={() => setFormData({ ...formData, isActive: true })}
+                  className="w-4 h-4 text-green-500 focus:ring-green-500"
+                />
+                <span className="text-slate-300">Active</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={formData.isActive === false}
+                  onChange={() => setFormData({ ...formData, isActive: false })}
+                  className="w-4 h-4 text-red-500 focus:ring-red-500"
+                />
+                <span className="text-slate-300">Inactive</span>
+              </label>
+            </div>
+          </div>
+
+          {errors.submit && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+              <p className="text-red-400 text-sm">{errors.submit}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl hover:from-yellow-700 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  Save Changes
                 </>
               )}
             </button>
@@ -639,13 +860,6 @@ const ViewStudentModal = ({ student, classes, isOpen, onClose }: any) => {
                   <p className="text-white">{student.parentPhone || "Not provided"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Users size={18} className="text-green-400" />
-                <div>
-                  <p className="text-xs text-slate-400">Enrollment Status</p>
-                  <p className="text-white">{student.enrollmentStatus || "Enrolled"}</p>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -690,6 +904,7 @@ export default function StudentsPage() {
   const [classes, setClasses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -759,35 +974,42 @@ export default function StudentsPage() {
     setStudents([newStudent, ...students]);
   };
 
+  const handleUpdateStudent = (updatedStudent: any) => {
+    setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+  };
+
   const handleViewStudent = (student: any) => {
     setSelectedStudent(student);
     setShowViewModal(true);
   };
 
   const handleEditStudent = (student: any) => {
-    console.log("Edit student:", student);
-    // Implement edit functionality
+    setSelectedStudent(student);
+    setShowEditModal(true);
   };
 
   const handleDeleteStudent = async (student: any) => {
-    if (confirm(`Are you sure you want to delete ${student.fullName}?`)) {
+    if (confirm(`Are you sure you want to delete ${student.fullName}? This action cannot be undone.`)) {
       try {
         const token = localStorage.getItem("accessToken");
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/students/${student.id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/students/${student.id}`, {
           method: "DELETE",
           headers: {
             "Authorization": `Bearer ${token}`,
           },
         });
+        
+        const data = await response.json();
+        
         if (response.ok) {
           setStudents(students.filter(s => s.id !== student.id));
           showNotification(`Student "${student.fullName}" deleted successfully`, "success");
         } else {
-          showNotification("Failed to delete student", "error");
+          throw new Error(data.message || "Failed to delete student");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting student:", error);
-        showNotification("Error deleting student", "error");
+        showNotification(error.message || "Error deleting student", "error");
       }
     }
   };
@@ -1148,6 +1370,18 @@ export default function StudentsPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreate={handleCreateStudent}
+        classes={classes}
+        showNotification={showNotification}
+      />
+      
+      <EditStudentModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedStudent(null);
+        }}
+        onUpdate={handleUpdateStudent}
+        student={selectedStudent}
         classes={classes}
         showNotification={showNotification}
       />
