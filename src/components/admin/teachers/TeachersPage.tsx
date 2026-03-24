@@ -5,6 +5,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import { getAccessToken } from "@/src/lib/auth";
+import {
+  getAdminTeachers,
+  type AdminTeacher,
+} from "@/src/lib/admin-api";
 import {
   Users,
   Plus,
@@ -215,7 +220,7 @@ const CreateTeacherModal = ({ isOpen, onClose, onCreate }: any) => {
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/teachers`, {
         method: "POST",
         headers: {
@@ -464,7 +469,7 @@ const ViewTeacherModal = ({ teacher, isOpen, onClose }: any) => {
 // ============ MAIN TEACHERS PAGE ============
 export default function TeachersPage() {
   const { user } = useAuth();
-  const [teachers, setTeachers] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<AdminTeacher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -481,34 +486,7 @@ export default function TeachersPage() {
   const fetchTeachers = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/teachers`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch teachers: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Handle different response structures
-      let teachersList = [];
-      if (Array.isArray(data)) {
-        teachersList = data;
-      } else if (data.teachers && Array.isArray(data.teachers)) {
-        teachersList = data.teachers;
-      } else if (data.data && Array.isArray(data.data)) {
-        teachersList = data.data;
-      } else {
-        teachersList = [];
-      }
-      
+      const teachersList = await getAdminTeachers();
       setTeachers(teachersList);
     } catch (error) {
       console.error("Error fetching teachers:", error);
@@ -518,7 +496,8 @@ export default function TeachersPage() {
   };
 
   const handleCreateTeacher = (newTeacher: any) => {
-    setTeachers([newTeacher, ...teachers]);
+    setTeachers((prev) => [newTeacher, ...prev]);
+    void fetchTeachers();
   };
 
   const handleViewTeacher = (teacher: any) => {
@@ -534,7 +513,7 @@ export default function TeachersPage() {
   const handleDeleteTeacher = async (teacher: any) => {
     if (confirm(`Are you sure you want to delete ${teacher.fullName || teacher.email}?`)) {
       try {
-        const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/teachers/${teacher.id}`, {
           method: "DELETE",
           headers: {

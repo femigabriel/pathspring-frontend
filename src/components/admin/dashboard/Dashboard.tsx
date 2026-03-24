@@ -5,6 +5,11 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import { getAccessToken } from "@/src/lib/auth";
+import {
+  getAdminDashboardSnapshot,
+  type AdminStudent,
+} from "@/src/lib/admin-api";
 import {
   Users,
   GraduationCap,
@@ -108,7 +113,7 @@ const StudentCard = ({ student }: any) => {
             <Star key={i} size={12} className={i < (student.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-gray-300 dark:text-slate-600"} />
           ))}
         </div>
-        <Link href={`/dashboard/students/${student.id}`} className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300">
+        <Link href="/admin/students" className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300">
           View Profile →
         </Link>
       </div>
@@ -154,7 +159,7 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }: any) => {
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/students`, {
         method: "POST",
         headers: {
@@ -335,7 +340,7 @@ export default function AdminDashboard() {
   const { user, school } = useAuth();
   const [greeting, setGreeting] = useState("");
   const [showCreateStudent, setShowCreateStudent] = useState(false);
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<AdminStudent[]>([]);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -349,41 +354,16 @@ export default function AdminDashboard() {
     else if (hour < 17) setGreeting("Good Afternoon");
     else setGreeting("Good Evening");
 
-    fetchStudents();
-    fetchStats();
+    void loadDashboard();
   }, []);
 
-  const fetchStudents = async () => {
+  const loadDashboard = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/students`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data);
-      }
+      const snapshot = await getAdminDashboardSnapshot();
+      setStudents(snapshot.students);
+      setStats(snapshot.stats);
     } catch (error) {
-      console.error("Error fetching students:", error);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const token = localStorage.getItem("accessToken");
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/dashboard/stats`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error loading dashboard:", error);
     }
   };
 
@@ -457,7 +437,7 @@ export default function AdminDashboard() {
         <div>
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Recent Students</h2>
-            <Link href="/dashboard/students" className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1">
+            <Link href="/admin/students" className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1">
               View All <ChevronRight size={16} />
             </Link>
           </div>
@@ -479,7 +459,7 @@ export default function AdminDashboard() {
       <CreateStudentModal
         isOpen={showCreateStudent}
         onClose={() => setShowCreateStudent(false)}
-        onCreate={fetchStudents}
+        onCreate={loadDashboard}
       />
     </ProtectedRoute>
   );

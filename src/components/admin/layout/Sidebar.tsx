@@ -10,20 +10,13 @@ import {
   Users,
   GraduationCap,
   BookOpen,
-  BarChart3,
-  Settings,
   LogOut,
   ChevronLeft,
   ChevronRight,
   School,
-  Award,
-  Calendar,
-  MessageSquare,
   X,
-  Menu,
 } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
-import { useTheme } from "@/src/contexts/ThemeContext";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -33,13 +26,10 @@ interface SidebarProps {
 const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { theme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
       if (window.innerWidth < 1024) {
         setCollapsed(false);
       }
@@ -69,34 +59,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       roles: ["SCHOOL_ADMIN"],
     },
     {
-      name: "Stories",
-      icon: BookOpen,
-      href: "/admin/stories",
-      roles: ["SCHOOL_ADMIN", "TEACHER", "STUDENT"],
-    },
-    {
-      name: "Analytics",
-      icon: BarChart3,
-      href: "/admin/analytics",
-      roles: ["SCHOOL_ADMIN", "TEACHER"],
-    },
-    {
       name: "Classes",
       icon: School,
       href: "/admin/classes",
       roles: ["SCHOOL_ADMIN", "TEACHER"],
-    },
-    {
-      name: "Messages",
-      icon: MessageSquare,
-      href: "/admin/messages",
-      roles: ["SCHOOL_ADMIN", "TEACHER"],
-    },
-    {
-      name: "Settings",
-      icon: Settings,
-      href: "/admin/settings",
-      roles: ["SCHOOL_ADMIN", "TEACHER", "STUDENT"],
     },
   ];
 
@@ -118,7 +84,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
         {/* Logo */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/10">
           {!collapsed && (
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href="/admin/dashboard" className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
@@ -128,7 +94,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
             </Link>
           )}
           {collapsed && (
-            <Link href="/dashboard">
+            <Link href="/admin/dashboard">
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
@@ -210,7 +176,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/10">
-              <Link href="/dashboard" className="flex items-center gap-2">
+              <Link href="/admin/dashboard" className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>

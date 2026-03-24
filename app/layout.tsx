@@ -19,8 +19,7 @@ export const metadata: Metadata = {
   description:
     "Interactive social-emotional learning stories for Nigerian kids. Discover magical tales that teach kindness, courage, and emotional wisdom.",
   icons: {
-    icon: "/favicon.png",
-    apple: "/favicon.svg",
+    icon: "/favicon.ico",
   },
 };
 
@@ -30,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="font-sans">
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} ${quicksand.variable} font-sans`}>
         <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>

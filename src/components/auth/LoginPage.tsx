@@ -25,6 +25,7 @@ import {
   Flower2,
   Rainbow,
 } from "lucide-react";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -393,6 +394,7 @@ const LoginForm = ({
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [notification, setNotification] = useState<{
@@ -433,13 +435,7 @@ export default function LoginPage() {
 
       showNotification("Welcome back! Logging in... 🎉", "success");
 
-      // Store tokens & user info
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      if (data.school) {
-        localStorage.setItem("school", JSON.stringify(data.school));
-      }
+      login(data.accessToken, data.refreshToken, data.user, data.school);
 
       // FIXED ROUTING - Redirect based on EXACT role
       setTimeout(() => {
@@ -455,17 +451,17 @@ export default function LoginPage() {
 
           case "SCHOOL_ADMIN":
             console.log("→ Redirecting to school admin dashboard");
-            router.push("/school-admin/dashboard");
+            router.push("/admin/dashboard");
             break;
 
           case "TEACHER":
             console.log("→ Redirecting to teacher dashboard");
-            router.push("/teacher/dashboard");
+            router.push("/admin/dashboard");
             break;
 
           case "STUDENT":
             console.log("→ Redirecting to student dashboard");
-            router.push("/student/dashboard");
+            router.push("/admin/dashboard");
             break;
 
           default:
@@ -473,19 +469,20 @@ export default function LoginPage() {
             router.push("/login");
         }
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login error:", err);
 
       let errorMsg = "";
+      const message = err instanceof Error ? err.message : "";
 
       if (
-        err.message?.includes("ERR_CONNECTION_REFUSED") ||
-        err.message?.includes("Failed to fetch")
+        message.includes("ERR_CONNECTION_REFUSED") ||
+        message.includes("Failed to fetch")
       ) {
         errorMsg =
           "Unable to connect to the server. Please check your internet connection and try again.";
-      } else if (err.message) {
-        errorMsg = err.message;
+      } else if (message) {
+        errorMsg = message;
       } else {
         errorMsg = "Login failed! Please check your email and password.";
       }

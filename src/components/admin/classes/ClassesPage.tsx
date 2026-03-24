@@ -5,6 +5,15 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import { getAccessToken } from "@/src/lib/auth";
+import {
+  getAdminClasses,
+  getAdminSchoolDetails,
+  getAdminTeachers,
+  type AdminClassroom,
+  type AdminSchoolDetails,
+  type AdminTeacher,
+} from "@/src/lib/admin-api";
 import {
   School,
   Plus,
@@ -156,7 +165,7 @@ const ClassCard = ({ classItem, onEdit, onDelete, onView }: any) => {
               )}
             </div>
           </div>
-          <Link href={`/dashboard/classes/${classItem.id}`} className="text-blue-600 dark:text-blue-400 text-sm hover:text-blue-700 dark:hover:text-blue-300">
+          <Link href="/admin/classes" className="text-blue-600 dark:text-blue-400 text-sm hover:text-blue-700 dark:hover:text-blue-300">
             View Class →
           </Link>
         </div>
@@ -283,7 +292,7 @@ const CreateClassModal = ({ isOpen, onClose, onCreate, teachers, showNotificatio
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/classes`, {
         method: "POST",
         headers: {
@@ -467,7 +476,7 @@ const ViewClassModal = ({ classItem, isOpen, onClose }: any) => {
   const fetchStudents = async () => {
     setIsLoadingStudents(true);
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/classes/${classItem.id}/students`, {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -614,9 +623,9 @@ const ViewClassModal = ({ classItem, isOpen, onClose }: any) => {
 // ============ MAIN CLASSES PAGE ============
 export default function ClassesPage() {
   const { user } = useAuth();
-  const [classes, setClasses] = useState<any[]>([]);
-  const [teachers, setTeachers] = useState<any[]>([]);
-  const [schoolDetails, setSchoolDetails] = useState<any>(null);
+  const [classes, setClasses] = useState<AdminClassroom[]>([]);
+  const [teachers, setTeachers] = useState<AdminTeacher[]>([]);
+  const [schoolDetails, setSchoolDetails] = useState<AdminSchoolDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -639,53 +648,15 @@ export default function ClassesPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      
-      // Fetch classes
-      const classesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/classes`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      
-      if (classesResponse.ok) {
-        const data = await classesResponse.json();
-        setClasses(data.classrooms || []);
-      } else {
-        console.error("Failed to fetch classes:", classesResponse.status);
-        showNotification("Failed to fetch classes", "error");
-      }
+      const [classList, teacherList, schoolInfo] = await Promise.all([
+        getAdminClasses(),
+        getAdminTeachers(),
+        getAdminSchoolDetails().catch(() => null),
+      ]);
 
-      // Fetch teachers for dropdown
-      const teachersResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/school/teachers`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      
-      if (teachersResponse.ok) {
-        const teachersData = await teachersResponse.json();
-        setTeachers(Array.isArray(teachersData) ? teachersData : teachersData.teachers || []);
-      }
-
-      // Fetch school details
-      const schoolResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/school/details`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      
-      if (schoolResponse.ok) {
-        const schoolData = await schoolResponse.json();
-        setSchoolDetails(schoolData);
-      }
-      
+      setClasses(classList);
+      setTeachers(teacherList);
+      setSchoolDetails(schoolInfo);
     } catch (error) {
       console.error("Error fetching data:", error);
       showNotification("Error connecting to server", "error");
@@ -711,7 +682,7 @@ export default function ClassesPage() {
   const handleDeleteClass = async (classItem: any) => {
     if (confirm(`Are you sure you want to delete ${classItem.name}?`)) {
       try {
-        const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/classes/${classItem.id}`, {
           method: "DELETE",
           headers: {

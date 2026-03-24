@@ -3,19 +3,22 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-
-interface User {
-  id: string;
-  email: string;
-  role: "SCHOOL_ADMIN" | "TEACHER" | "STUDENT";
-  schoolId?: string;
-}
-
-interface School {
-  id: string;
-  name: string;
-  schoolCode: string;
-}
+import {
+  AUTH_EVENT_KEY,
+  type AuthSchool as School,
+  type AuthUser as User,
+  clearAuthSession,
+  getAccessToken,
+  getRefreshToken,
+  getStoredSchool,
+  getStoredUser,
+  hasValidSession,
+  isLogoutStorageEvent,
+  isSessionExpired,
+  markSessionActivity,
+  migrateLegacyAuthStorage,
+  persistAuthSession,
+} from "@/src/lib/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -38,30 +41,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const login = (accessToken: string, refreshToken: string, userData: User, schoolData?: School) => {
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    persistAuthSession({
+      accessToken,
+      refreshToken,
+      user: userData,
+      school: schoolData,
+    });
     setUser(userData);
-    if (schoolData) setSchool(schoolData);
-    
-    // Also store in localStorage for persistence
-    localStorage.setItem("user", JSON.stringify(userData));
-    if (schoolData) localStorage.setItem("school", JSON.stringify(schoolData));
+    setSchool(schoolData ?? null);
   };
 
   const logout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
-    localStorage.removeItem("school");
+    clearAuthSession();
     setUser(null);
     setSchool(null);
-    router.push("/login");
+    router.replace("/login");
   };
 
   const fetchUserData = async () => {
-    const token = localStorage.getItem("accessToken");
-    
-    if (!token) {
+    const token = getAccessToken();
+
+    if (!token || isSessionExpired()) {
+      clearAuthSession();
+      setUser(null);
+      setSchool(null);
       setIsLoading(false);
       return;
     }
@@ -76,12 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        // If token is invalid, clear storage
         if (response.status === 401) {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("user");
-          localStorage.removeItem("school");
+          clearAuthSession();
           setUser(null);
           setSchool(null);
         }
@@ -89,50 +88,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      
-      // Set user data
+
       setUser(data.user);
-      if (data.school) setSchool(data.school);
-      
-      // Update localStorage
-      localStorage.setItem("user", JSON.stringify(data.user));
-      if (data.school) localStorage.setItem("school", JSON.stringify(data.school));
-      
+      setSchool(data.school ?? null);
+
+      persistAuthSession({
+        accessToken: token,
+        refreshToken: getRefreshToken() ?? undefined,
+        user: data.user,
+        school: data.school,
+      });
+      markSessionActivity();
     } catch (error) {
       console.error("Error fetching user data:", error);
-      // Don't logout on network errors, just keep existing data
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Load user from localStorage on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedUser = localStorage.getItem("user");
-      const storedSchool = localStorage.getItem("school");
-      const token = localStorage.getItem("accessToken");
+      migrateLegacyAuthStorage();
+
+      if (isSessionExpired()) {
+        clearAuthSession();
+        setIsLoading(false);
+        return;
+      }
+
+      const storedUser = getStoredUser();
+      const storedSchool = getStoredSchool();
+      const token = getAccessToken();
 
       if (token && storedUser) {
-        // Set initial user from localStorage
-        setUser(JSON.parse(storedUser));
-        if (storedSchool) setSchool(JSON.parse(storedSchool));
-        
-        // Fetch fresh user data in background
+        setUser(storedUser);
+        setSchool(storedSchool);
+        markSessionActivity();
         await fetchUserData();
       } else {
         setIsLoading(false);
       }
     };
 
-    initializeAuth();
+    void initializeAuth();
   }, []);
+
+  useEffect(() => {
+    const handleActivity = () => {
+      if (getAccessToken()) {
+        markSessionActivity();
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === AUTH_EVENT_KEY && isLogoutStorageEvent(event.newValue)) {
+        setUser(null);
+        setSchool(null);
+        setIsLoading(false);
+        router.replace("/login");
+      }
+    };
+
+    const sessionMonitor = window.setInterval(() => {
+      if (getAccessToken() && isSessionExpired()) {
+        clearAuthSession();
+        setUser(null);
+        setSchool(null);
+        router.replace("/login");
+      }
+    }, 60_000);
+
+    window.addEventListener("mousemove", handleActivity, { passive: true });
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("mousedown", handleActivity, { passive: true });
+    window.addEventListener("touchstart", handleActivity, { passive: true });
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.clearInterval(sessionMonitor);
+      window.removeEventListener("mousemove", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("mousedown", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [router]);
 
   const value = {
     user,
     school,
     isLoading,
-    isAuthenticated: !!user && !!localStorage.getItem("accessToken"),
+    isAuthenticated: !!user && hasValidSession(),
     login,
     logout,
     fetchUserData,

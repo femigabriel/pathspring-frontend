@@ -28,6 +28,8 @@ import {
   Flower2,
   Rainbow,
 } from "lucide-react";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { getDefaultRouteForRole } from "@/src/lib/auth";
 
 // ============ API CONFIGURATION ============
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -677,6 +679,7 @@ const SuccessModal = ({
 // ============ MAIN REGISTER PAGE ============
 export default function RegisterPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -735,17 +738,14 @@ export default function RegisterPage() {
         );
       }
 
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("school", JSON.stringify(data.school));
+      login(data.accessToken, data.refreshToken, data.user, data.school);
 
       setRegisteredData(data);
       setShowSuccess(true);
       showNotification("School registered successfully! 🎉", "success");
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(getDefaultRouteForRole(data.user?.role));
       }, 3000);
     } catch (err: any) {
       console.error("Registration error:", err);
@@ -1050,7 +1050,7 @@ export default function RegisterPage() {
           <SuccessModal
             school={registeredData.school}
             user={registeredData.user}
-            onClose={() => router.push("/dashboard")}
+            onClose={() => router.push(getDefaultRouteForRole(registeredData.user?.role))}
           />
         )}
       </AnimatePresence>

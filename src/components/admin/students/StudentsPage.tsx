@@ -5,6 +5,13 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import { getAccessToken } from "@/src/lib/auth";
+import {
+  getAdminClasses,
+  getAdminStudents,
+  type AdminClassroom,
+  type AdminStudent,
+} from "@/src/lib/admin-api";
 import {
   Users,
   Plus,
@@ -156,7 +163,7 @@ const StudentCard = ({ student, classes, onEdit, onDelete, onView }: any) => {
               {student.isActive !== false ? "Active" : "Inactive"}
             </span>
           </div>
-          <Link href={`/dashboard/students/${student.id}`} className="text-blue-600 dark:text-blue-400 text-sm hover:text-blue-700 dark:hover:text-blue-300">
+          <Link href="/admin/students" className="text-blue-600 dark:text-blue-400 text-sm hover:text-blue-700 dark:hover:text-blue-300">
             View Profile →
           </Link>
         </div>
@@ -291,7 +298,7 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate, classes, showNotificati
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/students`, {
         method: "POST",
         headers: {
@@ -566,7 +573,7 @@ const EditStudentModal = ({ isOpen, onClose, onUpdate, student, classes, showNot
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/students/${student.id}`, {
         method: "PATCH",
         headers: {
@@ -899,8 +906,8 @@ const ViewStudentModal = ({ student, classes, isOpen, onClose }: any) => {
 // ============ MAIN STUDENTS PAGE ============
 export default function StudentsPage() {
   const { user } = useAuth();
-  const [students, setStudents] = useState<any[]>([]);
-  const [classes, setClasses] = useState<any[]>([]);
+  const [students, setStudents] = useState<AdminStudent[]>([]);
+  const [classes, setClasses] = useState<AdminClassroom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -928,39 +935,13 @@ export default function StudentsPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      
-      // Fetch students
-      const studentsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/school/students`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      
-      if (studentsResponse.ok) {
-        const data = await studentsResponse.json();
-        setStudents(Array.isArray(data) ? data : data.students || []);
-      } else {
-        console.error("Failed to fetch students:", studentsResponse.status);
-        showNotification("Failed to fetch students", "error");
-      }
+      const [studentList, classList] = await Promise.all([
+        getAdminStudents(),
+        getAdminClasses(),
+      ]);
 
-      // Fetch classes for filtering and assignment
-      const classesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/classes`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      
-      if (classesResponse.ok) {
-        const data = await classesResponse.json();
-        setClasses(data.classrooms || []);
-      }
-      
+      setStudents(studentList);
+      setClasses(classList);
     } catch (error) {
       console.error("Error fetching data:", error);
       showNotification("Error connecting to server", "error");
@@ -990,7 +971,7 @@ export default function StudentsPage() {
   const handleDeleteStudent = async (student: any) => {
     if (confirm(`Are you sure you want to delete ${student.fullName}? This action cannot be undone.`)) {
       try {
-        const token = localStorage.getItem("accessToken");
+      const token = getAccessToken();
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/students/${student.id}`, {
           method: "DELETE",
           headers: {

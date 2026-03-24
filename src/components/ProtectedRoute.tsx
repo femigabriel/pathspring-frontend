@@ -5,10 +5,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
+import { getAccessToken, type UserRole } from "@/src/lib/auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: Array<"SCHOOL_ADMIN" | "TEACHER" | "STUDENT">;
+  allowedRoles?: UserRole[];
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -30,11 +31,11 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         if (allowedRoles && !allowedRoles.includes(user.role)) {
           // Redirect to appropriate dashboard based on role
           if (user.role === "SCHOOL_ADMIN") {
-            router.replace("/dashboard");
+            router.replace("/admin/dashboard");
           } else if (user.role === "TEACHER") {
-            router.replace("/teacher/dashboard");
+            router.replace("/admin/dashboard");
           } else {
-            router.replace("/student/dashboard");
+            router.replace("/admin/dashboard");
           }
           return;
         }
@@ -44,7 +45,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
       }
 
       // If we have token but no user data yet, try to fetch it
-      if (!isLoading && !user && localStorage.getItem("accessToken")) {
+      if (!isLoading && !user && getAccessToken()) {
         try {
           await fetchUserData();
         } catch (error) {

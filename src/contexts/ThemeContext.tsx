@@ -13,42 +13,41 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const getInitialTheme = (): Theme => {
+  if (typeof window === "undefined") {
+    return "dark";
+  }
+
+  const savedTheme = window.localStorage.getItem("theme") as Theme | null;
+  if (savedTheme === "light" || savedTheme === "dark") {
+    return savedTheme;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
-    setMounted(true);
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    
-    const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
-    setTheme(initialTheme);
-  }, []);
+    const root = document.documentElement;
 
-  useEffect(() => {
-    if (mounted) {
-      const root = document.documentElement;
-      if (theme === "dark") {
-        root.classList.add("dark");
-        root.classList.remove("light");
-      } else {
-        root.classList.add("light");
-        root.classList.remove("dark");
-      }
-      localStorage.setItem("theme", theme);
+    if (theme === "dark") {
+      root.classList.add("dark");
+      root.classList.remove("light");
+    } else {
+      root.classList.add("light");
+      root.classList.remove("dark");
     }
-  }, [theme, mounted]);
+
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === "dark" ? "light" : "dark");
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
-
-  // Prevent flash of wrong theme
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>

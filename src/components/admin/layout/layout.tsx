@@ -16,11 +16,9 @@ export default function DashboardLayout({
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      setShouldRedirect(true);
       router.replace("/login");
     }
   }, [isLoading, isAuthenticated, router]);
@@ -37,7 +35,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (!isAuthenticated || shouldRedirect) {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -59,7 +57,7 @@ export default function DashboardLayout({
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <div className="flex-1 flex flex-col min-h-screen w-full">
           <Header setSidebarOpen={setSidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 ml-60">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:ml-60">
             {children}
           </main>
         </div>
