@@ -37,9 +37,9 @@ import Link from "next/link";
 // ============ NOTIFICATION COMPONENT ============
 const Notification = ({ message, type, onClose }: { message: string; type: "success" | "error" | "info"; onClose: () => void }) => {
   const colors = {
-    success: "bg-green-500 border-green-600",
-    error: "bg-red-500 border-red-600",
-    info: "bg-blue-500 border-blue-600",
+    success: "bg-green-500 dark:bg-green-500 border-green-600 dark:border-green-600",
+    error: "bg-red-500 dark:bg-red-500 border-red-600 dark:border-red-600",
+    info: "bg-blue-500 dark:bg-blue-500 border-blue-600 dark:border-blue-600",
   };
   
   const icons = {
@@ -73,7 +73,7 @@ const ClassCard = ({ classItem, onEdit, onDelete, onView }: any) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -5 }}
-      className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 hover:border-purple-500/50 transition-all overflow-hidden"
+      className="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-slate-700 hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-all overflow-hidden shadow-sm dark:shadow-none"
     >
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
@@ -86,11 +86,11 @@ const ClassCard = ({ classItem, onEdit, onDelete, onView }: any) => {
               <School size={24} className="text-white" />
             </div>
             <div>
-              <h4 className="font-semibold text-white text-base">{classItem.name}</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white text-base">{classItem.name}</h4>
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs text-blue-400">{classItem.gradeLevel}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">{classItem.gradeLevel}</p>
                 {classItem.isActive !== false && (
-                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
+                  <span className="px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-full text-xs">
                     Active
                   </span>
                 )}
@@ -98,25 +98,25 @@ const ClassCard = ({ classItem, onEdit, onDelete, onView }: any) => {
             </div>
           </div>
           <div className="relative group">
-            <button className="p-2 rounded-lg hover:bg-slate-700 transition-colors">
-              <MoreVertical size={18} className="text-slate-400" />
+            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+              <MoreVertical size={18} className="text-gray-500 dark:text-slate-400" />
             </button>
-            <div className="absolute right-0 mt-2 w-36 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
               <button
                 onClick={() => onView(classItem)}
-                className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 rounded-t-lg flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-t-lg flex items-center gap-2"
               >
                 <Eye size={14} /> View Details
               </button>
               <button
                 onClick={() => onEdit(classItem)}
-                className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
               >
                 <Edit size={14} /> Edit
               </button>
               <button
                 onClick={() => onDelete(classItem)}
-                className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
               >
                 <Trash2 size={14} /> Delete
               </button>
@@ -126,37 +126,37 @@ const ClassCard = ({ classItem, onEdit, onDelete, onView }: any) => {
 
         <div className="space-y-2 mb-4">
           {teacher && (
-            <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
               <User size={14} />
               <span>Teacher: {teacher.fullName}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
             <Users size={14} />
             <span>Students: {classItem.studentCount || 0}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
             <Calendar size={14} />
             <span>Created: {classItem.createdAt ? new Date(classItem.createdAt).toLocaleDateString() : "Recently"}</span>
           </div>
         </div>
 
-        <div className="pt-3 border-t border-slate-700 flex items-center justify-between">
+        <div className="pt-3 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-1">
             <div className="flex -space-x-2">
               {[...Array(Math.min(3, classItem.studentCount || 0))].map((_, i) => (
-                <div key={i} className="w-6 h-6 bg-purple-500/30 rounded-full border border-purple-500 flex items-center justify-center">
-                  <span className="text-xs text-purple-300">S</span>
+                <div key={i} className="w-6 h-6 bg-purple-100 dark:bg-purple-500/30 rounded-full border border-purple-500 flex items-center justify-center">
+                  <span className="text-xs text-purple-600 dark:text-purple-300">S</span>
                 </div>
               ))}
               {(classItem.studentCount || 0) > 3 && (
-                <div className="w-6 h-6 bg-slate-700 rounded-full flex items-center justify-center">
-                  <span className="text-xs text-slate-400">+{(classItem.studentCount || 0) - 3}</span>
+                <div className="w-6 h-6 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                  <span className="text-xs text-gray-600 dark:text-slate-400">+{(classItem.studentCount || 0) - 3}</span>
                 </div>
               )}
             </div>
           </div>
-          <Link href={`/dashboard/classes/${classItem.id}`} className="text-blue-400 text-sm hover:text-blue-300">
+          <Link href={`/dashboard/classes/${classItem.id}`} className="text-blue-600 dark:text-blue-400 text-sm hover:text-blue-700 dark:hover:text-blue-300">
             View Class →
           </Link>
         </div>
@@ -174,7 +174,7 @@ const ClassTableRow = ({ classItem, onEdit, onDelete, onView, index }: any) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="border-b border-slate-700 hover:bg-slate-800/50 transition-colors"
+      className="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
@@ -186,11 +186,11 @@ const ClassTableRow = ({ classItem, onEdit, onDelete, onView, index }: any) => {
             <School size={18} className="text-white" />
           </div>
           <div>
-            <p className="font-medium text-white">{classItem.name}</p>
+            <p className="font-medium text-gray-900 dark:text-white">{classItem.name}</p>
             <div className="flex items-center gap-2">
-              <p className="text-xs text-blue-400">{classItem.gradeLevel}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400">{classItem.gradeLevel}</p>
               {classItem.isActive !== false && (
-                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
+                <span className="px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-full text-xs">
                   Active
                 </span>
               )}
@@ -201,28 +201,28 @@ const ClassTableRow = ({ classItem, onEdit, onDelete, onView, index }: any) => {
       <td className="px-6 py-4">
         {teacher ? (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
-              <User size={14} className="text-purple-400" />
+            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-500/20 rounded-full flex items-center justify-center">
+              <User size={14} className="text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-white">{teacher.fullName}</p>
-              <p className="text-xs text-slate-400">{teacher.email}</p>
+              <p className="text-sm text-gray-900 dark:text-white">{teacher.fullName}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">{teacher.email}</p>
             </div>
           </div>
         ) : (
-          <span className="text-slate-400 text-sm">Not assigned</span>
+          <span className="text-gray-500 dark:text-slate-400 text-sm">Not assigned</span>
         )}
         </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
-          <Users size={14} className="text-slate-400" />
-          <span className="text-slate-300 text-sm">{classItem.studentCount || 0} students</span>
+          <Users size={14} className="text-gray-500 dark:text-slate-400" />
+          <span className="text-gray-700 dark:text-slate-300 text-sm">{classItem.studentCount || 0} students</span>
         </div>
         </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
-          <Calendar size={14} className="text-slate-400" />
-          <span className="text-slate-300 text-sm">
+          <Calendar size={14} className="text-gray-500 dark:text-slate-400" />
+          <span className="text-gray-700 dark:text-slate-300 text-sm">
             {classItem.createdAt ? new Date(classItem.createdAt).toLocaleDateString() : "N/A"}
           </span>
         </div>
@@ -231,24 +231,24 @@ const ClassTableRow = ({ classItem, onEdit, onDelete, onView, index }: any) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => onView(classItem)}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
             title="View Details"
           >
-            <Eye size={16} className="text-slate-400 hover:text-blue-400" />
+            <Eye size={16} className="text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400" />
           </button>
           <button
             onClick={() => onEdit(classItem)}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
             title="Edit"
           >
-            <Edit size={16} className="text-slate-400 hover:text-yellow-400" />
+            <Edit size={16} className="text-gray-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400" />
           </button>
           <button
             onClick={() => onDelete(classItem)}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
             title="Delete"
           >
-            <Trash2 size={16} className="text-slate-400 hover:text-red-400" />
+            <Trash2 size={16} className="text-gray-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400" />
           </button>
         </div>
         </td>
@@ -336,29 +336,29 @@ const CreateClassModal = ({ isOpen, onClose, onCreate, teachers, showNotificatio
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 rounded-2xl max-w-md w-full border border-purple-500/30 max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-gray-200 dark:border-purple-500/30 max-h-[90vh] overflow-y-auto shadow-xl dark:shadow-none"
       >
-        <div className="sticky top-0 bg-slate-900 p-6 border-b border-slate-700">
+        <div className="sticky top-0 bg-white dark:bg-slate-900 p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
                 <School size={20} className="text-white" />
               </div>
-              <h2 className="text-xl font-bold text-white">Create New Class</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create New Class</h2>
             </div>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
-              <X size={20} className="text-slate-400" />
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+              <X size={20} className="text-gray-500 dark:text-slate-400" />
             </button>
           </div>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
               Class Name *
             </label>
             <input
@@ -366,39 +366,39 @@ const CreateClassModal = ({ isOpen, onClose, onCreate, teachers, showNotificatio
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className={`w-full p-3 bg-slate-800 border ${errors.name ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+              className={`w-full p-3 bg-gray-50 dark:bg-slate-800 border ${errors.name ? 'border-red-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors`}
               placeholder="e.g., Green Class, Blue Class"
             />
-            {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+            {errors.name && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
               Grade Level *
             </label>
             <select
               required
               value={formData.gradeLevel}
               onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
-              className={`w-full p-3 bg-slate-800 border ${errors.gradeLevel ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+              className={`w-full p-3 bg-gray-50 dark:bg-slate-800 border ${errors.gradeLevel ? 'border-red-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors`}
             >
               <option value="">Select Grade Level</option>
               {gradeLevels.map(grade => (
                 <option key={grade} value={grade}>{grade}</option>
               ))}
             </select>
-            {errors.gradeLevel && <p className="text-red-400 text-xs mt-1">{errors.gradeLevel}</p>}
+            {errors.gradeLevel && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.gradeLevel}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
               Class Teacher *
             </label>
             <select
               required
               value={formData.teacherId}
               onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
-              className={`w-full p-3 bg-slate-800 border ${errors.teacherId ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+              className={`w-full p-3 bg-gray-50 dark:bg-slate-800 border ${errors.teacherId ? 'border-red-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors`}
             >
               <option value="">Select Teacher</option>
               {teachers.map((teacher: any) => (
@@ -407,17 +407,17 @@ const CreateClassModal = ({ isOpen, onClose, onCreate, teachers, showNotificatio
                 </option>
               ))}
             </select>
-            {errors.teacherId && <p className="text-red-400 text-xs mt-1">{errors.teacherId}</p>}
+            {errors.teacherId && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.teacherId}</p>}
             {teachers.length === 0 && (
-              <p className="text-yellow-400 text-xs mt-1">
+              <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
                 No teachers available. Please create a teacher first.
               </p>
             )}
           </div>
 
           {errors.submit && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-              <p className="text-red-400 text-sm">{errors.submit}</p>
+            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-3">
+              <p className="text-red-600 dark:text-red-400 text-sm">{errors.submit}</p>
             </div>
           )}
 
@@ -425,7 +425,7 @@ const CreateClassModal = ({ isOpen, onClose, onCreate, teachers, showNotificatio
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-colors"
+              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               Cancel
             </button>
@@ -490,13 +490,13 @@ const ViewClassModal = ({ classItem, isOpen, onClose }: any) => {
   if (!isOpen || !classItem) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 rounded-2xl max-w-2xl w-full border border-purple-500/30 max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full border border-gray-200 dark:border-purple-500/30 max-h-[90vh] overflow-y-auto shadow-xl dark:shadow-none"
       >
-        <div className="sticky top-0 bg-slate-900 p-6 border-b border-slate-700">
+        <div className="sticky top-0 bg-white dark:bg-slate-900 p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -507,56 +507,56 @@ const ViewClassModal = ({ classItem, isOpen, onClose }: any) => {
                 <School size={24} className="text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">{classItem.name}</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{classItem.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-sm text-blue-400">{classItem.gradeLevel}</p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400">{classItem.gradeLevel}</p>
                   {classItem.isActive !== false && (
-                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
+                    <span className="px-2 py-0.5 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 rounded-full text-xs">
                       Active
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10">
-              <X size={20} className="text-slate-400" />
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10">
+              <X size={20} className="text-gray-500 dark:text-slate-400" />
             </button>
           </div>
         </div>
 
         <div className="p-6 space-y-6">
           {/* Class Details */}
-          <div className="bg-slate-800/50 rounded-xl p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-white mb-3">Class Details</h3>
+          <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Class Details</h3>
             {teacher && (
               <div className="flex items-center gap-3">
-                <User size={18} className="text-purple-400" />
+                <User size={18} className="text-purple-600 dark:text-purple-400" />
                 <div>
-                  <p className="text-xs text-slate-400">Class Teacher</p>
-                  <p className="text-white">{teacher.fullName}</p>
-                  <p className="text-xs text-slate-400">{teacher.email}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">Class Teacher</p>
+                  <p className="text-gray-900 dark:text-white">{teacher.fullName}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">{teacher.email}</p>
                 </div>
               </div>
             )}
             <div className="flex items-center gap-3">
-              <Users size={18} className="text-blue-400" />
+              <Users size={18} className="text-blue-600 dark:text-blue-400" />
               <div>
-                <p className="text-xs text-slate-400">Total Students</p>
-                <p className="text-white">{classItem.studentCount || 0}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Total Students</p>
+                <p className="text-gray-900 dark:text-white">{classItem.studentCount || 0}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Calendar size={18} className="text-green-400" />
+              <Calendar size={18} className="text-green-600 dark:text-green-400" />
               <div>
-                <p className="text-xs text-slate-400">Created Date</p>
-                <p className="text-white">{classItem.createdAt ? new Date(classItem.createdAt).toLocaleDateString() : "N/A"}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Created Date</p>
+                <p className="text-gray-900 dark:text-white">{classItem.createdAt ? new Date(classItem.createdAt).toLocaleDateString() : "N/A"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <CheckCircle size={18} className={classItem.isActive !== false ? "text-green-400" : "text-gray-400"} />
+              <CheckCircle size={18} className={classItem.isActive !== false ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"} />
               <div>
-                <p className="text-xs text-slate-400">Status</p>
-                <p className={`font-medium ${classItem.isActive !== false ? "text-green-400" : "text-gray-400"}`}>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Status</p>
+                <p className={`font-medium ${classItem.isActive !== false ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-400"}`}>
                   {classItem.isActive !== false ? "Active" : "Inactive"}
                 </p>
               </div>
@@ -564,8 +564,8 @@ const ViewClassModal = ({ classItem, isOpen, onClose }: any) => {
           </div>
 
           {/* Students List */}
-          <div className="bg-slate-800/50 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-white mb-3">Students in Class</h3>
+          <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Students in Class</h3>
             {isLoadingStudents ? (
               <div className="flex items-center justify-center py-8">
                 <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -573,27 +573,27 @@ const ViewClassModal = ({ classItem, isOpen, onClose }: any) => {
             ) : students.length > 0 ? (
               <div className="space-y-2">
                 {students.map((student: any) => (
-                  <div key={student.id} className="flex items-center justify-between p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+                  <div key={student.id} className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
-                        <span className="text-purple-400 text-sm font-semibold">
+                      <div className="w-8 h-8 bg-purple-100 dark:bg-purple-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-purple-600 dark:text-purple-400 text-sm font-semibold">
                           {student.fullName?.charAt(0) || "S"}
                         </span>
                       </div>
                       <div>
-                        <p className="text-sm text-white">{student.fullName}</p>
-                        <p className="text-xs text-slate-400">{student.parentEmail}</p>
+                        <p className="text-sm text-gray-900 dark:text-white">{student.fullName}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">{student.parentEmail}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle size={14} className="text-green-400" />
-                      <span className="text-xs text-slate-400">Enrolled</span>
+                      <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Enrolled</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-center text-slate-400 py-4">No students enrolled in this class yet</p>
+              <p className="text-center text-gray-500 dark:text-slate-400 py-4">No students enrolled in this class yet</p>
             )}
           </div>
         </div>
@@ -652,7 +652,6 @@ export default function ClassesPage() {
       
       if (classesResponse.ok) {
         const data = await classesResponse.json();
-        // Handle the response structure with "classrooms" key
         setClasses(data.classrooms || []);
       } else {
         console.error("Failed to fetch classes:", classesResponse.status);
@@ -771,20 +770,20 @@ export default function ClassesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">Classes</h1>
-            <p className="text-slate-400 mt-1">Manage your school's classes and assignments</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Classes</h1>
+            <p className="text-gray-600 dark:text-slate-400 mt-1">Manage your school's classes and assignments</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handleRefresh}
-              className="p-2.5 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"
+              className="p-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
               title="Refresh"
             >
-              <RefreshCw size={20} className="text-slate-400" />
+              <RefreshCw size={20} className="text-gray-600 dark:text-slate-400" />
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30"
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30 dark:shadow-none"
             >
               <Plus size={20} />
               Create Class
@@ -794,63 +793,63 @@ export default function ClassesPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <School size={20} className="text-blue-400" />
-              <span className="text-xs text-green-400">{activeClasses} Active</span>
+              <School size={20} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-xs text-green-600 dark:text-green-400">{activeClasses} Active</span>
             </div>
-            <p className="text-2xl font-bold text-white">{classes.length}</p>
-            <p className="text-sm text-slate-400">Total Classes</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{classes.length}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Total Classes</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <Users size={20} className="text-purple-400" />
-              <TrendingUp size={14} className="text-green-400" />
+              <Users size={20} className="text-purple-600 dark:text-purple-400" />
+              <TrendingUp size={14} className="text-green-600 dark:text-green-400" />
             </div>
-            <p className="text-2xl font-bold text-white">{totalStudents}</p>
-            <p className="text-sm text-slate-400">Total Students</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalStudents}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Total Students</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <GraduationCap size={20} className="text-green-400" />
+              <GraduationCap size={20} className="text-green-600 dark:text-green-400" />
             </div>
-            <p className="text-2xl font-bold text-white">{teachers.length}</p>
-            <p className="text-sm text-slate-400">Available Teachers</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{teachers.length}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Available Teachers</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <CheckCircle size={20} className="text-yellow-400" />
+              <CheckCircle size={20} className="text-yellow-600 dark:text-yellow-400" />
             </div>
-            <p className="text-2xl font-bold text-white">{classesWithTeacher}</p>
-            <p className="text-sm text-slate-400">Classes with Teacher</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{classesWithTeacher}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Classes with Teacher</p>
           </div>
         </div>
 
         {/* School Details Card */}
         {schoolDetails && (
-          <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-xl p-4 border border-blue-500/30">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-600/20 dark:to-cyan-600/20 rounded-xl p-4 border border-blue-200 dark:border-blue-500/30">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-xl">
-                  <School size={24} className="text-blue-400" />
+                <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-xl">
+                  <School size={24} className="text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-400">School</p>
-                  <p className="text-lg font-semibold text-white">{schoolDetails.name || "Not specified"}</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">School</p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">{schoolDetails.name || "Not specified"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-6">
                 <div>
-                  <p className="text-xs text-slate-400">School Code</p>
-                  <p className="font-mono font-semibold text-white">{schoolDetails.schoolCode || "N/A"}</p>
+                  <p className="text-xs text-gray-600 dark:text-slate-400">School Code</p>
+                  <p className="font-mono font-semibold text-gray-900 dark:text-white">{schoolDetails.schoolCode || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Location</p>
-                  <p className="text-sm text-white">{schoolDetails.location || "Not specified"}</p>
+                  <p className="text-xs text-gray-600 dark:text-slate-400">Location</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{schoolDetails.location || "Not specified"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Established</p>
-                  <p className="text-sm text-white">{schoolDetails.createdAt ? new Date(schoolDetails.createdAt).getFullYear() : "N/A"}</p>
+                  <p className="text-xs text-gray-600 dark:text-slate-400">Established</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{schoolDetails.createdAt ? new Date(schoolDetails.createdAt).getFullYear() : "N/A"}</p>
                 </div>
               </div>
             </div>
@@ -860,22 +859,22 @@ export default function ClassesPage() {
         {/* Search and View Toggle */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400" size={18} />
             <input
               type="text"
               placeholder="Search classes by name or grade level..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-2 bg-slate-800/50 rounded-xl p-1 border border-slate-700">
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800/50 rounded-xl p-1 border border-gray-200 dark:border-slate-700">
             <button
               onClick={() => setViewMode("grid")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === "grid"
                   ? "bg-blue-600 text-white"
-                  : "text-slate-400 hover:text-white"
+                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               Grid View
@@ -885,7 +884,7 @@ export default function ClassesPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === "table"
                   ? "bg-blue-600 text-white"
-                  : "text-slate-400 hover:text-white"
+                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               Table View
@@ -900,9 +899,9 @@ export default function ClassesPage() {
           </div>
         ) : filteredClasses.length === 0 ? (
           <div className="text-center py-20">
-            <School size={48} className="text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No classes found</h3>
-            <p className="text-slate-400">
+            <School size={48} className="text-gray-400 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No classes found</h3>
+            <p className="text-gray-600 dark:text-slate-400">
               {searchQuery ? "Try a different search term" : "Click 'Create Class' to get started"}
             </p>
           </div>
@@ -921,15 +920,15 @@ export default function ClassesPage() {
           </div>
         ) : (
           // Table View
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 overflow-x-auto shadow-sm dark:shadow-none">
             <table className="w-full min-w-[800px]">
-              <thead className="bg-slate-800 border-b border-slate-700">
+              <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Class</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Teacher</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Students</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Class</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Teacher</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Students</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -954,7 +953,7 @@ export default function ClassesPage() {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 bg-slate-800 rounded-lg text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 rounded-lg text-gray-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               <ChevronLeft size={18} />
             </button>
@@ -978,7 +977,7 @@ export default function ClassesPage() {
                     className={`w-8 h-8 rounded-lg transition-all ${
                       currentPage === pageNum
                         ? "bg-blue-600 text-white"
-                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                        : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
                     }`}
                   >
                     {pageNum}
@@ -987,10 +986,10 @@ export default function ClassesPage() {
               })}
               {totalPages > 5 && currentPage < totalPages - 2 && (
                 <>
-                  <span className="text-slate-500">...</span>
+                  <span className="text-gray-500 dark:text-slate-500">...</span>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
-                    className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
                   >
                     {totalPages}
                   </button>
@@ -1000,7 +999,7 @@ export default function ClassesPage() {
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-slate-800 rounded-lg text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 rounded-lg text-gray-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               <ChevronRight size={18} />
             </button>

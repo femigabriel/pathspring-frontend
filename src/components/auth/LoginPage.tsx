@@ -1,4 +1,4 @@
-// app/login/page.tsx
+// app/login/page.tsx - FIXED ROUTING
 "use client";
 
 import { useState } from "react";
@@ -25,16 +25,12 @@ import {
   Flower2,
   Rainbow,
 } from "lucide-react";
-import { useAuth } from "@/src/contexts/AuthContext";
 
-// ============ API CONFIGURATION ============
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// ============ DESIGN SYSTEM ============
 const INPUT_STYLE =
   "w-full p-5 text-lg border-2 rounded-xl focus:outline-none focus:ring-2 transition-all bg-slate-800/50 border-slate-700 focus:border-purple-500 focus:ring-purple-500/20 text-white placeholder:text-slate-500";
 
-// ============ NOTIFICATION COMPONENT ============
 const Notification = ({
   message,
   type,
@@ -57,17 +53,13 @@ const Notification = ({
     >
       <span className="text-2xl">{type === "success" ? "✅" : "⚠️"}</span>
       <p className="font-bold text-lg">{message}</p>
-      <button
-        onClick={onClose}
-        className="ml-4 hover:scale-110 transition-transform"
-      >
+      <button onClick={onClose} className="ml-4 hover:scale-110 transition-transform">
         <X size={20} />
       </button>
     </motion.div>
   );
 };
 
-// ============ LOADING SPINNER ============
 const LoadingSpinner = () => {
   return (
     <div className="flex items-center justify-center gap-3">
@@ -81,7 +73,6 @@ const LoadingSpinner = () => {
   );
 };
 
-// ============ HERO SECTION ============
 const LoginHero = () => {
   return (
     <motion.div
@@ -89,7 +80,6 @@ const LoginHero = () => {
       animate={{ opacity: 1, y: 0 }}
       className="text-center mb-12"
     >
-      {/* Stats Badge */}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -101,7 +91,6 @@ const LoginHero = () => {
         <Star className="text-yellow-300" size={18} fill="currentColor" />
       </motion.div>
 
-      {/* PathSpring Logo with Dark Theme */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -140,7 +129,6 @@ const LoginHero = () => {
   );
 };
 
-// ============ FEATURE CARDS ============
 const FeatureCards = () => {
   const features = [
     {
@@ -200,7 +188,6 @@ const FeatureCards = () => {
   );
 };
 
-// ============ STATS SECTION ============
 const StatsSection = () => {
   const stats = [
     { value: "50K+", label: "Active Readers", icon: Users },
@@ -229,7 +216,6 @@ const StatsSection = () => {
   );
 };
 
-// ============ LOGIN FORM ============
 const LoginForm = ({
   onSubmit,
   isLoading,
@@ -240,9 +226,7 @@ const LoginForm = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
-    {},
-  );
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [focused, setFocused] = useState<string>("");
 
   const validate = () => {
@@ -332,8 +316,7 @@ const LoginForm = ({
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
-              if (errors.password)
-                setErrors({ ...errors, password: undefined });
+              if (errors.password) setErrors({ ...errors, password: undefined });
             }}
             onFocus={() => setFocused("password")}
             onBlur={() => setFocused("")}
@@ -408,10 +391,8 @@ const LoginForm = ({
   );
 };
 
-// ============ MAIN LOGIN PAGE ============
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [notification, setNotification] = useState<{
@@ -429,7 +410,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      console.log("Attempting login to:", `${API_BASE_URL}/api/v1/auth/login`);
+      console.log("Login attempt for:", email);
 
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: "POST",
@@ -445,22 +426,51 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Invalid email or password!");
+        throw new Error(data.error || "Invalid email or password!");
       }
 
-      // Use Auth Context to login
-      login(data.accessToken, data.refreshToken, data.user, data.school);
+      console.log("Login success:", data.user.role);
 
       showNotification("Welcome back! Logging in... 🎉", "success");
 
-      // Redirect based on user role
+      // Store tokens & user info
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.school) {
+        localStorage.setItem("school", JSON.stringify(data.school));
+      }
+
+      // FIXED ROUTING - Redirect based on EXACT role
       setTimeout(() => {
-        if (data.user.role === "SCHOOL_ADMIN") {
-          router.push("/admin/dashboard");
-        } else if (data.user.role === "TEACHER") {
-          router.push("/teacher/dashboard");
-        } else {
-          router.push("/student/dashboard");
+        const userRole = data.user.role;
+
+        console.log("Routing user with role:", userRole);
+
+        switch (userRole) {
+          case "PLATFORM_ADMIN":
+            console.log("→ Redirecting to premium-admin dashboard");
+            router.push("/premium-admin/dashboard");
+            break;
+
+          case "SCHOOL_ADMIN":
+            console.log("→ Redirecting to school admin dashboard");
+            router.push("/school-admin/dashboard");
+            break;
+
+          case "TEACHER":
+            console.log("→ Redirecting to teacher dashboard");
+            router.push("/teacher/dashboard");
+            break;
+
+          case "STUDENT":
+            console.log("→ Redirecting to student dashboard");
+            router.push("/student/dashboard");
+            break;
+
+          default:
+            console.warn("Unknown role:", userRole);
+            router.push("/login");
         }
       }, 1500);
     } catch (err: any) {
@@ -491,7 +501,6 @@ export default function LoginPage() {
     setError("");
   };
 
-  // Floating elements for hero section
   const floatingElements = [
     {
       icon: BookOpen,
@@ -545,14 +554,12 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-slate-950">
-      {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl animate-pulse animation-delay-2000" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse animation-delay-4000" />
       </div>
 
-      {/* Grid Overlay */}
       <div
         className="absolute inset-0 opacity-20"
         style={{
@@ -562,7 +569,6 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Floating Elements */}
       {floatingElements.map((element, index) => {
         const Icon = element.icon;
         return (
@@ -586,17 +592,13 @@ export default function LoginPage() {
               ease: "easeInOut",
             }}
           >
-            <Icon
-              className={`${element.color} opacity-30`}
-              size={element.size}
-            />
+            <Icon className={`${element.color} opacity-30`} size={element.size} />
           </motion.div>
         );
       })}
 
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-3xl mx-auto">
-          {/* Notification */}
           <AnimatePresence>
             {notification && (
               <Notification
@@ -607,29 +609,20 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          {/* Hero Section */}
           <LoginHero />
-
-          {/* Feature Cards */}
           <FeatureCards />
-
-          {/* Stats Section */}
           <StatsSection />
 
-          {/* Main Card with Gradient Border */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
             className="relative group"
           >
-            {/* Animated Gradient Border */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient" />
 
-            {/* Card Content */}
             <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10">
               <div className="p-8">
-                {/* Decorative Header */}
                 <div className="text-center mb-6">
                   <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 px-4 py-2 rounded-full mb-4 border border-purple-500/30">
                     <Sparkles className="text-purple-400" size={16} />
@@ -637,15 +630,12 @@ export default function LoginPage() {
                       Secure Login
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-white">
-                    Access Your Account
-                  </h3>
+                  <h3 className="text-2xl font-bold text-white">Access Your Account</h3>
                   <p className="text-slate-400 text-sm mt-1">
                     Enter your credentials to continue
                   </p>
                 </div>
 
-                {/* Error Message */}
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -667,13 +657,11 @@ export default function LoginPage() {
                   </motion.div>
                 )}
 
-                {/* Login Form */}
                 <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
               </div>
             </div>
           </motion.div>
 
-          {/* Register Link */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
