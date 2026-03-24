@@ -60,6 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserData = async () => {
     const token = getAccessToken();
+    const storedUser = getStoredUser();
+    const storedSchool = getStoredSchool();
 
     if (!token || isSessionExpired()) {
       clearAuthSession();
@@ -83,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearAuthSession();
           setUser(null);
           setSchool(null);
+          return;
         }
         throw new Error(`Failed to fetch user data: ${response.status}`);
       }
@@ -100,7 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       markSessionActivity();
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      if (storedUser) {
+        setUser(storedUser);
+        setSchool(storedSchool);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(storedUser);
         setSchool(storedSchool);
         markSessionActivity();
-        await fetchUserData();
+        setIsLoading(false);
       } else {
         setIsLoading(false);
       }

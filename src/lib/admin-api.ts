@@ -9,6 +9,12 @@ export interface AdminStudent {
   fullName: string;
   gradeLevel?: string;
   classroom?: string;
+  classroomName?: string;
+  classroomDetails?: {
+    id: string;
+    name: string;
+    gradeLevel?: string;
+  } | null;
   age?: number;
   parentEmail?: string;
   parentPhone?: string;
@@ -50,6 +56,12 @@ export interface AdminSchoolDetails {
   schoolCode?: string;
   location?: string;
   createdAt?: string;
+  studentCount?: number;
+  activeStudentCount?: number;
+  teacherCount?: number;
+  activeTeacherCount?: number;
+  classCount?: number;
+  activeClassCount?: number;
   [key: string]: unknown;
 }
 
@@ -204,13 +216,70 @@ const average = (values: number[]) => {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 };
 
+const normalizeStudent = (student: AdminStudent) => {
+  const classroomDetails =
+    isRecord(student.classroom) &&
+    typeof student.classroom.id === "string" &&
+    typeof student.classroom.name === "string"
+      ? {
+          id: student.classroom.id,
+          name: student.classroom.name,
+          gradeLevel:
+            typeof student.classroom.gradeLevel === "string"
+              ? student.classroom.gradeLevel
+              : undefined,
+        }
+      : null;
+
+  return {
+    ...student,
+    id: student.id ?? "",
+    fullName: student.fullName ?? "Unnamed Student",
+    classroom: classroomDetails?.id ?? (typeof student.classroom === "string" ? student.classroom : undefined),
+    classroomName: classroomDetails?.name,
+    classroomDetails,
+    isActive:
+      typeof student.isActive === "boolean"
+        ? student.isActive
+        : typeof student.enrollmentStatus === "string"
+          ? student.enrollmentStatus === "active"
+          : true,
+  };
+};
+
+const normalizeTeacher = (teacher: AdminTeacher) => ({
+  ...teacher,
+  id: teacher.id ?? "",
+  fullName: teacher.fullName ?? "Unnamed Teacher",
+  email: teacher.email ?? "",
+  role: teacher.role ?? "TEACHER",
+  studentsCount:
+    typeof teacher.studentsCount === "number"
+      ? teacher.studentsCount
+      : Array.isArray(teacher.classrooms)
+        ? teacher.classrooms.length
+        : 0,
+});
+
+const normalizeClassroom = (classroom: AdminClassroom) => ({
+  ...classroom,
+  id: classroom.id ?? "",
+  name: classroom.name ?? "Untitled Class",
+  teacher:
+    isRecord(classroom.teacher) && typeof classroom.teacher.id === "string"
+      ? normalizeTeacher(classroom.teacher as AdminTeacher)
+      : null,
+  studentCount: typeof classroom.studentCount === "number" ? classroom.studentCount : 0,
+  isActive: typeof classroom.isActive === "boolean" ? classroom.isActive : true,
+});
+
 export const getAdminStudents = async () => {
   const { data } = await requestJsonFromCandidates<unknown>([
     "/api/v1/school/students",
     "/api/v1/auth/students",
   ]);
 
-  return pickArray<AdminStudent>(data, ["students", "data", "results"]);
+  return pickArray<AdminStudent>(data, ["students", "data", "results"]).map(normalizeStudent);
 };
 
 export const getAdminTeachers = async () => {
@@ -219,7 +288,7 @@ export const getAdminTeachers = async () => {
     "/api/v1/auth/teachers",
   ]);
 
-  return pickArray<AdminTeacher>(data, ["teachers", "data", "results"]);
+  return pickArray<AdminTeacher>(data, ["teachers", "data", "results"]).map(normalizeTeacher);
 };
 
 export const getAdminClasses = async () => {
@@ -228,16 +297,37 @@ export const getAdminClasses = async () => {
     "/api/v1/auth/classes",
   ]);
 
-  return pickArray<AdminClassroom>(data, ["classrooms", "classes", "data", "results"]);
+  return pickArray<AdminClassroom>(data, ["classrooms", "classes", "data", "results"]).map(
+    normalizeClassroom,
+  );
 };
 
 export const getAdminSchoolDetails = async () => {
-  const { data } = await requestJsonFromCandidates<unknown>([
-    "/api/v1/school/details",
-    "/api/v1/auth/me",
-  ]);
+  const { data } = await requestJson<unknown>("/api/v1/school/details");
 
-  return pickSchool(data);
+  if (!isRecord(data)) {
+    return null;
+  }
+
+  const school = pickSchool(data);
+  const stats = isRecord(data.stats) ? data.stats : null;
+
+  if (!school) {
+    return null;
+  }
+
+  return {
+    ...school,
+    studentCount: typeof stats?.studentCount === "number" ? stats.studentCount : undefined,
+    activeStudentCount:
+      typeof stats?.activeStudentCount === "number" ? stats.activeStudentCount : undefined,
+    teacherCount: typeof stats?.teacherCount === "number" ? stats.teacherCount : undefined,
+    activeTeacherCount:
+      typeof stats?.activeTeacherCount === "number" ? stats.activeTeacherCount : undefined,
+    classCount: typeof stats?.classCount === "number" ? stats.classCount : undefined,
+    activeClassCount:
+      typeof stats?.activeClassCount === "number" ? stats.activeClassCount : undefined,
+  };
 };
 
 export const getAdminDashboardSnapshot = async (): Promise<DashboardSnapshot> => {
@@ -275,8 +365,8 @@ export const getAdminDashboardSnapshot = async (): Promise<DashboardSnapshot> =>
     classes,
     school,
     stats: {
-      totalStudents: students.length,
-      totalTeachers: teachers.length,
+      totalStudents: school?.studentCount ?? students.length,
+      totalTeachers: school?.teacherCount ?? teachers.length,
       totalStories,
       avgProgress,
     },
