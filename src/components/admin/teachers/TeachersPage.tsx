@@ -35,7 +35,7 @@ const TeacherCard = ({ teacher, onEdit, onDelete, onView }: any) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -5 }}
-      className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 hover:border-purple-500/50 transition-all overflow-hidden"
+      className="bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-slate-700 hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-all overflow-hidden shadow-sm dark:shadow-none"
     >
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
@@ -46,30 +46,30 @@ const TeacherCard = ({ teacher, onEdit, onDelete, onView }: any) => {
               </span>
             </div>
             <div>
-              <h4 className="font-semibold text-white text-base">{teacher.fullName}</h4>
-              <p className="text-xs text-purple-400">{teacher.role?.replace("_", " ") || "TEACHER"}</p>
+              <h4 className="font-semibold text-gray-900 dark:text-white text-base">{teacher.fullName}</h4>
+              <p className="text-xs text-purple-600 dark:text-purple-400">{teacher.role?.replace("_", " ") || "TEACHER"}</p>
             </div>
           </div>
           <div className="relative group">
-            <button className="p-2 rounded-lg hover:bg-slate-700 transition-colors">
-              <MoreVertical size={18} className="text-slate-400" />
+            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+              <MoreVertical size={18} className="text-gray-500 dark:text-slate-400" />
             </button>
-            <div className="absolute right-0 mt-2 w-36 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
               <button
                 onClick={() => onView(teacher)}
-                className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 rounded-t-lg flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-t-lg flex items-center gap-2"
               >
                 <Eye size={14} /> View Details
               </button>
               <button
                 onClick={() => onEdit(teacher)}
-                className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
               >
                 <Edit size={14} /> Edit
               </button>
               <button
                 onClick={() => onDelete(teacher)}
-                className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
               >
                 <Trash2 size={14} /> Delete
               </button>
@@ -78,31 +78,27 @@ const TeacherCard = ({ teacher, onEdit, onDelete, onView }: any) => {
         </div>
 
         <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
             <Mail size={14} />
             <span className="truncate">{teacher.email}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
             <BookOpen size={14} />
             <span>Specialization: {teacher.specialization || "Not specified"}</span>
           </div>
-          {/* <div className="flex items-center gap-2 text-sm text-slate-400">
-            <GraduationCap size={14} />
-            <span>School: {teacher.school}</span>
-          </div> */}
         </div>
 
-        <div className="pt-3 border-t border-slate-700 flex items-center justify-between">
+        <div className="pt-3 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
                 size={14}
-                className={i < (teacher.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-slate-600"}
+                className={i < (teacher.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-gray-300 dark:text-slate-600"}
               />
             ))}
           </div>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-gray-500 dark:text-slate-500">
             {teacher.createdAt ? new Date(teacher.createdAt).toLocaleDateString() : "Recently joined"}
           </span>
         </div>
@@ -118,7 +114,7 @@ const TeacherTableRow = ({ teacher, onEdit, onDelete, onView, index }: any) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="border-b border-slate-700 hover:bg-slate-800/50 transition-colors"
+      className="border-b border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
@@ -128,61 +124,61 @@ const TeacherTableRow = ({ teacher, onEdit, onDelete, onView, index }: any) => {
             </span>
           </div>
           <div>
-            <p className="font-medium text-white">{teacher.fullName}</p>
-            <p className="text-xs text-purple-400">{teacher.role?.replace("_", " ") || "TEACHER"}</p>
+            <p className="font-medium text-gray-900 dark:text-white">{teacher.fullName}</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400">{teacher.role?.replace("_", " ") || "TEACHER"}</p>
           </div>
         </div>
-       </td>
+        </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
-          <Mail size={14} className="text-slate-400" />
-          <span className="text-slate-300 text-sm">{teacher.email}</span>
+          <Mail size={14} className="text-gray-500 dark:text-slate-400" />
+          <span className="text-gray-700 dark:text-slate-300 text-sm">{teacher.email}</span>
         </div>
-       </td>
+        </td>
       <td className="px-6 py-4">
-        <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs font-medium">
+        <span className="px-3 py-1 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
           {teacher.specialization || "General"}
         </span>
-       </td>
+        </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-1">
           {[...Array(5)].map((_, i) => (
             <Star
               key={i}
               size={14}
-              className={i < (teacher.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-slate-600"}
+              className={i < (teacher.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-gray-300 dark:text-slate-600"}
             />
           ))}
         </div>
-       </td>
+        </td>
       <td className="px-6 py-4">
-        <span className="text-slate-400 text-sm">{teacher.studentsCount || 0} students</span>
-       </td>
+        <span className="text-gray-600 dark:text-slate-400 text-sm">{teacher.studentsCount || 0} students</span>
+        </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
           <button
             onClick={() => onView(teacher)}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
             title="View Details"
           >
-            <Eye size={16} className="text-slate-400 hover:text-purple-400" />
+            <Eye size={16} className="text-gray-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400" />
           </button>
           <button
             onClick={() => onEdit(teacher)}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
             title="Edit"
           >
-            <Edit size={16} className="text-slate-400 hover:text-blue-400" />
+            <Edit size={16} className="text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400" />
           </button>
           <button
             onClick={() => onDelete(teacher)}
-            className="p-2 rounded-lg hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
             title="Delete"
           >
-            <Trash2 size={16} className="text-slate-400 hover:text-red-400" />
+            <Trash2 size={16} className="text-gray-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400" />
           </button>
         </div>
-       </td>
+        </td>
     </motion.tr>
   );
 };
@@ -254,29 +250,29 @@ const CreateTeacherModal = ({ isOpen, onClose, onCreate }: any) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 rounded-2xl max-w-md w-full border border-purple-500/30 max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-gray-200 dark:border-purple-500/30 max-h-[90vh] overflow-y-auto shadow-xl dark:shadow-none"
       >
-        <div className="sticky top-0 bg-slate-900 p-6 border-b border-slate-700">
+        <div className="sticky top-0 bg-white dark:bg-slate-900 p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                 <UserPlus size={20} className="text-white" />
               </div>
-              <h2 className="text-xl font-bold text-white">Add New Teacher</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add New Teacher</h2>
             </div>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-colors">
-              <X size={20} className="text-slate-400" />
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+              <X size={20} className="text-gray-500 dark:text-slate-400" />
             </button>
           </div>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
               Full Name *
             </label>
             <input
@@ -284,14 +280,14 @@ const CreateTeacherModal = ({ isOpen, onClose, onCreate }: any) => {
               required
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              className={`w-full p-3 bg-slate-800 border ${errors.fullName ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+              className={`w-full p-3 bg-gray-50 dark:bg-slate-800 border ${errors.fullName ? 'border-red-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors`}
               placeholder="e.g., Grace Mensah"
             />
-            {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName}</p>}
+            {errors.fullName && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.fullName}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
               Email Address *
             </label>
             <input
@@ -299,14 +295,14 @@ const CreateTeacherModal = ({ isOpen, onClose, onCreate }: any) => {
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className={`w-full p-3 bg-slate-800 border ${errors.email ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+              className={`w-full p-3 bg-gray-50 dark:bg-slate-800 border ${errors.email ? 'border-red-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors`}
               placeholder="teacher@school.com"
             />
-            {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
+            {errors.email && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.email}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
               Password *
             </label>
             <input
@@ -314,23 +310,23 @@ const CreateTeacherModal = ({ isOpen, onClose, onCreate }: any) => {
               required
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className={`w-full p-3 bg-slate-800 border ${errors.password ? 'border-red-500' : 'border-slate-700'} rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors`}
+              className={`w-full p-3 bg-gray-50 dark:bg-slate-800 border ${errors.password ? 'border-red-500' : 'border-gray-200 dark:border-slate-700'} rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors`}
               placeholder="Create a secure password"
             />
-            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
-            <p className="text-slate-500 text-xs mt-1">
+            {errors.password && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{errors.password}</p>}
+            <p className="text-gray-500 dark:text-slate-500 text-xs mt-1">
               At least 8 characters, one uppercase letter, one number
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">
               Specialization
             </label>
             <select
               value={formData.specialization}
               onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-              className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-purple-500 transition-colors"
+              className="w-full p-3 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 transition-colors"
             >
               <option value="">Select Specialization</option>
               <option value="Mathematics">Mathematics</option>
@@ -344,8 +340,8 @@ const CreateTeacherModal = ({ isOpen, onClose, onCreate }: any) => {
           </div>
 
           {errors.submit && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-              <p className="text-red-400 text-sm">{errors.submit}</p>
+            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-3">
+              <p className="text-red-600 dark:text-red-400 text-sm">{errors.submit}</p>
             </div>
           )}
 
@@ -353,7 +349,7 @@ const CreateTeacherModal = ({ isOpen, onClose, onCreate }: any) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-colors"
+              className="flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               Cancel
             </button>
@@ -386,13 +382,13 @@ const ViewTeacherModal = ({ teacher, isOpen, onClose }: any) => {
   if (!isOpen || !teacher) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-slate-900 rounded-2xl max-w-md w-full border border-purple-500/30"
+        className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-gray-200 dark:border-purple-500/30 shadow-xl dark:shadow-none"
       >
-        <div className="p-6 border-b border-slate-700">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
@@ -401,63 +397,54 @@ const ViewTeacherModal = ({ teacher, isOpen, onClose }: any) => {
                 </span>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">{teacher.fullName}</h2>
-                <p className="text-sm text-purple-400">{teacher.role?.replace("_", " ") || "TEACHER"}</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{teacher.fullName}</h2>
+                <p className="text-sm text-purple-600 dark:text-purple-400">{teacher.role?.replace("_", " ") || "TEACHER"}</p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10">
-              <X size={20} className="text-slate-400" />
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10">
+              <X size={20} className="text-gray-500 dark:text-slate-400" />
             </button>
           </div>
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="bg-slate-800/50 rounded-xl p-4 space-y-3">
+          <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-3">
-              <Mail size={18} className="text-purple-400" />
+              <Mail size={18} className="text-purple-600 dark:text-purple-400" />
               <div>
-                <p className="text-xs text-slate-400">Email</p>
-                <p className="text-white">{teacher.email}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Email</p>
+                <p className="text-gray-900 dark:text-white">{teacher.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <BookOpen size={18} className="text-purple-400" />
+              <BookOpen size={18} className="text-purple-600 dark:text-purple-400" />
               <div>
-                <p className="text-xs text-slate-400">Specialization</p>
-                <p className="text-white">{teacher.specialization || "Not specified"}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Specialization</p>
+                <p className="text-gray-900 dark:text-white">{teacher.specialization || "Not specified"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <GraduationCap size={18} className="text-purple-400" />
+              <GraduationCap size={18} className="text-purple-600 dark:text-purple-400" />
               <div>
-                <p className="text-xs text-slate-400">School</p>
-                <p className="text-white">{teacher.school || teacher.schoolName || "PathSpring"}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">School</p>
+                <p className="text-gray-900 dark:text-white">{teacher.school || teacher.schoolName || "PathSpring"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Award size={18} className="text-purple-400" />
+              <Award size={18} className="text-purple-600 dark:text-purple-400" />
               <div>
-                <p className="text-xs text-slate-400">Rating</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Rating</p>
                 <div className="flex items-center gap-1 mt-1">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
                       size={16}
-                      className={i < (teacher.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-slate-600"}
+                      className={i < (teacher.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-gray-300 dark:text-slate-600"}
                     />
                   ))}
                 </div>
               </div>
             </div>
-            {teacher.schoolCode && (
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5" />
-                <div>
-                  <p className="text-xs text-slate-400">School Code</p>
-                  <p className="text-white font-mono text-sm">{teacher.schoolCode}</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -495,7 +482,6 @@ export default function TeachersPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("accessToken");
-    //   console.log("Fetching teachers with token:", token);
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/teachers`, {
         method: "GET",
@@ -505,14 +491,11 @@ export default function TeachersPage() {
         },
       });
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
         throw new Error(`Failed to fetch teachers: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Teachers data:", data);
       
       // Handle different response structures
       let teachersList = [];
@@ -591,20 +574,20 @@ export default function TeachersPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">Teachers</h1>
-            <p className="text-slate-400 mt-1">Manage your school's teaching staff</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Teachers</h1>
+            <p className="text-gray-600 dark:text-slate-400 mt-1">Manage your school's teaching staff</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={handleRefresh}
-              className="p-2.5 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors"
+              className="p-2.5 bg-gray-100 dark:bg-slate-800 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
               title="Refresh"
             >
-              <RefreshCw size={20} className="text-slate-400" />
+              <RefreshCw size={20} className="text-gray-600 dark:text-slate-400" />
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30"
+              className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2 shadow-lg shadow-purple-500/30 dark:shadow-none"
             >
               <Plus size={20} />
               Add Teacher
@@ -614,35 +597,35 @@ export default function TeachersPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <Users size={20} className="text-purple-400" />
-              <span className="text-xs text-green-400">Active</span>
+              <Users size={20} className="text-purple-600 dark:text-purple-400" />
+              <span className="text-xs text-green-600 dark:text-green-400">Active</span>
             </div>
-            <p className="text-2xl font-bold text-white">{teachers.length}</p>
-            <p className="text-sm text-slate-400">Total Teachers</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{teachers.length}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Total Teachers</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <GraduationCap size={20} className="text-blue-400" />
+              <GraduationCap size={20} className="text-blue-600 dark:text-blue-400" />
             </div>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {teachers.filter(t => t.specialization && t.specialization !== "").length}
             </p>
-            <p className="text-sm text-slate-400">With Specialization</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">With Specialization</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <Star size={20} className="text-yellow-400" />
+              <Star size={20} className="text-yellow-500 dark:text-yellow-400" />
             </div>
-            <p className="text-2xl font-bold text-white">4.8</p>
-            <p className="text-sm text-slate-400">Average Rating</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">4.8</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Average Rating</p>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <Calendar size={20} className="text-green-400" />
+              <Calendar size={20} className="text-green-600 dark:text-green-400" />
             </div>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {teachers.filter(t => {
                 if (!t.createdAt) return false;
                 const createdDate = new Date(t.createdAt);
@@ -652,29 +635,29 @@ export default function TeachersPage() {
                 return diffDays <= 30;
               }).length}
             </p>
-            <p className="text-sm text-slate-400">New This Month</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">New This Month</p>
           </div>
         </div>
 
         {/* Search and View Toggle */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="relative w-full sm:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400" size={18} />
             <input
               type="text"
               placeholder="Search teachers by name, email, or specialization..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
             />
           </div>
-          <div className="flex items-center gap-2 bg-slate-800/50 rounded-xl p-1 border border-slate-700">
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800/50 rounded-xl p-1 border border-gray-200 dark:border-slate-700">
             <button
               onClick={() => setViewMode("grid")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === "grid"
                   ? "bg-purple-600 text-white"
-                  : "text-slate-400 hover:text-white"
+                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               Grid View
@@ -684,7 +667,7 @@ export default function TeachersPage() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 viewMode === "table"
                   ? "bg-purple-600 text-white"
-                  : "text-slate-400 hover:text-white"
+                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               Table View
@@ -699,9 +682,9 @@ export default function TeachersPage() {
           </div>
         ) : filteredTeachers.length === 0 ? (
           <div className="text-center py-20">
-            <Users size={48} className="text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No teachers found</h3>
-            <p className="text-slate-400">
+            <Users size={48} className="text-gray-400 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No teachers found</h3>
+            <p className="text-gray-600 dark:text-slate-400">
               {searchQuery ? "Try a different search term" : "Click 'Add Teacher' to create your first teacher account"}
             </p>
           </div>
@@ -720,16 +703,16 @@ export default function TeachersPage() {
           </div>
         ) : (
           // Table View
-          <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-x-auto">
+          <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 overflow-x-auto shadow-sm dark:shadow-none">
             <table className="w-full min-w-[800px]">
-              <thead className="bg-slate-800 border-b border-slate-700">
+              <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Teacher</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Specialization</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Rating</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Students</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Teacher</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Specialization</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Rating</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Students</th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -754,7 +737,7 @@ export default function TeachersPage() {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 bg-slate-800 rounded-lg text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 rounded-lg text-gray-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               <ChevronLeft size={18} />
             </button>
@@ -778,7 +761,7 @@ export default function TeachersPage() {
                     className={`w-8 h-8 rounded-lg transition-all ${
                       currentPage === pageNum
                         ? "bg-purple-600 text-white"
-                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                        : "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
                     }`}
                   >
                     {pageNum}
@@ -787,10 +770,10 @@ export default function TeachersPage() {
               })}
               {totalPages > 5 && currentPage < totalPages - 2 && (
                 <>
-                  <span className="text-slate-500">...</span>
+                  <span className="text-gray-500 dark:text-slate-500">...</span>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
-                    className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700"
                   >
                     {totalPages}
                   </button>
@@ -800,7 +783,7 @@ export default function TeachersPage() {
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-slate-800 rounded-lg text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 rounded-lg text-gray-600 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               <ChevronRight size={18} />
             </button>
