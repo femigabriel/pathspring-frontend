@@ -4,15 +4,28 @@ export type UserRole = "PLATFORM_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT"
 
 export interface AuthUser {
   id: string;
-  email: string;
+  email?: string;
   role: UserRole;
   schoolId?: string;
+  username?: string;
+  fullName?: string;
+  isActive?: boolean;
+  school?: string | null;
+  schoolCode?: string | null;
+  gradeLevel?: string | null;
+  classroom?: {
+    id: string;
+    name: string;
+    gradeLevel?: string;
+  } | null;
+  lastLoginAt?: string | null;
 }
 
 export interface AuthSchool {
   id: string;
   name: string;
   schoolCode: string;
+  logo?: string | null;
 }
 
 interface PersistAuthSessionOptions {
@@ -82,9 +95,11 @@ export const getDefaultRouteForRole = (role?: string | null) => {
     case "PLATFORM_ADMIN":
       return "/premium-admin/dashboard";
     case "SCHOOL_ADMIN":
-    case "TEACHER":
-    case "STUDENT":
       return "/admin/dashboard";
+    case "TEACHER":
+      return "/admin/story-book";
+    case "STUDENT":
+      return "/student/dashboard";
     default:
       return "/login";
   }

@@ -10,9 +10,12 @@ import {
   Users,
   GraduationCap,
   BookOpen,
+  LibraryBig,
   LogOut,
+  Medal,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   School,
   X,
 } from "lucide-react";
@@ -63,6 +66,24 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       icon: School,
       href: "/admin/classes",
       roles: ["SCHOOL_ADMIN", "TEACHER"],
+    },
+    {
+      name: "Story Book",
+      icon: LibraryBig,
+      href: "/admin/story-book",
+      roles: ["SCHOOL_ADMIN", "TEACHER", "STUDENT"],
+    },
+    {
+      name: "Submissions",
+      icon: ClipboardCheck,
+      href: "/admin/submissions",
+      roles: ["SCHOOL_ADMIN"],
+    },
+    {
+      name: "Scoreboard",
+      icon: Medal,
+      href: "/admin/scoreboard",
+      roles: ["SCHOOL_ADMIN"],
     },
   ];
 

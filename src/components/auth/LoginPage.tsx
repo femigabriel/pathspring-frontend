@@ -456,12 +456,12 @@ export default function LoginPage() {
 
           case "TEACHER":
             console.log("→ Redirecting to teacher dashboard");
-            router.push("/admin/dashboard");
+            router.push("/admin/story-book");
             break;
 
           case "STUDENT":
             console.log("→ Redirecting to student dashboard");
-            router.push("/admin/dashboard");
+            router.push("/student/dashboard");
             break;
 
           default:
@@ -672,6 +672,15 @@ export default function LoginPage() {
                 className="text-purple-400 font-semibold hover:text-purple-300 transition-colors"
               >
                 Create your school account
+              </Link>
+            </p>
+            <p className="mt-3 text-slate-400">
+              Student reader?{" "}
+              <Link
+                href="/student/login"
+                className="text-emerald-400 font-semibold hover:text-emerald-300 transition-colors"
+              >
+                Sign in with username and PIN
               </Link>
             </p>
           </motion.div>

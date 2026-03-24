@@ -10,9 +10,14 @@ import { getAccessToken, type UserRole } from "@/src/lib/auth";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
+  unauthenticatedRedirect?: string;
 }
 
-export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+export default function ProtectedRoute({
+  children,
+  allowedRoles,
+  unauthenticatedRedirect = "/login",
+}: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user, fetchUserData } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
@@ -21,7 +26,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     const checkAuth = async () => {
       // If not loading and not authenticated, redirect to login
       if (!isLoading && !isAuthenticated) {
-        router.replace("/login");
+        router.replace(unauthenticatedRedirect);
         return;
       }
 
@@ -33,7 +38,9 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
           if (user.role === "SCHOOL_ADMIN") {
             router.replace("/admin/dashboard");
           } else if (user.role === "TEACHER") {
-            router.replace("/admin/dashboard");
+            router.replace("/admin/story-book");
+          } else if (user.role === "STUDENT") {
+            router.replace("/student/dashboard");
           } else {
             router.replace("/admin/dashboard");
           }
@@ -50,7 +57,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
           await fetchUserData();
         } catch (error) {
           console.error("Failed to fetch user data:", error);
-          router.replace("/login");
+          router.replace(unauthenticatedRedirect);
           return;
         }
       }
@@ -60,7 +67,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     };
 
     checkAuth();
-  }, [isLoading, isAuthenticated, user, router, allowedRoles, fetchUserData]);
+  }, [isLoading, isAuthenticated, user, router, allowedRoles, fetchUserData, unauthenticatedRedirect]);
 
   // Show loading spinner while checking authentication
   if (isLoading || isChecking) {

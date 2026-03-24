@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { useRouter } from "next/navigation";
 import {
   AUTH_EVENT_KEY,
+  getDefaultRouteForRole,
   type AuthSchool as School,
   type AuthUser as User,
   clearAuthSession,
@@ -52,10 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    const nextRoute = getDefaultRouteForRole(user?.role) === "/student/dashboard" ? "/student/login" : "/login";
     clearAuthSession();
     setUser(null);
     setSchool(null);
-    router.replace("/login");
+    router.replace(nextRoute);
   };
 
   const fetchUserData = async () => {
@@ -72,9 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // console.log("Fetching user data from:", `${API_BASE_URL}/api/v1/auth/me`);
-      
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+      const userRole = storedUser?.role;
+      const endpoint = userRole === "STUDENT" ? "/api/v1/auth/students/me" : "/api/v1/auth/me";
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },
@@ -92,14 +95,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
 
-      setUser(data.user);
-      setSchool(data.school ?? null);
+      const nextUser =
+        userRole === "STUDENT" && data.student
+          ? {
+              ...(storedUser ?? {}),
+              id: data.student.id ?? storedUser?.id ?? "",
+              role: "STUDENT" as const,
+              username: data.student.username ?? storedUser?.username,
+              fullName: data.student.fullName ?? storedUser?.fullName,
+              isActive:
+                typeof data.student.isActive === "boolean"
+                  ? data.student.isActive
+                  : storedUser?.isActive,
+              school: data.student.school?.name ?? storedUser?.school ?? null,
+              schoolCode: data.student.school?.schoolCode ?? storedUser?.schoolCode ?? null,
+              gradeLevel: data.student.profile?.gradeLevel ?? storedUser?.gradeLevel ?? null,
+              classroom: data.student.profile?.classroom ?? storedUser?.classroom ?? null,
+              lastLoginAt: data.student.lastLoginAt ?? storedUser?.lastLoginAt ?? null,
+            }
+          : {
+              ...(storedUser ?? {}),
+              ...(data.user ?? {}),
+            };
+
+      const nextSchool =
+        userRole === "STUDENT" && data.student?.school
+          ? {
+              id: data.student.school.id ?? storedSchool?.id ?? "",
+              name: data.student.school.name ?? storedSchool?.name ?? "PathSpring School",
+              schoolCode: data.student.school.schoolCode ?? storedSchool?.schoolCode ?? "",
+              logo: data.student.school.logo ?? storedSchool?.logo ?? null,
+            }
+          : data.school ?? storedSchool ?? null;
+
+      setUser(nextUser);
+      setSchool(nextSchool);
 
       persistAuthSession({
         accessToken: token,
         refreshToken: getRefreshToken() ?? undefined,
-        user: data.user,
-        school: data.school,
+        user: nextUser,
+        school: nextSchool,
       });
       markSessionActivity();
     } catch (error) {
