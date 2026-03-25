@@ -11,7 +11,7 @@ export default function StudentHeader({ setSidebarOpen }: StudentHeaderProps) {
   const { user, school } = useAuth();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-emerald-100 bg-white/80 px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 sm:px-6">
+    <header className="border-b border-emerald-100 bg-white/80 px-4 py-4 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/75 sm:px-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <button

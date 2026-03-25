@@ -9,6 +9,7 @@ export interface PlatformContentItem {
   id: string;
   type?: string;
   title: string;
+  coverImageUrl?: string;
   summary?: string;
   description?: string;
   theme?: string;
@@ -224,6 +225,23 @@ const requestFromCandidates = async <T = unknown>(paths: string[]) => {
 const toStringArray = (value: unknown) =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
+const toAssetProxyUrl = (value: unknown, version?: unknown) => {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+
+  const versionSuffix =
+    typeof version === "string" && version.trim()
+      ? `${value.includes("?") ? "&" : "?"}v=${encodeURIComponent(version)}`
+      : "";
+
+  const absoluteUrl = /^https?:\/\//i.test(value)
+    ? `${value}${versionSuffix}`
+    : value.startsWith("/")
+      ? `${API_BASE_URL.replace(/\/$/, "")}${value}${versionSuffix}`
+      : `${value}${versionSuffix}`;
+
+  return `/api/media?src=${encodeURIComponent(absoluteUrl)}`;
+};
+
 const normalizeContentItem = (value: unknown): PlatformContentItem | null => {
   if (!isRecord(value)) return null;
 
@@ -238,6 +256,7 @@ const normalizeContentItem = (value: unknown): PlatformContentItem | null => {
     _id: id,
     id,
     title,
+    coverImageUrl: toAssetProxyUrl(value.coverImageUrl, value.updatedAt),
     summary: typeof value.summary === "string" ? value.summary : undefined,
     description: typeof value.description === "string" ? value.description : undefined,
     theme: typeof value.theme === "string" ? value.theme : undefined,
@@ -319,7 +338,13 @@ const normalizeBundleNode = (value: unknown): PlatformBundleNode | null => {
     chapters: pickArray<PlatformStoryChapter>(
       value.chapters,
       [],
-      (chapter) => (isRecord(chapter) ? (chapter as PlatformStoryChapter) : null),
+      (chapter) =>
+        isRecord(chapter)
+          ? {
+              ...(chapter as PlatformStoryChapter),
+              imageUrl: toAssetProxyUrl(chapter.imageUrl, chapter.updatedAt),
+            }
+          : null,
     ),
     questions: pickArray<PlatformQuestion>(
       value.questions,
@@ -478,6 +503,31 @@ export const createPlatformStoryActivity = async (
 
   const record = isRecord(payload) ? payload.activity ?? payload : payload;
   return normalizeActivity(record);
+};
+
+export const generatePlatformStoryImages = async (
+  storyId: string,
+  options?: {
+    target?: "all" | "cover";
+    size?: string;
+    quality?: string;
+    outputFormat?: string;
+  },
+) => {
+  const payload = await platformRequest<unknown>(
+    `/api/v1/platform/content/${storyId}/generate-images`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target: options?.target ?? "all",
+        size: options?.size ?? "1024x1536",
+        quality: options?.quality ?? "medium",
+        outputFormat: options?.outputFormat ?? "jpeg",
+      }),
+    },
+  );
+
+  return isRecord(payload) ? payload : {};
 };
 
 export const getPlatformSchools = async () => {

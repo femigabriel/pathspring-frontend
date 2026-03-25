@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   CheckCircle2,
+  Image as ImageIcon,
   Layers,
   LogOut,
   Menu,
@@ -25,6 +26,7 @@ import { clearAuthSession, getStoredUser } from "@/src/lib/auth";
 import {
   createPlatformStoryActivity,
   generatePlatformContentPackage,
+  generatePlatformStoryImages,
   getPlatformContentAnalytics,
   getPlatformContentBundle,
   getPlatformContentItems,
@@ -55,6 +57,11 @@ const getBundleId = (bundle: PlatformBundle | null) =>
 
 const getBundleTitle = (bundle: PlatformBundle | null) =>
   bundle?.contentPack?.title ?? bundle?.story?.content.title ?? bundle?.requestedContent?.title ?? "Untitled Bundle";
+
+const getStoryId = (bundle: PlatformBundle | null) =>
+  bundle?.story?.content._id ??
+  (bundle?.requestedContent?.type === "STORY" ? bundle.requestedContent._id : "") ??
+  "";
 
 const prettyDate = (value?: string) =>
   value ? new Date(value).toLocaleDateString() : "Recently updated";
@@ -94,6 +101,7 @@ export default function PremiumAdminDashboard() {
   const [generating, setGenerating] = useState(false);
   const [publishingId, setPublishingId] = useState("");
   const [openingId, setOpeningId] = useState("");
+  const [generatingImagesId, setGeneratingImagesId] = useState("");
   const [addingActivity, setAddingActivity] = useState(false);
   const [draft, setDraft] = useState({
     title: "Tolu and the Whispering Drum",
@@ -302,6 +310,28 @@ export default function PremiumAdminDashboard() {
     }
   };
 
+  const handleGenerateImages = async () => {
+    const storyId = getStoryId(selectedBundle);
+    const bundleId = getBundleId(selectedBundle);
+    if (!storyId || !bundleId) return;
+
+    setGeneratingImagesId(storyId);
+    setError("");
+    setNotice("");
+
+    try {
+      await generatePlatformStoryImages(storyId);
+      const refreshedBundle = await getPlatformContentBundle(bundleId);
+      setSelectedBundle(refreshedBundle);
+      await refreshData();
+      setNotice("Story images generated and attached successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate story images.");
+    } finally {
+      setGeneratingImagesId("");
+    }
+  };
+
   if (!authorized) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
@@ -315,6 +345,8 @@ export default function PremiumAdminDashboard() {
   const selectedQuizQuestions = selectedBundle?.quiz?.questions ?? [];
   const selectedActivities = selectedBundle?.activities ?? [];
   const selectedBundleId = getBundleId(selectedBundle);
+  const selectedStoryId = getStoryId(selectedBundle);
+  const selectedCoverImage = selectedBundle?.story?.content.coverImageUrl;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.14),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] text-white">
@@ -463,6 +495,37 @@ export default function PremiumAdminDashboard() {
                       <h3 className="text-3xl font-black">{getBundleTitle(selectedBundle)}</h3>
                       <p className="mt-3 text-sm leading-7 text-slate-300">{selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? draft.topic}</p>
                     </div>
+                    <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+                      <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950/55">
+                        {selectedCoverImage ? (
+                          <img src={selectedCoverImage} alt={getBundleTitle(selectedBundle)} className="h-72 w-full object-cover" />
+                        ) : (
+                          <div className="flex h-72 items-center justify-center bg-gradient-to-br from-fuchsia-500/20 via-slate-900 to-cyan-500/20 text-center text-sm text-slate-400">
+                            Cover art will appear here after image generation.
+                          </div>
+                        )}
+                      </div>
+                      <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Story Art</p>
+                            <h4 className="mt-2 text-xl font-bold">Generate cover and chapter images</h4>
+                          </div>
+                          <ImageIcon size={20} className="text-fuchsia-300" />
+                        </div>
+                        <p className="mt-3 text-sm leading-7 text-slate-400">
+                          Use the saved story prompts to create the book cover and chapter illustrations, then refresh the bundle preview instantly.
+                        </p>
+                        <button
+                          onClick={() => void handleGenerateImages()}
+                          disabled={!selectedStoryId || !!generatingImagesId}
+                          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-rose-500 to-fuchsia-600 px-5 py-3 font-bold text-slate-950 disabled:opacity-60"
+                        >
+                          <ImageIcon size={18} />
+                          {generatingImagesId === selectedStoryId ? "Generating Images..." : "Generate Story Images"}
+                        </button>
+                      </div>
+                    </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Chapters</p><p className="mt-2 text-3xl font-black">{selectedStoryChapters.length}</p></div>
                       <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Activities</p><p className="mt-2 text-3xl font-black">{selectedActivities.length}</p></div>
@@ -499,11 +562,36 @@ export default function PremiumAdminDashboard() {
                     <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
                       <h3 className="text-3xl font-black">{getBundleTitle(selectedBundle)}</h3>
                       <p className="mt-3 text-sm leading-7 text-slate-300">{selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? "No short description provided yet."}</p>
+                      <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+                        <div className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-slate-900/70">
+                          {selectedCoverImage ? (
+                            <img src={selectedCoverImage} alt={getBundleTitle(selectedBundle)} className="h-64 w-full object-cover" />
+                          ) : (
+                            <div className="flex h-64 items-center justify-center bg-gradient-to-br from-fuchsia-500/20 via-slate-900 to-cyan-500/20 text-center text-sm text-slate-400">
+                              No cover image yet. Generate story images to populate this preview.
+                            </div>
+                          )}
+                        </div>
+                        <div className="rounded-[1.35rem] border border-white/10 bg-white/5 p-4">
+                          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Image Workflow</p>
+                          <p className="mt-3 text-sm leading-7 text-slate-400">
+                            After a story package is generated, click the button below to create the cover art and chapter illustrations from the saved prompts.
+                          </p>
+                          <button
+                            onClick={() => void handleGenerateImages()}
+                            disabled={!selectedStoryId || !!generatingImagesId}
+                            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-rose-500 to-fuchsia-600 px-5 py-3 font-bold text-slate-950 disabled:opacity-60"
+                          >
+                            <ImageIcon size={18} />
+                            {generatingImagesId === selectedStoryId ? "Generating Images..." : "Generate Story Images"}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
                       <div className="mb-4 flex items-center justify-between"><h4 className="text-lg font-bold">Story Chapters</h4><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">{selectedStoryChapters.length}</span></div>
                       <div className="space-y-3">
-                        {selectedStoryChapters.length === 0 ? <p className="text-sm text-slate-400">No chapters returned yet.</p> : selectedStoryChapters.map((chapter, index) => <div key={chapter._id ?? `${chapter.title}-${index}`} className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Chapter {chapter.order ?? index + 1}</p><h5 className="mt-1 font-semibold">{chapter.title ?? `Chapter ${index + 1}`}</h5><p className="mt-2 text-sm leading-6 text-slate-400">{chapter.body ?? "No chapter body returned."}</p></div>)}
+                        {selectedStoryChapters.length === 0 ? <p className="text-sm text-slate-400">No chapters returned yet.</p> : selectedStoryChapters.map((chapter, index) => <div key={chapter._id ?? `${chapter.title}-${index}`} className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4">{chapter.imageUrl ? <img src={chapter.imageUrl} alt={chapter.title ?? `Chapter ${index + 1}`} className="mb-4 h-44 w-full rounded-2xl object-cover" /> : <div className="mb-4 flex h-44 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-slate-950/45 text-center text-xs uppercase tracking-[0.18em] text-slate-500">No chapter image yet</div>}<p className="text-xs uppercase tracking-[0.16em] text-slate-500">Chapter {chapter.order ?? index + 1}</p><h5 className="mt-1 font-semibold">{chapter.title ?? `Chapter ${index + 1}`}</h5><p className="mt-2 line-clamp-6 text-sm leading-6 text-slate-400">{chapter.body ?? "No chapter body returned."}</p></div>)}
                       </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">

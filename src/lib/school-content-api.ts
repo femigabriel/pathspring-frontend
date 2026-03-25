@@ -81,8 +81,7 @@ const parseJsonSafely = (text: string) => {
 
   try {
     return JSON.parse(text) as unknown;
-  } catch (error) {
-    console.error("JSON parse error:", error);
+  } catch {
     return text;
   }
 };
@@ -99,36 +98,28 @@ const schoolRequest = async <T = unknown>(path: string, init?: RequestInit) => {
     throw new Error("Your session has expired. Please log in again.");
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-        Pragma: "no-cache",
-        Authorization: `Bearer ${token}`,
-        ...(init?.headers ?? {}),
-      },
-    });
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers ?? {}),
+    },
+  });
 
-    const text = await response.text();
-    const payload = parseJsonSafely(text);
+  const text = await response.text();
+  const payload = parseJsonSafely(text);
 
-    if (!response.ok) {
-      const errorMessage = extractMessage(
-        payload,
-        `Request failed with status ${response.status}`
-      );
-      console.error("API Error:", { status: response.status, message: errorMessage, path });
-      throw new Error(errorMessage);
-    }
-
-    return payload as T;
-  } catch (error) {
-    console.error("School request failed:", { path, error });
-    throw error;
+  if (!response.ok) {
+    throw new Error(
+      extractMessage(payload, `Request failed with status ${response.status}`),
+    );
   }
+
+  return payload as T;
 };
 
 const toStringArray = (value: unknown) =>
@@ -187,34 +178,20 @@ const dedupePublishedContents = (contents: SchoolStoryContent[]) => {
 };
 
 const normalizeContent = (value: unknown): SchoolStoryContent | null => {
-  if (!isRecord(value)) {
-    console.warn("normalizeContent: received non-record value", value);
-    return null;
-  }
+  if (!isRecord(value)) return null;
 
   const rawId = value._id ?? value.id;
   const id = typeof rawId === "string" ? rawId : "";
   const title = typeof value.title === "string" ? value.title : "";
 
-  if (!id || !title) {
-    console.warn("normalizeContent: missing id or title", { id, title, value });
-    return null;
-  }
+  if (!id || !title) return null;
 
-  const coverImageUrl = toAssetProxyUrl(value.coverImageUrl, value.updatedAt);
-  if (!coverImageUrl && value.coverImageUrl) {
-    console.warn(`Content "${title}" has coverImageUrl but couldn't resolve it:`, {
-      raw: value.coverImageUrl,
-      resolved: coverImageUrl,
-    });
-  }
-
-  const normalized: SchoolStoryContent = {
+  return {
     ...value,
     _id: id,
     id,
     title,
-    coverImageUrl,
+    coverImageUrl: toAssetProxyUrl(value.coverImageUrl, value.updatedAt),
     summary: typeof value.summary === "string" ? value.summary : undefined,
     description: typeof value.description === "string" ? value.description : undefined,
     theme: typeof value.theme === "string" ? value.theme : undefined,
@@ -231,9 +208,6 @@ const normalizeContent = (value: unknown): SchoolStoryContent | null => {
         ? value.estimatedDurationMinutes
         : undefined,
   };
-
-  console.log("✅ Normalized content:", { title, id, hasImage: !!coverImageUrl });
-  return normalized;
 };
 
 const normalizeNode = (value: unknown): SchoolBundleNode | null => {
@@ -287,72 +261,37 @@ const normalizeActivity = (value: unknown): SchoolActivity | null => {
 
 export const getPublishedSchoolContents = async () => {
   try {
-    console.log("📚 Fetching published school contents...");
     const payload = await schoolRequest<unknown>("/api/v1/content");
-    console.log("API Response received:", payload);
-
     const record = isRecord(payload) ? payload : {};
     const contents = Array.isArray(record.contents) ? record.contents : [];
 
-    console.log(`Found ${contents.length} contents in API response`);
-
-    const normalized = dedupePublishedContents(
+    return dedupePublishedContents(
       contents
         .map((item) => normalizeContent(item))
         .filter((item): item is SchoolStoryContent => item !== null)
-        .filter((item) => {
-          const isValid = item.type === "CONTENT_PACK" || item.type === "STORY";
-          if (!isValid) {
-            console.log(`Filtered out content with type: ${item.type}`);
-          }
-          return isValid;
-        })
+        .filter((item) => item.type === "CONTENT_PACK" || item.type === "STORY"),
     );
-
-    console.log(
-      `✅ Successfully normalized ${normalized.length} contents:`,
-      normalized.map((c) => ({ title: c.title, hasImage: !!c.coverImageUrl }))
-    );
-
-    return normalized;
-  } catch (error) {
-    console.error("❌ Failed to get published school contents:", error);
+  } catch {
     return [];
   }
 };
 
 export const getPublishedSchoolStoryBundle = async (contentId: string) => {
-  try {
-    console.log(`📖 Fetching story bundle for content: ${contentId}`);
-    const payload = await schoolRequest<unknown>(`/api/v1/content/${contentId}/full`);
+  const payload = await schoolRequest<unknown>(`/api/v1/content/${contentId}/full`);
+  const record = isRecord(payload) ? payload : {};
 
-    const record = isRecord(payload) ? payload : {};
-
-    const bundle: SchoolStoryBundle = {
-      requestedContent: normalizeContent(record.requestedContent),
-      contentPack: normalizeContent(record.contentPack),
-      story: normalizeNode(record.story),
-      quiz: normalizeNode(record.quiz),
-      game: normalizeContent(record.game),
-      activities: Array.isArray(record.activities)
-        ? record.activities
-            .map((item) => normalizeActivity(item))
-            .filter((item): item is SchoolActivity => item !== null)
-        : [],
-    };
-
-    console.log("✅ Story bundle loaded:", {
-      hasStory: !!bundle.story,
-      hasQuiz: !!bundle.quiz,
-      hasGame: !!bundle.game,
-      activityCount: bundle.activities.length,
-    });
-
-    return bundle;
-  } catch (error) {
-    console.error("❌ Failed to get story bundle:", error);
-    throw error;
-  }
+  return {
+    requestedContent: normalizeContent(record.requestedContent),
+    contentPack: normalizeContent(record.contentPack),
+    story: normalizeNode(record.story),
+    quiz: normalizeNode(record.quiz),
+    game: normalizeContent(record.game),
+    activities: Array.isArray(record.activities)
+      ? record.activities
+          .map((item) => normalizeActivity(item))
+          .filter((item): item is SchoolActivity => item !== null)
+      : [],
+  } satisfies SchoolStoryBundle;
 };
 
 export const recordStudentContentProgress = async (
@@ -365,21 +304,12 @@ export const recordStudentContentProgress = async (
     struggleAreas?: string[];
     strengths?: string[];
     completedAt?: string;
-  }
-) => {
-  try {
-    console.log(`📊 Recording progress for content: ${contentId}`, payload);
-    const result = await schoolRequest(`/api/v1/content/${contentId}/progress`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    console.log("✅ Progress recorded successfully");
-    return result;
-  } catch (error) {
-    console.error("❌ Failed to record progress:", error);
-    throw error;
-  }
-};
+  },
+) =>
+  schoolRequest(`/api/v1/content/${contentId}/progress`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 
 export const submitStudentContentAnswers = async (
   contentId: string,
@@ -388,18 +318,9 @@ export const submitStudentContentAnswers = async (
     timeSpentSeconds?: number;
     startedAt?: string;
     feedback?: string;
-  }
-) => {
-  try {
-    console.log(`✍️ Submitting answers for content: ${contentId}`);
-    const result = await schoolRequest(`/api/v1/content/${contentId}/submissions`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    console.log("✅ Answers submitted successfully");
-    return result;
-  } catch (error) {
-    console.error("❌ Failed to submit answers:", error);
-    throw error;
-  }
-};
+  },
+) =>
+  schoolRequest(`/api/v1/content/${contentId}/submissions`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
