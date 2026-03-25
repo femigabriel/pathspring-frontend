@@ -2,10 +2,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, Bell, Search, ChevronDown, X } from "lucide-react";
+import { Menu, Search, ChevronDown, X } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import ThemeToggle from "./ThemeToggle";
+import NotificationsBell from "@/src/components/shared/notifications/NotificationsBell";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -13,7 +14,6 @@ interface HeaderProps {
 
 const Header = ({ setSidebarOpen }: HeaderProps) => {
   const { user, school } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,12 +27,6 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
-  const notifications = [
-    { id: 1, message: "New student registered", time: "5 min ago", read: false },
-    { id: 2, message: "Teacher account created", time: "1 hour ago", read: false },
-    { id: 3, message: "New story added to library", time: "2 hours ago", read: true },
-  ];
 
   return (
     <header className="sticky top-0 z-20 bg-white dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-white/10">
@@ -84,46 +78,7 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
             </button>
           )}
 
-          {/* Notifications */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-            >
-              <Bell size={20} className="text-gray-500 dark:text-slate-400" />
-              {notifications.filter(n => !n.read).length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-              )}
-            </button>
-
-            <AnimatePresence>
-              {showNotifications && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden z-50"
-                >
-                  <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={`p-4 border-b border-gray-200 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${
-                          !notification.read ? "bg-purple-50 dark:bg-purple-500/10" : ""
-                        }`}
-                      >
-                        <p className="text-sm text-gray-900 dark:text-white">{notification.message}</p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{notification.time}</p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <NotificationsBell />
 
           {/* User Menu */}
           <div className="relative">

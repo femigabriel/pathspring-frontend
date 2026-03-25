@@ -7,6 +7,8 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
 import { getAccessToken } from "@/src/lib/auth";
 import {
+  filterClassesForTeacher,
+  filterTeachersForTeacher,
   getAdminClasses,
   getAdminSchoolDetails,
   getAdminTeachers,
@@ -106,31 +108,44 @@ const ClassCard = ({ classItem, onEdit, onDelete, onView }: any) => {
               </div>
             </div>
           </div>
-          <div className="relative group">
-            <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-              <MoreVertical size={18} className="text-gray-500 dark:text-slate-400" />
-            </button>
-            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-              <button
-                onClick={() => onView(classItem)}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-t-lg flex items-center gap-2"
-              >
-                <Eye size={14} /> View Details
+          {onEdit || onDelete ? (
+            <div className="relative group">
+              <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                <MoreVertical size={18} className="text-gray-500 dark:text-slate-400" />
               </button>
-              <button
-                onClick={() => onEdit(classItem)}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
-              >
-                <Edit size={14} /> Edit
-              </button>
-              <button
-                onClick={() => onDelete(classItem)}
-                className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
-              >
-                <Trash2 size={14} /> Delete
-              </button>
+              <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                <button
+                  onClick={() => onView(classItem)}
+                  className={`w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2 ${onEdit || onDelete ? "rounded-t-lg" : "rounded-lg"}`}
+                >
+                  <Eye size={14} /> View Details
+                </button>
+                {onEdit ? (
+                  <button
+                    onClick={() => onEdit(classItem)}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                  >
+                    <Edit size={14} /> Edit
+                  </button>
+                ) : null}
+                {onDelete ? (
+                  <button
+                    onClick={() => onDelete(classItem)}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : (
+            <button
+              onClick={() => onView(classItem)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Eye size={18} className="text-gray-500 dark:text-slate-400" />
+            </button>
+          )}
         </div>
 
         <div className="space-y-2 mb-4">
@@ -245,20 +260,24 @@ const ClassTableRow = ({ classItem, onEdit, onDelete, onView, index }: any) => {
           >
             <Eye size={16} className="text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400" />
           </button>
-          <button
-            onClick={() => onEdit(classItem)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-            title="Edit"
-          >
-            <Edit size={16} className="text-gray-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400" />
-          </button>
-          <button
-            onClick={() => onDelete(classItem)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={16} className="text-gray-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400" />
-          </button>
+          {onEdit ? (
+            <button
+              onClick={() => onEdit(classItem)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              title="Edit"
+            >
+              <Edit size={16} className="text-gray-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400" />
+            </button>
+          ) : null}
+          {onDelete ? (
+            <button
+              onClick={() => onDelete(classItem)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              title="Delete"
+            >
+              <Trash2 size={16} className="text-gray-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400" />
+            </button>
+          ) : null}
         </div>
         </td>
     </motion.tr>
@@ -623,6 +642,7 @@ const ViewClassModal = ({ classItem, isOpen, onClose }: any) => {
 // ============ MAIN CLASSES PAGE ============
 export default function ClassesPage() {
   const { user } = useAuth();
+  const isTeacher = user?.role === "TEACHER";
   const [classes, setClasses] = useState<AdminClassroom[]>([]);
   const [teachers, setTeachers] = useState<AdminTeacher[]>([]);
   const [schoolDetails, setSchoolDetails] = useState<AdminSchoolDetails | null>(null);
@@ -654,8 +674,11 @@ export default function ClassesPage() {
         getAdminSchoolDetails().catch(() => null),
       ]);
 
-      setClasses(classList);
-      setTeachers(teacherList);
+      const scopedClasses = isTeacher ? filterClassesForTeacher(classList, user) : classList;
+      const scopedTeachers = isTeacher ? filterTeachersForTeacher(teacherList, user) : teacherList;
+
+      setClasses(scopedClasses);
+      setTeachers(scopedTeachers);
       setSchoolDetails(schoolInfo);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -725,7 +748,7 @@ export default function ClassesPage() {
   const classesWithTeacher = classes.filter(c => c.teacher).length;
 
   return (
-    <ProtectedRoute allowedRoles={["SCHOOL_ADMIN"]}>
+    <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "TEACHER"]}>
       <div className="space-y-6">
         {/* Notification */}
         <AnimatePresence>
@@ -742,7 +765,7 @@ export default function ClassesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Classes</h1>
-            <p className="text-gray-600 dark:text-slate-400 mt-1">Manage your school's classes and assignments</p>
+            <p className="text-gray-600 dark:text-slate-400 mt-1">{isTeacher ? "View the class or classes you are in charge of and open each roster." : "Manage your school's classes and assignments"}</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -752,13 +775,15 @@ export default function ClassesPage() {
             >
               <RefreshCw size={20} className="text-gray-600 dark:text-slate-400" />
             </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30 dark:shadow-none"
-            >
-              <Plus size={20} />
-              Create Class
-            </button>
+            {!isTeacher ? (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30 dark:shadow-none"
+              >
+                <Plus size={20} />
+                Create Class
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -884,8 +909,8 @@ export default function ClassesPage() {
                 key={classItem.id || index}
                 classItem={classItem}
                 onView={handleViewClass}
-                onEdit={handleEditClass}
-                onDelete={handleDeleteClass}
+                onEdit={isTeacher ? undefined : handleEditClass}
+                onDelete={isTeacher ? undefined : handleDeleteClass}
               />
             ))}
           </div>
@@ -909,8 +934,8 @@ export default function ClassesPage() {
                     classItem={classItem}
                     index={index}
                     onView={handleViewClass}
-                    onEdit={handleEditClass}
-                    onDelete={handleDeleteClass}
+                    onEdit={isTeacher ? undefined : handleEditClass}
+                    onDelete={isTeacher ? undefined : handleDeleteClass}
                   />
                 ))}
               </tbody>
@@ -979,13 +1004,15 @@ export default function ClassesPage() {
       </div>
 
       {/* Modals */}
-      <CreateClassModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreate={handleCreateClass}
-        teachers={teachers}
-        showNotification={showNotification}
-      />
+      {!isTeacher ? (
+        <CreateClassModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateClass}
+          teachers={teachers}
+          showNotification={showNotification}
+        />
+      ) : null}
       
       <ViewClassModal
         classItem={selectedClass}

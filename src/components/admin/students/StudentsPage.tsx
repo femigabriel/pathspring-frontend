@@ -7,11 +7,14 @@ import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
 import { getAccessToken } from "@/src/lib/auth";
 import {
+  filterClassesForTeacher,
+  filterStudentsForTeacher,
   getAdminClasses,
   getAdminStudents,
   type AdminClassroom,
   type AdminStudent,
 } from "@/src/lib/admin-api";
+import { createParentLink } from "@/src/lib/parent-api";
 import {
   Users,
   Plus,
@@ -74,7 +77,7 @@ const Notification = ({ message, type, onClose }: { message: string; type: "succ
 };
 
 // ============ STUDENT CARD COMPONENT ============
-const StudentCard = ({ student, classes, onEdit, onDelete, onView }: any) => {
+const StudentCard = ({ student, classes, onEdit, onDelete, onView, onLinkParent }: any) => {
   const studentClass = classes.find((c: any) => c.id === student.classroom);
   
   return (
@@ -126,6 +129,12 @@ const StudentCard = ({ student, classes, onEdit, onDelete, onView }: any) => {
                 <Edit size={14} /> Edit
               </button>
               <button
+                onClick={() => onLinkParent(student)}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2"
+              >
+                <UserPlus size={14} /> Link Parent
+              </button>
+              <button
                 onClick={() => onDelete(student)}
                 className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-b-lg flex items-center gap-2"
               >
@@ -173,7 +182,7 @@ const StudentCard = ({ student, classes, onEdit, onDelete, onView }: any) => {
 };
 
 // ============ STUDENT TABLE ROW COMPONENT ============
-const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, index }: any) => {
+const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, onLinkParent, index }: any) => {
   const studentClass = classes.find((c: any) => c.id === student.classroom);
   
   return (
@@ -244,6 +253,13 @@ const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, index }: 
             title="Edit"
           >
             <Edit size={16} className="text-gray-500 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400" />
+          </button>
+          <button
+            onClick={() => onLinkParent(student)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            title="Link Parent"
+          >
+            <UserPlus size={16} className="text-gray-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400" />
           </button>
           <button
             onClick={() => onDelete(student)}
@@ -903,6 +919,223 @@ const ViewStudentModal = ({ student, classes, isOpen, onClose }: any) => {
   );
 };
 
+const LinkParentModal = ({
+  isOpen,
+  onClose,
+  student,
+  onLinked,
+  showNotification,
+}: any) => {
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    relationship: "Mother",
+    phone: "",
+    isPrimaryContact: true,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!isOpen || !student) return;
+
+    setFormData({
+      fullName: "",
+      email: student.parentEmail || "",
+      password: "",
+      relationship: "Mother",
+      phone: student.parentPhone || "",
+      isPrimaryContact: true,
+    });
+    setErrors({});
+  }, [isOpen, student]);
+
+  if (!isOpen || !student) return null;
+
+  const validate = () => {
+    const nextErrors: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) nextErrors.fullName = "Parent full name is required";
+    if (!formData.email.trim()) nextErrors.email = "Parent email is required";
+    if (formData.email && !formData.email.includes("@")) nextErrors.email = "Enter a valid email";
+    if (!formData.password.trim()) nextErrors.password = "Temporary password is required";
+    if (formData.password && formData.password.length < 8) nextErrors.password = "Use at least 8 characters";
+    if (!formData.relationship.trim()) nextErrors.relationship = "Relationship is required";
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!validate()) return;
+
+    setIsSaving(true);
+
+    try {
+      await createParentLink({
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        studentId: student.id,
+        relationship: formData.relationship.trim(),
+        phone: formData.phone.trim() || undefined,
+        isPrimaryContact: formData.isPrimaryContact,
+      });
+
+      onLinked(student.id, {
+        parentEmail: formData.email.trim(),
+        parentPhone: formData.phone.trim(),
+      });
+      showNotification(`Parent account linked to ${student.fullName} successfully.`, "success");
+      onClose();
+    } catch (error: any) {
+      const message = error?.message || "Failed to link parent account.";
+      setErrors({ submit: message });
+      showNotification(message, "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm dark:bg-black/70">
+      <motion.div
+        initial={{ scale: 0.94, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-purple-500/30 dark:bg-slate-900 dark:shadow-none"
+      >
+        <div className="sticky top-0 flex items-center justify-between border-b border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Link Parent Account</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+              Create a parent login for {student.fullName}.
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-white/10">
+            <X size={20} className="text-gray-500 dark:text-slate-400" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <div className="grid gap-5 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                Parent Full Name *
+              </label>
+              <input
+                value={formData.fullName}
+                onChange={(event) => setFormData({ ...formData, fullName: event.target.value })}
+                className={`w-full rounded-xl border p-3 text-gray-900 outline-none transition-colors dark:bg-slate-800 dark:text-white ${
+                  errors.fullName ? "border-red-500" : "border-gray-200 dark:border-slate-700"
+                }`}
+                placeholder="e.g., Rose Musa"
+              />
+              {errors.fullName ? <p className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.fullName}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                Relationship *
+              </label>
+              <input
+                value={formData.relationship}
+                onChange={(event) => setFormData({ ...formData, relationship: event.target.value })}
+                className={`w-full rounded-xl border p-3 text-gray-900 outline-none transition-colors dark:bg-slate-800 dark:text-white ${
+                  errors.relationship ? "border-red-500" : "border-gray-200 dark:border-slate-700"
+                }`}
+                placeholder="Mother, Father, Guardian"
+              />
+              {errors.relationship ? <p className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.relationship}</p> : null}
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                Parent Email *
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                className={`w-full rounded-xl border p-3 text-gray-900 outline-none transition-colors dark:bg-slate-800 dark:text-white ${
+                  errors.email ? "border-red-500" : "border-gray-200 dark:border-slate-700"
+                }`}
+                placeholder="rose@example.com"
+              />
+              {errors.email ? <p className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.email}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                Phone
+              </label>
+              <input
+                value={formData.phone}
+                onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                className="w-full rounded-xl border border-gray-200 p-3 text-gray-900 outline-none transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                placeholder="08012345678"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700 dark:text-slate-300">
+              Temporary Password *
+            </label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(event) => setFormData({ ...formData, password: event.target.value })}
+              className={`w-full rounded-xl border p-3 text-gray-900 outline-none transition-colors dark:bg-slate-800 dark:text-white ${
+                errors.password ? "border-red-500" : "border-gray-200 dark:border-slate-700"
+              }`}
+              placeholder="SecureParent123!"
+            />
+            {errors.password ? <p className="mt-1 text-xs text-red-500 dark:text-red-400">{errors.password}</p> : null}
+          </div>
+
+          <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={formData.isPrimaryContact}
+              onChange={(event) => setFormData({ ...formData, isPrimaryContact: event.target.checked })}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            Mark this parent as the primary contact for the child.
+          </label>
+
+          {errors.submit ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+              {errors.submit}
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-gray-200 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 font-semibold text-white transition-all disabled:opacity-60"
+            >
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
+              {isSaving ? "Linking Parent..." : "Create Parent Login"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 // ============ MAIN STUDENTS PAGE ============
 export default function StudentsPage() {
   const { user } = useAuth();
@@ -912,6 +1145,7 @@ export default function StudentsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showParentModal, setShowParentModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterClass, setFilterClass] = useState("");
@@ -940,8 +1174,14 @@ export default function StudentsPage() {
         getAdminClasses(),
       ]);
 
-      setStudents(studentList);
-      setClasses(classList);
+      const scopedClasses = user?.role === "TEACHER" ? filterClassesForTeacher(classList, user) : classList;
+      const scopedStudents =
+        user?.role === "TEACHER"
+          ? filterStudentsForTeacher(studentList, classList, user)
+          : studentList;
+
+      setStudents(scopedStudents);
+      setClasses(scopedClasses);
     } catch (error) {
       console.error("Error fetching data:", error);
       showNotification("Error connecting to server", "error");
@@ -966,6 +1206,38 @@ export default function StudentsPage() {
   const handleEditStudent = (student: any) => {
     setSelectedStudent(student);
     setShowEditModal(true);
+  };
+
+  const handleOpenParentLink = (student: any) => {
+    setSelectedStudent(student);
+    setShowParentModal(true);
+  };
+
+  const handleParentLinked = (
+    studentId: string,
+    details: { parentEmail: string; parentPhone?: string },
+  ) => {
+    setStudents((current) =>
+      current.map((student) =>
+        student.id === studentId
+          ? {
+              ...student,
+              parentEmail: details.parentEmail,
+              parentPhone: details.parentPhone || student.parentPhone,
+            }
+          : student,
+      ),
+    );
+
+    setSelectedStudent((current: any) =>
+      current && current.id === studentId
+        ? {
+            ...current,
+            parentEmail: details.parentEmail,
+            parentPhone: details.parentPhone || current.parentPhone,
+          }
+        : current,
+    );
   };
 
   const handleDeleteStudent = async (student: any) => {
@@ -1029,7 +1301,7 @@ export default function StudentsPage() {
   const gradeLevels = [...new Set(students.map(s => s.gradeLevel).filter(Boolean))];
 
   return (
-    <ProtectedRoute allowedRoles={["SCHOOL_ADMIN"]}>
+    <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "TEACHER"]}>
       <div className="space-y-6">
         {/* Notification */}
         <AnimatePresence>
@@ -1046,7 +1318,11 @@ export default function StudentsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Students</h1>
-            <p className="text-gray-600 dark:text-slate-400 mt-1">Manage all students in your school</p>
+            <p className="text-gray-600 dark:text-slate-400 mt-1">
+              {user?.role === "TEACHER"
+                ? "Manage the students in your assigned class."
+                : "Manage all students in your school"}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -1250,6 +1526,7 @@ export default function StudentsPage() {
                 classes={classes}
                 onView={handleViewStudent}
                 onEdit={handleEditStudent}
+                onLinkParent={handleOpenParentLink}
                 onDelete={handleDeleteStudent}
               />
             ))}
@@ -1277,6 +1554,7 @@ export default function StudentsPage() {
                     index={index}
                     onView={handleViewStudent}
                     onEdit={handleEditStudent}
+                    onLinkParent={handleOpenParentLink}
                     onDelete={handleDeleteStudent}
                   />
                 ))}
@@ -1372,6 +1650,17 @@ export default function StudentsPage() {
         isOpen={showViewModal}
         onClose={() => {
           setShowViewModal(false);
+          setSelectedStudent(null);
+        }}
+      />
+
+      <LinkParentModal
+        isOpen={showParentModal}
+        student={selectedStudent}
+        onLinked={handleParentLinked}
+        showNotification={showNotification}
+        onClose={() => {
+          setShowParentModal(false);
           setSelectedStudent(null);
         }}
       />

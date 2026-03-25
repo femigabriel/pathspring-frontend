@@ -49,8 +49,8 @@ export default function StudentBookshelfPage() {
     <StudentShell>
       <div className="space-y-8">
         <section className="overflow-hidden rounded-[2.3rem] border border-white/70 bg-[radial-gradient(circle_at_top_left,rgba(191,219,254,0.25),transparent_26%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.22),transparent_24%),linear-gradient(180deg,#fefce8_0%,#eff6ff_100%)] p-6 shadow-xl dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_26%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.14),transparent_24%),linear-gradient(180deg,#0b1120_0%,#111827_100%)] md:p-8">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div>
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_16rem] xl:items-end">
+            <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm dark:bg-white/10 dark:text-emerald-300">
                 <Sparkles size={16} />
                 Bookshelf
@@ -63,32 +63,52 @@ export default function StudentBookshelfPage() {
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
-              <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
-                <Search size={18} className="text-slate-400" />
-                <input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search title, theme, or grade..."
-                  className="w-full min-w-56 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-white"
-                />
+            <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-sky-100 p-3 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300">
+                  <LibraryBig size={20} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Total Books
+                  </p>
+                  <p className="text-xl font-black text-slate-900 dark:text-white">{filteredStories.length}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {searchQuery.trim() ? "Matching your search" : "Available for your class"}
+                  </p>
+                </div>
               </div>
-              <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-sky-100 p-3 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300">
-                    <LibraryBig size={20} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      Total Books
-                    </p>
-                    <p className="text-xl font-black text-slate-900 dark:text-white">{filteredStories.length}</p>
-                  </div>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-[1.7rem] border border-emerald-100 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Search your shelf</p>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Search by title, theme, subject, or grade level.
+                </p>
+              </div>
+              <div className="md:w-[26rem]">
+                <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 dark:border-white/10 dark:bg-slate-950/40">
+                  <Search size={18} className="shrink-0 text-slate-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search title, theme, or grade..."
+                    className="w-full min-w-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-white"
+                  />
                 </div>
               </div>
             </div>
           </div>
         </section>
+
+        {!loading && filteredStories.length === 0 && searchQuery.trim() ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+            No books matched "{searchQuery.trim()}". Try a title, theme, subject, or class level instead.
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">

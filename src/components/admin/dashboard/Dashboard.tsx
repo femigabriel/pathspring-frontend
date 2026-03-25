@@ -5,8 +5,11 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
-import { getAccessToken } from "@/src/lib/auth";
+import { getSchoolWorkspaceBaseRoute, getAccessToken } from "@/src/lib/auth";
 import {
+  filterClassesForTeacher,
+  filterStudentsForTeacher,
+  filterTeachersForTeacher,
   getAdminDashboardSnapshot,
   type AdminStudent,
 } from "@/src/lib/admin-api";
@@ -74,7 +77,7 @@ const QuickAction = ({ icon: Icon, label, onClick, color }: any) => {
 };
 
 // Student Card Component
-const StudentCard = ({ student }: any) => {
+const StudentCard = ({ student, workspaceBase }: any) => {
   return (
     <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 p-4 hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-all shadow-sm dark:shadow-none">
       <div className="flex items-center justify-between mb-3">
@@ -113,7 +116,7 @@ const StudentCard = ({ student }: any) => {
             <Star key={i} size={12} className={i < (student.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-gray-300 dark:text-slate-600"} />
           ))}
         </div>
-        <Link href="/admin/students" className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300">
+        <Link href={`${workspaceBase}/students`} className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300">
           View Profile →
         </Link>
       </div>
@@ -338,9 +341,12 @@ const CreateStudentModal = ({ isOpen, onClose, onCreate }: any) => {
 // Main Dashboard Page
 export default function AdminDashboard() {
   const { user, school } = useAuth();
+  const workspaceBase = getSchoolWorkspaceBaseRoute(user?.role);
+  const isTeacher = user?.role === "TEACHER";
   const [greeting, setGreeting] = useState("");
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   const [students, setStudents] = useState<AdminStudent[]>([]);
+  const [teacherClassCount, setTeacherClassCount] = useState(0);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -360,22 +366,58 @@ export default function AdminDashboard() {
   const loadDashboard = async () => {
     try {
       const snapshot = await getAdminDashboardSnapshot();
+      if (isTeacher) {
+        const scopedClasses = filterClassesForTeacher(snapshot.classes, user);
+        const scopedStudents = filterStudentsForTeacher(snapshot.students, snapshot.classes, user);
+        const scopedTeachers = filterTeachersForTeacher(snapshot.teachers, user);
+        const totalStories = scopedStudents.reduce((sum, student) => sum + (Number(student.storiesRead) || 0), 0);
+        const progressValues = scopedStudents
+          .map((student) => {
+            if (typeof student.progress === "number") return student.progress;
+            if (typeof student.completionRate === "number") return student.completionRate;
+            return null;
+          })
+          .filter((value): value is number => value !== null);
+        const avgProgress =
+          progressValues.length > 0
+            ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length)
+            : 0;
+
+        setStudents(scopedStudents);
+        setTeacherClassCount(scopedClasses.length);
+        setStats({
+          totalStudents: scopedStudents.length,
+          totalTeachers: scopedTeachers.length || 1,
+          totalStories,
+          avgProgress,
+        });
+        return;
+      }
+
       setStudents(snapshot.students);
+      setTeacherClassCount(snapshot.classes.length);
       setStats(snapshot.stats);
     } catch (error) {
       console.error("Error loading dashboard:", error);
     }
   };
 
-  const quickActions = [
-    { icon: GraduationCap, label: "Add Student", onClick: () => setShowCreateStudent(true), color: "from-purple-500 to-pink-500" },
-    { icon: Users, label: "Add Teacher", onClick: () => console.log("Add Teacher"), color: "from-blue-500 to-cyan-500" },
-    { icon: BookOpen, label: "Add Story", onClick: () => console.log("Add Story"), color: "from-green-500 to-emerald-500" },
-    { icon: Calendar, label: "Create Class", onClick: () => console.log("Create Class"), color: "from-orange-500 to-red-500" },
-  ];
+  const quickActions = isTeacher
+    ? [
+        { icon: GraduationCap, label: "Add Student", onClick: () => setShowCreateStudent(true), color: "from-purple-500 to-pink-500" },
+        { icon: Calendar, label: "My Class", onClick: () => (window.location.href = `${workspaceBase}/classes`), color: "from-orange-500 to-red-500" },
+        { icon: BookOpen, label: "Story Book", onClick: () => (window.location.href = `${workspaceBase}/story-book`), color: "from-green-500 to-emerald-500" },
+        { icon: Users, label: "Notifications", onClick: () => (window.location.href = `${workspaceBase}/notifications`), color: "from-blue-500 to-cyan-500" },
+      ]
+    : [
+        { icon: GraduationCap, label: "Add Student", onClick: () => setShowCreateStudent(true), color: "from-purple-500 to-pink-500" },
+        { icon: Users, label: "Add Teacher", onClick: () => (window.location.href = `${workspaceBase}/teachers`), color: "from-blue-500 to-cyan-500" },
+        { icon: BookOpen, label: "Add Story", onClick: () => (window.location.href = `${workspaceBase}/story-book`), color: "from-green-500 to-emerald-500" },
+        { icon: Calendar, label: "Create Class", onClick: () => (window.location.href = `${workspaceBase}/classes`), color: "from-orange-500 to-red-500" },
+      ];
 
   return (
-    <ProtectedRoute allowedRoles={["SCHOOL_ADMIN"]}>
+    <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "TEACHER"]}>
       <div className="space-y-6">
         {/* Welcome Section */}
         <motion.div
@@ -387,39 +429,39 @@ export default function AdminDashboard() {
             {greeting}, {user?.email?.split("@")[0]}! 👋
           </h1>
           <p className="text-sm md:text-base text-white/90">
-            Welcome back to {school?.name}. Here's what's happening with your school today.
+            Welcome back to {school?.name}. {isTeacher ? "Here is your teaching space for today." : "Here's what's happening with your school today."}
           </p>
         </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <StatsCard
-            title="Total Students"
+            title={isTeacher ? "My Students" : "Total Students"}
             value={stats.totalStudents}
             icon={GraduationCap}
             color="from-purple-500 to-pink-500"
-            trend="+12%"
+            trend={isTeacher ? `${teacherClassCount} class${teacherClassCount === 1 ? "" : "es"}` : "+12%"}
           />
           <StatsCard
-            title="Total Teachers"
-            value={stats.totalTeachers}
+            title={isTeacher ? "My Classes" : "Total Teachers"}
+            value={isTeacher ? teacherClassCount : stats.totalTeachers}
             icon={Users}
             color="from-blue-500 to-cyan-500"
-            trend="+2"
+            trend={isTeacher ? "Focused view" : "+2"}
           />
           <StatsCard
-            title="Stories Read"
+            title={isTeacher ? "Class Stories Read" : "Stories Read"}
             value={stats.totalStories}
             icon={BookOpen}
             color="from-green-500 to-emerald-500"
-            trend="+23%"
+            trend={isTeacher ? "Live class data" : "+23%"}
           />
           <StatsCard
-            title="Avg Progress"
+            title={isTeacher ? "Class Progress" : "Avg Progress"}
             value={`${stats.avgProgress}%`}
             icon={TrendingUp}
             color="from-orange-500 to-red-500"
-            trend="+5%"
+            trend={isTeacher ? "Updated live" : "+5%"}
           />
         </div>
 
@@ -437,13 +479,13 @@ export default function AdminDashboard() {
         <div>
           <div className="flex items-center justify-between mb-3 md:mb-4">
             <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Recent Students</h2>
-            <Link href="/admin/students" className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1">
+            <Link href={`${workspaceBase}/students`} className="text-purple-600 dark:text-purple-400 text-xs md:text-sm hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1">
               View All <ChevronRight size={16} />
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {students.slice(0, 3).map((student) => (
-              <StudentCard key={student.id} student={student} />
+              <StudentCard key={student.id} student={student} workspaceBase={workspaceBase} />
             ))}
             {students.length === 0 && (
               <div className="col-span-full text-center py-12">

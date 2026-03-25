@@ -1,6 +1,6 @@
 "use client";
 
-export type UserRole = "PLATFORM_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT";
+export type UserRole = "PLATFORM_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
 
 export interface AuthUser {
   id: string;
@@ -13,6 +13,7 @@ export interface AuthUser {
   school?: string | null;
   schoolCode?: string | null;
   gradeLevel?: string | null;
+  phone?: string | null;
   classroom?: {
     id: string;
     name: string;
@@ -97,13 +98,18 @@ export const getDefaultRouteForRole = (role?: string | null) => {
     case "SCHOOL_ADMIN":
       return "/admin/dashboard";
     case "TEACHER":
-      return "/admin/story-book";
+      return "/teacher/dashboard";
     case "STUDENT":
       return "/student/dashboard";
+    case "PARENT":
+      return "/parent/dashboard";
     default:
       return "/login";
   }
 };
+
+export const getSchoolWorkspaceBaseRoute = (role?: string | null) =>
+  role === "TEACHER" ? "/teacher" : "/admin";
 
 export const persistAuthSession = ({
   accessToken,

@@ -1,5 +1,6 @@
 "use client";
 
+import type { AuthUser } from "@/src/lib/auth";
 import { getAccessToken } from "@/src/lib/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -64,6 +65,27 @@ export interface AdminSchoolDetails {
   activeClassCount?: number;
   [key: string]: unknown;
 }
+
+const matchesTeacherIdentity = (
+  teacher: AdminTeacher | null | undefined,
+  user?: Pick<AuthUser, "id" | "email" | "fullName"> | null,
+) => {
+  if (!teacher || !user) return false;
+
+  if (teacher.id && user.id && teacher.id === user.id) return true;
+  if (teacher.email && user.email && teacher.email.toLowerCase() === user.email.toLowerCase()) {
+    return true;
+  }
+  if (
+    teacher.fullName &&
+    user.fullName &&
+    teacher.fullName.trim().toLowerCase() === user.fullName.trim().toLowerCase()
+  ) {
+    return true;
+  }
+
+  return false;
+};
 
 interface DashboardSnapshot {
   students: AdminStudent[];
@@ -329,6 +351,35 @@ export const getAdminSchoolDetails = async () => {
       typeof stats?.activeClassCount === "number" ? stats.activeClassCount : undefined,
   };
 };
+
+export const isTeacherClassOwner = (
+  classroom: AdminClassroom,
+  user?: Pick<AuthUser, "id" | "email" | "fullName"> | null,
+) => matchesTeacherIdentity(classroom.teacher, user);
+
+export const filterClassesForTeacher = (
+  classrooms: AdminClassroom[],
+  user?: Pick<AuthUser, "id" | "email" | "fullName"> | null,
+) => classrooms.filter((classroom) => isTeacherClassOwner(classroom, user));
+
+export const filterStudentsForTeacher = (
+  students: AdminStudent[],
+  classrooms: AdminClassroom[],
+  user?: Pick<AuthUser, "id" | "email" | "fullName"> | null,
+) => {
+  const teacherClassIds = new Set(filterClassesForTeacher(classrooms, user).map((classroom) => classroom.id));
+  return students.filter((student) => {
+    const classroomId =
+      student.classroomDetails?.id ??
+      (typeof student.classroom === "string" ? student.classroom : "");
+    return classroomId ? teacherClassIds.has(classroomId) : false;
+  });
+};
+
+export const filterTeachersForTeacher = (
+  teachers: AdminTeacher[],
+  user?: Pick<AuthUser, "id" | "email" | "fullName"> | null,
+) => teachers.filter((teacher) => matchesTeacherIdentity(teacher, user));
 
 export const getAdminDashboardSnapshot = async (): Promise<DashboardSnapshot> => {
   const [students, teachers, classes, school] = await Promise.all([

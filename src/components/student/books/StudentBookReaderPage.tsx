@@ -545,7 +545,7 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
           </div>
 
           {/* Flip Book Container - Larger and more prominent */}
-          <div className="flex justify-center items-center py-6 md:py-8">
+          <div className="flex justify-center items-center py-4 md:py-8">
             <HTMLFlipBook
               ref={flipBookRef}
               width={600}

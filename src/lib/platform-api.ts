@@ -138,6 +138,24 @@ export interface CreatePlatformActivityInput {
   teacherNotes?: string;
 }
 
+export interface UpdatePlatformStoryInput {
+  title?: string;
+  summary?: string;
+  description?: string;
+  theme?: string;
+  selFocus?: string[];
+  status?: string;
+}
+
+export interface RegeneratePlatformStoryInput {
+  theme?: string;
+  selFocus?: string[];
+  chapterCount?: number;
+  tone?: string;
+  customPromptNotes?: string;
+  clearCoverImage?: boolean;
+}
+
 class ApiRequestError extends Error {
   status: number;
 
@@ -448,8 +466,20 @@ const normalizeSchool = (value: unknown): PlatformSchool | null => {
   };
 };
 
-export const getPlatformContentItems = async (filters?: { selFocus?: string[] }) => {
+export const getPlatformContentItems = async (filters?: {
+  type?: string;
+  dedupe?: boolean;
+  selFocus?: string[];
+}) => {
   const searchParams = new URLSearchParams();
+
+  if (filters?.type?.trim()) {
+    searchParams.set("type", filters.type.trim());
+  }
+
+  if (typeof filters?.dedupe === "boolean") {
+    searchParams.set("dedupe", String(filters.dedupe));
+  }
 
   filters?.selFocus?.forEach((value) => {
     if (value.trim()) {
@@ -538,6 +568,41 @@ export const generatePlatformStoryImages = async (
         quality: options?.quality ?? "medium",
         outputFormat: options?.outputFormat ?? "jpeg",
       }),
+    },
+  );
+
+  return isRecord(payload) ? payload : {};
+};
+
+export const updatePlatformStory = async (
+  storyId: string,
+  input: UpdatePlatformStoryInput,
+) => {
+  const payload = await platformRequest<unknown>(`/api/v1/platform/stories/${storyId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+
+  return normalizeContentItem(isRecord(payload) ? payload.story ?? payload.content ?? payload : payload);
+};
+
+export const deletePlatformStory = async (storyId: string) => {
+  const payload = await platformRequest<unknown>(`/api/v1/platform/stories/${storyId}`, {
+    method: "DELETE",
+  });
+
+  return isRecord(payload) ? payload : {};
+};
+
+export const regeneratePlatformStory = async (
+  storyId: string,
+  input: RegeneratePlatformStoryInput,
+) => {
+  const payload = await platformRequest<unknown>(
+    `/api/v1/platform/stories/${storyId}/regenerate`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
     },
   );
 

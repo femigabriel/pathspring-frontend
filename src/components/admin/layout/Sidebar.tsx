@@ -17,9 +17,11 @@ import {
   ChevronRight,
   ClipboardCheck,
   School,
+  Bell,
   X,
 } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { getSchoolWorkspaceBaseRoute } from "@/src/lib/auth";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -30,6 +32,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const workspaceBase = getSchoolWorkspaceBaseRoute(user?.role);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -46,32 +49,38 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     {
       name: "Dashboard",
       icon: LayoutDashboard,
-      href: "/admin/dashboard",
-      roles: ["SCHOOL_ADMIN", "TEACHER", "STUDENT"],
+      href: `${workspaceBase}/dashboard`,
+      roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
       name: "Students",
       icon: GraduationCap,
-      href: "/admin/students",
+      href: `${workspaceBase}/students`,
       roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
       name: "Teachers",
       icon: Users,
-      href: "/admin/teachers",
+      href: `${workspaceBase}/teachers`,
       roles: ["SCHOOL_ADMIN"],
     },
     {
       name: "Classes",
       icon: School,
-      href: "/admin/classes",
+      href: `${workspaceBase}/classes`,
       roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
       name: "Story Book",
       icon: LibraryBig,
-      href: "/admin/story-book",
-      roles: ["SCHOOL_ADMIN", "TEACHER", "STUDENT"],
+      href: `${workspaceBase}/story-book`,
+      roles: ["SCHOOL_ADMIN", "TEACHER"],
+    },
+    {
+      name: "Notifications",
+      icon: Bell,
+      href: `${workspaceBase}/notifications`,
+      roles: ["SCHOOL_ADMIN", "TEACHER"],
     },
     {
       name: "Submissions",
@@ -105,7 +114,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
         {/* Logo */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/10">
           {!collapsed && (
-            <Link href="/admin/dashboard" className="flex items-center gap-2">
+            <Link href={`${workspaceBase}/dashboard`} className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
@@ -115,7 +124,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
             </Link>
           )}
           {collapsed && (
-            <Link href="/admin/dashboard">
+            <Link href={`${workspaceBase}/dashboard`}>
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
@@ -197,7 +206,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/10">
-              <Link href="/admin/dashboard" className="flex items-center gap-2">
+              <Link href={`${workspaceBase}/dashboard`} className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>

@@ -74,6 +74,17 @@ export interface StudentSubmissionAnswerPayload {
   answer: string | string[];
 }
 
+export interface SchoolContentAssignment {
+  id: string;
+  contentId?: string;
+  classroomId?: string;
+  studentUserIds: string[];
+  dueAt?: string;
+  notes?: string;
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -261,9 +272,29 @@ const normalizeActivity = (value: unknown): SchoolActivity | null => {
   };
 };
 
+const normalizeAssignment = (value: unknown): SchoolContentAssignment | null => {
+  if (!isRecord(value)) return null;
+
+  const rawId = value.id ?? value._id;
+  const id = typeof rawId === "string" ? rawId : "";
+
+  if (!id) return null;
+
+  return {
+    ...value,
+    id,
+    contentId: typeof value.contentId === "string" ? value.contentId : undefined,
+    classroomId: typeof value.classroomId === "string" ? value.classroomId : undefined,
+    studentUserIds: toStringArray(value.studentUserIds),
+    dueAt: typeof value.dueAt === "string" ? value.dueAt : undefined,
+    notes: typeof value.notes === "string" ? value.notes : undefined,
+    createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined,
+  };
+};
+
 export const getPublishedSchoolContents = async () => {
   try {
-    const payload = await schoolRequest<unknown>("/api/v1/content");
+    const payload = await schoolRequest<unknown>("/api/v1/content?type=STORY");
     const record = isRecord(payload) ? payload : {};
     const contents = Array.isArray(record.contents) ? record.contents : [];
 
@@ -271,7 +302,7 @@ export const getPublishedSchoolContents = async () => {
       contents
         .map((item) => normalizeContent(item))
         .filter((item): item is SchoolStoryContent => item !== null)
-        .filter((item) => item.type === "CONTENT_PACK" || item.type === "STORY"),
+        .filter((item) => item.type === "STORY"),
     );
   } catch {
     return [];
@@ -294,6 +325,34 @@ export const getPublishedSchoolStoryBundle = async (contentId: string) => {
           .filter((item): item is SchoolActivity => item !== null)
       : [],
   } satisfies SchoolStoryBundle;
+};
+
+export const createContentAssignment = async (payload: {
+  contentId: string;
+  classroomId?: string;
+  studentUserIds?: string[];
+  dueAt?: string;
+  notes?: string;
+}) =>
+  schoolRequest("/api/v1/content/assignments", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const getContentAssignments = async () => {
+  const payload = await schoolRequest<unknown>("/api/v1/content/assignments");
+  const record = isRecord(payload) ? payload : {};
+  const assignments = Array.isArray(record.assignments)
+    ? record.assignments
+    : Array.isArray(record.data)
+      ? record.data
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+  return assignments
+    .map((item) => normalizeAssignment(item))
+    .filter((item): item is SchoolContentAssignment => item !== null);
 };
 
 export const recordStudentContentProgress = async (

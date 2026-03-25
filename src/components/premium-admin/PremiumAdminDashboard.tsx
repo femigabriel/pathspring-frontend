@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   CheckCircle2,
+  PencilLine,
   Filter,
   Image as ImageIcon,
   Layers,
@@ -18,13 +19,16 @@ import {
   Send,
   Settings,
   Sparkles,
+  Trash2,
   TrendingUp,
   Users,
   Wand2,
+  RotateCcw,
   X,
 } from "lucide-react";
 import { clearAuthSession, getStoredUser } from "@/src/lib/auth";
 import {
+  deletePlatformStory,
   createPlatformStoryActivity,
   generatePlatformContentPackage,
   generatePlatformStoryImages,
@@ -33,6 +37,8 @@ import {
   getPlatformContentItems,
   getPlatformSchools,
   publishPlatformContentBundle,
+  regeneratePlatformStory,
+  updatePlatformStory,
   type PlatformActivity,
   type PlatformAnalyticsResponse,
   type PlatformBundle,
@@ -111,6 +117,10 @@ export default function PremiumAdminDashboard() {
   const [openingId, setOpeningId] = useState("");
   const [generatingImagesId, setGeneratingImagesId] = useState("");
   const [addingActivity, setAddingActivity] = useState(false);
+  const [editingStory, setEditingStory] = useState(false);
+  const [savingStory, setSavingStory] = useState(false);
+  const [regeneratingStory, setRegeneratingStory] = useState(false);
+  const [deletingStory, setDeletingStory] = useState(false);
   const [selFocusFilter, setSelFocusFilter] = useState<string[]>([]);
   const [draft, setDraft] = useState({
     title: "Tolu and the Whispering Drum",
@@ -137,12 +147,29 @@ export default function PremiumAdminDashboard() {
       "Pick one scene from the story.\nAct it out in a small group.\nPause and discuss the brave choice.\nWrite one better choice and explain why.",
     teacherNotes: "",
   });
+  const [storyEditDraft, setStoryEditDraft] = useState({
+    title: "",
+    summary: "",
+    description: "",
+    theme: "",
+    selFocus: "",
+    status: "draft",
+  });
+  const [regenerateDraft, setRegenerateDraft] = useState({
+    theme: "",
+    selFocus: "",
+    chapterCount: 6,
+    tone: "emotionally rich, child-friendly, page-turning, deeply engaging",
+    customPromptNotes:
+      "Write a much stronger, fuller story with meaningful dialogue, better scene flow, richer emotional development, and substantial chapters for a premium children reading experience.",
+    clearCoverImage: false,
+  });
 
   const activeTab = isPremiumTab(searchParams.get("tab")) ? searchParams.get("tab") : "overview";
 
   const libraryItems = useMemo(() => {
-    const bundles = contentItems.filter((item) => item.type === "CONTENT_PACK");
-    return bundles.length > 0 ? bundles : contentItems.filter((item) => item.type === "STORY");
+    const stories = contentItems.filter((item) => item.type === "STORY");
+    return stories.length > 0 ? stories : contentItems;
   }, [contentItems]);
 
   const publishedBundles = useMemo(
@@ -166,6 +193,7 @@ export default function PremiumAdminDashboard() {
 
     const [contentResult, analyticsResult, schoolsResult] = await Promise.allSettled([
       getPlatformContentItems({
+        type: "STORY",
         selFocus: selFocusFilter,
       }),
       getPlatformContentAnalytics(),
@@ -211,6 +239,26 @@ export default function PremiumAdminDashboard() {
     if (!authorized) return;
     void refreshData();
   }, [authorized, selFocusFilter]);
+
+  useEffect(() => {
+    const story = selectedBundle?.story?.content;
+    if (!story) return;
+
+    setStoryEditDraft({
+      title: story.title ?? "",
+      summary: story.summary ?? "",
+      description: story.description ?? "",
+      theme: story.theme ?? "",
+      selFocus: (story.selFocus ?? []).join(", "),
+      status: story.status ?? "draft",
+    });
+
+    setRegenerateDraft((current) => ({
+      ...current,
+      theme: story.theme ?? current.theme,
+      selFocus: (story.selFocus ?? []).join(", "),
+    }));
+  }, [selectedBundle]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -342,6 +390,89 @@ export default function PremiumAdminDashboard() {
       setError(err instanceof Error ? err.message : "Failed to generate story images.");
     } finally {
       setGeneratingImagesId("");
+    }
+  };
+
+  const handleSaveStory = async () => {
+    if (!selectedStoryId) return;
+
+    setSavingStory(true);
+    setError("");
+    setNotice("");
+
+    try {
+      await updatePlatformStory(selectedStoryId, {
+        title: storyEditDraft.title.trim(),
+        summary: storyEditDraft.summary.trim(),
+        description: storyEditDraft.description.trim(),
+        theme: storyEditDraft.theme.trim(),
+        selFocus: splitCsv(storyEditDraft.selFocus),
+        status: storyEditDraft.status.trim() || undefined,
+      });
+
+      const refreshedBundle = await getPlatformContentBundle(selectedStoryId);
+      setSelectedBundle(refreshedBundle);
+      await refreshData();
+      setEditingStory(false);
+      setNotice("Story updated successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update story.");
+    } finally {
+      setSavingStory(false);
+    }
+  };
+
+  const handleRegenerateStory = async () => {
+    if (!selectedStoryId) return;
+
+    setRegeneratingStory(true);
+    setError("");
+    setNotice("");
+
+    try {
+      await regeneratePlatformStory(selectedStoryId, {
+        theme: regenerateDraft.theme.trim() || undefined,
+        selFocus: splitCsv(regenerateDraft.selFocus),
+        chapterCount: regenerateDraft.chapterCount,
+        tone: regenerateDraft.tone.trim() || undefined,
+        customPromptNotes: regenerateDraft.customPromptNotes.trim() || undefined,
+        clearCoverImage: regenerateDraft.clearCoverImage,
+      });
+
+      const refreshedBundle = await getPlatformContentBundle(selectedStoryId);
+      setSelectedBundle(refreshedBundle);
+      await refreshData();
+      setNotice("Story regenerated successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to regenerate story.");
+    } finally {
+      setRegeneratingStory(false);
+    }
+  };
+
+  const handleDeleteStory = async () => {
+    if (!selectedStoryId) return;
+
+    const shouldDelete =
+      typeof window === "undefined"
+        ? false
+        : window.confirm("Delete this story? This action cannot be undone.");
+
+    if (!shouldDelete) return;
+
+    setDeletingStory(true);
+    setError("");
+    setNotice("");
+
+    try {
+      await deletePlatformStory(selectedStoryId);
+      setSelectedBundle(null);
+      await refreshData();
+      setNotice("Story deleted successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete story.");
+    } finally {
+      setDeletingStory(false);
     }
   };
 
@@ -667,7 +798,7 @@ export default function PremiumAdminDashboard() {
                 <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-white/10">
                   <div className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 border-b border-white/10 bg-slate-950/55 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"><span>Bundle</span><span>Subject</span><span>Status</span><span className="text-right">Action</span></div>
                   <div className="divide-y divide-white/5">
-                    {loading.content ? <div className="px-5 py-10 text-center text-sm text-slate-400">Loading premium bundles...</div> : libraryItems.length === 0 ? <div className="px-5 py-10 text-center text-sm text-slate-400">{selFocusFilter.length > 0 ? "No premium bundles matched the selected SEL focus yet." : "No premium bundles were returned by the backend yet."}</div> : libraryItems.map((item) => <div key={item._id} className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 px-5 py-4 text-sm text-slate-300"><div><p className="font-semibold">{item.title}</p><p className="mt-1 text-xs text-slate-500">{prettyDate(item.updatedAt ?? item.createdAt)}</p>{item.selFocus?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{item.selFocus.slice(0, 2).map((focus) => <span key={focus} className="rounded-full bg-fuchsia-500/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-fuchsia-200">{prettifySelFocus(focus)}</span>)}</div> : null}</div><div className="text-slate-400">{item.subject ?? item.theme ?? "General"}</div><div><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">{item.status ?? "draft"}</span></div><div className="flex justify-end gap-2"><button onClick={() => void handleOpenBundle(item._id)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">{openingId === item._id ? "Opening..." : "View"}</button>{item.status !== "published" ? <button onClick={() => void handlePublish(item._id)} disabled={publishingId === item._id} className="rounded-xl bg-emerald-500 px-3 py-2 font-semibold text-slate-950 disabled:opacity-60">{publishingId === item._id ? "Publishing..." : "Publish"}</button> : null}</div></div>)}
+                    {loading.content ? <div className="px-5 py-10 text-center text-sm text-slate-400">Loading premium stories...</div> : libraryItems.length === 0 ? <div className="px-5 py-10 text-center text-sm text-slate-400">{selFocusFilter.length > 0 ? "No premium stories matched the selected SEL focus yet." : "No premium stories were returned by the backend yet."}</div> : libraryItems.map((item) => <div key={item._id} className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 px-5 py-4 text-sm text-slate-300"><div><p className="font-semibold">{item.title}</p><p className="mt-1 text-xs text-slate-500">{prettyDate(item.updatedAt ?? item.createdAt)}</p>{item.selFocus?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{item.selFocus.slice(0, 2).map((focus) => <span key={focus} className="rounded-full bg-fuchsia-500/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-fuchsia-200">{prettifySelFocus(focus)}</span>)}</div> : null}</div><div className="text-slate-400">{item.subject ?? item.theme ?? "General"}</div><div><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">{item.status ?? "draft"}</span></div><div className="flex justify-end gap-2"><button onClick={() => void handleOpenBundle(item._id)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">{openingId === item._id ? "Opening..." : "View"}</button>{item.status !== "published" ? <button onClick={() => void handlePublish(item._id)} disabled={publishingId === item._id} className="rounded-xl bg-emerald-500 px-3 py-2 font-semibold text-slate-950 disabled:opacity-60">{publishingId === item._id ? "Publishing..." : "Publish"}</button> : null}</div></div>)}
                   </div>
                 </div>
               </section>
@@ -678,6 +809,35 @@ export default function PremiumAdminDashboard() {
                     <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
                       <h3 className="text-3xl font-black">{getBundleTitle(selectedBundle)}</h3>
                       <p className="mt-3 text-sm leading-7 text-slate-300">{selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? "No short description provided yet."}</p>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setEditingStory((current) => !current)}
+                          disabled={!selectedStoryId}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 disabled:opacity-50"
+                        >
+                          <PencilLine size={16} />
+                          {editingStory ? "Close Edit" : "Edit Story"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleRegenerateStory()}
+                          disabled={!selectedStoryId || regeneratingStory}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 disabled:opacity-50"
+                        >
+                          <RotateCcw size={16} />
+                          {regeneratingStory ? "Regenerating..." : "Redo Story"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteStory()}
+                          disabled={!selectedStoryId || deletingStory}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 disabled:opacity-50"
+                        >
+                          <Trash2 size={16} />
+                          {deletingStory ? "Deleting..." : "Delete Story"}
+                        </button>
+                      </div>
                       {selectedSelFocus.length > 0 ? (
                         <div className="mt-4 flex flex-wrap gap-2">
                           {selectedSelFocus.map((item) => (
@@ -687,6 +847,95 @@ export default function PremiumAdminDashboard() {
                           ))}
                         </div>
                       ) : null}
+                      {editingStory ? (
+                        <div className="mt-5 space-y-4 rounded-[1.35rem] border border-white/10 bg-white/5 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-white">Edit Story Details</p>
+                              <p className="mt-1 text-sm text-slate-400">Update the visible story details without generating a brand new package.</p>
+                            </div>
+                          </div>
+                          <input value={storyEditDraft.title} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, title: event.target.value })} placeholder="Story title" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
+                          <textarea rows={3} value={storyEditDraft.summary} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, summary: event.target.value })} placeholder="Short summary" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
+                          <textarea rows={4} value={storyEditDraft.description} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, description: event.target.value })} placeholder="Long description" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <input value={storyEditDraft.theme} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, theme: event.target.value })} placeholder="Theme" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
+                            <input value={storyEditDraft.status} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, status: event.target.value })} placeholder="Status" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
+                          </div>
+                          <input value={storyEditDraft.selFocus} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, selFocus: event.target.value })} placeholder="SEL focus separated by commas" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
+                          <div className="flex flex-wrap gap-2">
+                            {selFocusOptions.map((option) => {
+                              const selected = splitCsv(storyEditDraft.selFocus).includes(option);
+                              return (
+                                <button
+                                  key={`edit-${option}`}
+                                  type="button"
+                                  onClick={() =>
+                                    setStoryEditDraft((prev) => {
+                                      const nextValues = splitCsv(prev.selFocus);
+                                      return {
+                                        ...prev,
+                                        selFocus: nextValues.includes(option)
+                                          ? nextValues.filter((value) => value !== option).join(", ")
+                                          : [...nextValues, option].join(", "),
+                                      };
+                                    })
+                                  }
+                                  className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
+                                    selected
+                                      ? "bg-fuchsia-500/20 text-fuchsia-200 ring-1 ring-fuchsia-400/40"
+                                      : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
+                                  }`}
+                                >
+                                  {prettifySelFocus(option)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <button onClick={() => void handleSaveStory()} disabled={!selectedStoryId || savingStory || !storyEditDraft.title.trim()} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-rose-600 to-cyan-500 px-5 py-3 font-bold disabled:opacity-60">
+                            <PencilLine size={18} />
+                            {savingStory ? "Saving Story..." : "Save Story Changes"}
+                          </button>
+                        </div>
+                      ) : null}
+                      <div className="mt-5 rounded-[1.35rem] border border-cyan-400/15 bg-cyan-500/5 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold text-white">Regenerate Story Content</p>
+                            <p className="mt-1 text-sm leading-6 text-slate-400">
+                              Use this when the story needs a stronger rewrite. It refreshes the story body, chapters, and story questions from the saved brief.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void handleRegenerateStory()}
+                            disabled={!selectedStoryId || regeneratingStory}
+                            className="hidden rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60 md:inline-flex"
+                          >
+                            {regeneratingStory ? "Working..." : "Run Now"}
+                          </button>
+                        </div>
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                          <input value={regenerateDraft.theme} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, theme: event.target.value })} placeholder="Theme override" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
+                          <input type="number" value={regenerateDraft.chapterCount} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, chapterCount: Number(event.target.value) || 1 })} placeholder="Chapter count" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
+                        </div>
+                        <input value={regenerateDraft.selFocus} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, selFocus: event.target.value })} placeholder="SEL focus separated by commas" className="mt-4 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
+                        <textarea rows={2} value={regenerateDraft.tone} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, tone: event.target.value })} placeholder="Tone" className="mt-4 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
+                        <textarea rows={4} value={regenerateDraft.customPromptNotes} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, customPromptNotes: event.target.value })} placeholder="Custom prompt notes" className="mt-4 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
+                        <label className="mt-4 flex items-center gap-3 text-sm text-slate-300">
+                          <input type="checkbox" checked={regenerateDraft.clearCoverImage} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, clearCoverImage: event.target.checked })} className="h-4 w-4 rounded border-white/20 bg-slate-950/70" />
+                          Clear the old cover image so a fresh one can be generated after the rewrite.
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => void handleRegenerateStory()}
+                          disabled={!selectedStoryId || regeneratingStory}
+                          className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-bold text-slate-950 disabled:opacity-60 md:hidden"
+                        >
+                          <RotateCcw size={18} />
+                          {regeneratingStory ? "Regenerating Story..." : "Regenerate Story"}
+                        </button>
+                      </div>
                       <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                         <div className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-slate-900/70">
                           {selectedCoverImage ? (

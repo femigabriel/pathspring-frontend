@@ -456,12 +456,17 @@ export default function LoginPage() {
 
           case "TEACHER":
             console.log("→ Redirecting to teacher dashboard");
-            router.push("/admin/story-book");
+            router.push("/teacher/dashboard");
             break;
 
           case "STUDENT":
             console.log("→ Redirecting to student dashboard");
             router.push("/student/dashboard");
+            break;
+
+          case "PARENT":
+            console.log("Redirecting to parent dashboard");
+            router.push("/parent/dashboard");
             break;
 
           default:

@@ -75,7 +75,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const userRole = storedUser?.role;
-      const endpoint = userRole === "STUDENT" ? "/api/v1/auth/students/me" : "/api/v1/auth/me";
+      const endpoint =
+        userRole === "STUDENT"
+          ? "/api/v1/auth/students/me"
+          : userRole === "PARENT"
+            ? "/api/v1/parents/me"
+            : "/api/v1/auth/me";
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
@@ -113,6 +118,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               classroom: data.student.profile?.classroom ?? storedUser?.classroom ?? null,
               lastLoginAt: data.student.lastLoginAt ?? storedUser?.lastLoginAt ?? null,
             }
+          : userRole === "PARENT" && data.parent
+            ? {
+                ...(storedUser ?? {}),
+                id: data.parent.id ?? storedUser?.id ?? "",
+                role: "PARENT" as const,
+                email: data.parent.email ?? storedUser?.email,
+                fullName: data.parent.fullName ?? storedUser?.fullName,
+                phone: data.parent.phone ?? storedUser?.phone ?? null,
+                isActive:
+                  typeof data.parent.isActive === "boolean"
+                    ? data.parent.isActive
+                    : storedUser?.isActive,
+                lastLoginAt: data.parent.lastLoginAt ?? storedUser?.lastLoginAt ?? null,
+              }
           : {
               ...(storedUser ?? {}),
               ...(data.user ?? {}),
@@ -126,6 +145,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               schoolCode: data.student.school.schoolCode ?? storedSchool?.schoolCode ?? "",
               logo: data.student.school.logo ?? storedSchool?.logo ?? null,
             }
+          : userRole === "PARENT" && data.parent?.students?.[0]?.school
+            ? {
+                id: data.parent.students[0].school.id ?? storedSchool?.id ?? "",
+                name: data.parent.students[0].school.name ?? storedSchool?.name ?? "PathSpring School",
+                schoolCode: data.parent.students[0].school.schoolCode ?? storedSchool?.schoolCode ?? "",
+                logo: data.parent.students[0].school.logo ?? storedSchool?.logo ?? null,
+              }
           : data.school ?? storedSchool ?? null;
 
       setUser(nextUser);
