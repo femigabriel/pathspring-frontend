@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookMarked, BookOpen, ClipboardCheck, ClipboardList, Home, LogOut, X } from "lucide-react";
+import { BookMarked, BookOpen, Brain, ClipboardCheck, ClipboardList, Home, LogOut, X } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 interface StudentSidebarProps {
@@ -14,6 +14,7 @@ interface StudentSidebarProps {
 const menuItems = [
   { name: "My Space", href: "/student/dashboard", icon: Home },
   { name: "Bookshelf", href: "/student/books", icon: BookMarked },
+  { name: "SEL Corner", href: "/student/sel", icon: Brain },
   { name: "Quiz Time", href: "/student/quizzes", icon: ClipboardCheck },
   { name: "Story Activities", href: "/student/activities", icon: ClipboardList },
 ];

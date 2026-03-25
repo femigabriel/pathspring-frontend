@@ -15,6 +15,7 @@ export interface SchoolStoryContent {
   theme?: string;
   subject?: string;
   gradeLevels?: string[];
+  selFocus?: string[];
   publishedAt?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -197,6 +198,7 @@ const normalizeContent = (value: unknown): SchoolStoryContent | null => {
     theme: typeof value.theme === "string" ? value.theme : undefined,
     subject: typeof value.subject === "string" ? value.subject : undefined,
     gradeLevels: toStringArray(value.gradeLevels),
+    selFocus: toStringArray(value.selFocus),
     publishedAt: typeof value.publishedAt === "string" ? value.publishedAt : undefined,
     createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : undefined,

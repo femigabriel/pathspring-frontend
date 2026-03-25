@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   CheckCircle2,
+  Filter,
   Image as ImageIcon,
   Layers,
   LogOut,
@@ -38,6 +39,7 @@ import {
   type PlatformContentItem,
   type PlatformSchool,
 } from "@/src/lib/platform-api";
+import { prettifySelFocus, selFocusDescriptions, selFocusOptions } from "@/src/lib/sel-focus";
 
 type PremiumTab = "overview" | "content" | "generate" | "schools" | "analytics";
 
@@ -65,6 +67,12 @@ const getStoryId = (bundle: PlatformBundle | null) =>
 
 const prettyDate = (value?: string) =>
   value ? new Date(value).toLocaleDateString() : "Recently updated";
+
+const splitCsv = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const EmptyPanel = ({ title, body }: { title: string; body: string }) => (
   <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/45 px-6 text-center">
@@ -103,6 +111,7 @@ export default function PremiumAdminDashboard() {
   const [openingId, setOpeningId] = useState("");
   const [generatingImagesId, setGeneratingImagesId] = useState("");
   const [addingActivity, setAddingActivity] = useState(false);
+  const [selFocusFilter, setSelFocusFilter] = useState<string[]>([]);
   const [draft, setDraft] = useState({
     title: "Tolu and the Whispering Drum",
     ageRangeMin: 8,
@@ -110,6 +119,7 @@ export default function PremiumAdminDashboard() {
     gradeLevels: "Primary 4, Primary 5",
     subject: "Language Arts",
     skillFocus: "Comprehension, Critical Thinking, Empathy",
+    selFocus: "self-awareness, relationship-skills, responsible-decision-making",
     difficulty: "intermediate",
     language: "en",
     theme: "courage",
@@ -155,7 +165,9 @@ export default function PremiumAdminDashboard() {
     setLoading({ content: true, analytics: true, schools: true });
 
     const [contentResult, analyticsResult, schoolsResult] = await Promise.allSettled([
-      getPlatformContentItems(),
+      getPlatformContentItems({
+        selFocus: selFocusFilter,
+      }),
       getPlatformContentAnalytics(),
       getPlatformSchools(),
     ]);
@@ -198,7 +210,7 @@ export default function PremiumAdminDashboard() {
   useEffect(() => {
     if (!authorized) return;
     void refreshData();
-  }, [authorized]);
+  }, [authorized, selFocusFilter]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -213,6 +225,7 @@ export default function PremiumAdminDashboard() {
         gradeLevels: draft.gradeLevels.split(",").map((item) => item.trim()).filter(Boolean),
         subject: draft.subject,
         skillFocus: draft.skillFocus.split(",").map((item) => item.trim()).filter(Boolean),
+        selFocus: splitCsv(draft.selFocus),
         difficulty: draft.difficulty,
         estimatedStoryDurationMinutes: 20,
         language: draft.language,
@@ -347,10 +360,15 @@ export default function PremiumAdminDashboard() {
   const selectedBundleId = getBundleId(selectedBundle);
   const selectedStoryId = getStoryId(selectedBundle);
   const selectedCoverImage = selectedBundle?.story?.content.coverImageUrl;
+  const selectedSelFocus =
+    selectedBundle?.story?.content.selFocus ??
+    selectedBundle?.contentPack?.selFocus ??
+    selectedBundle?.requestedContent?.selFocus ??
+    [];
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.14),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] text-white">
-      <aside className={`fixed inset-y-0 left-0 z-40 w-80 border-r border-white/10 bg-slate-950/95 px-5 py-6 backdrop-blur-2xl transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-80 flex-col overflow-y-auto border-r border-white/10 bg-slate-950/95 px-5 py-6 backdrop-blur-2xl transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="mb-8 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="rounded-2xl bg-gradient-to-br from-fuchsia-500 via-rose-500 to-cyan-400 p-3">
@@ -390,7 +408,7 @@ export default function PremiumAdminDashboard() {
           })}
         </nav>
 
-        <div className="mt-8 space-y-2 border-t border-white/10 pt-6">
+        <div className="mt-auto space-y-2 border-t border-white/10 pt-6">
           <button className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-300">
             <Settings size={18} />
             <span className="font-semibold">Workspace Settings</span>
@@ -465,7 +483,7 @@ export default function PremiumAdminDashboard() {
             <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
               <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
                 <h2 className="text-2xl font-black">Story Creation Studio</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-400">This form now sends the full generation brief expected by the backend.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">This form now sends the full generation brief expected by the backend, including social-emotional learning focus areas.</p>
                 <div className="mt-6 space-y-4">
                   <input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Bundle title" />
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -482,6 +500,55 @@ export default function PremiumAdminDashboard() {
                   </div>
                   <input value={draft.gradeLevels} onChange={(event) => setDraft({ ...draft, gradeLevels: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Grade levels separated by commas" />
                   <input value={draft.skillFocus} onChange={(event) => setDraft({ ...draft, skillFocus: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Skill focus separated by commas" />
+                  <div className="space-y-3">
+                    <input value={draft.selFocus} onChange={(event) => setDraft({ ...draft, selFocus: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="SEL focus separated by commas" />
+                    <p className="text-sm leading-6 text-slate-400">
+                      Choose one or more social-emotional learning goals. These tags stay attached to the generated bundle and help you filter the library later.
+                    </p>
+                  </div>
+                  <div className="rounded-[1.4rem] border border-white/10 bg-slate-950/45 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quick SEL Picks</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selFocusOptions.map((option) => {
+                        const selected = splitCsv(draft.selFocus).includes(option);
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setDraft((prev) => {
+                                const nextValues = splitCsv(prev.selFocus);
+                                return {
+                                  ...prev,
+                                  selFocus: nextValues.includes(option)
+                                    ? nextValues.filter((value) => value !== option).join(", ")
+                                    : [...nextValues, option].join(", "),
+                                };
+                              })
+                            }
+                            className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
+                              selected
+                                ? "bg-fuchsia-500/20 text-fuchsia-200 ring-1 ring-fuchsia-400/40"
+                                : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
+                            }`}
+                          >
+                            {prettifySelFocus(option)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="rounded-[1.4rem] border border-fuchsia-400/20 bg-gradient-to-br from-fuchsia-500/10 via-slate-950/60 to-cyan-500/10 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-fuchsia-200">SEL Guide</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {selFocusOptions.map((option) => (
+                        <div key={option} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                          <p className="text-sm font-semibold text-white">{prettifySelFocus(option)}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-400">{selFocusDescriptions[option]}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <textarea rows={3} value={draft.topic} onChange={(event) => setDraft({ ...draft, topic: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Topic" />
                   <textarea rows={3} value={draft.moralLesson} onChange={(event) => setDraft({ ...draft, moralLesson: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Moral lesson" />
                   <button onClick={() => void handleGenerate()} disabled={generating} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-rose-600 to-cyan-500 px-5 py-3 font-bold disabled:opacity-60"><Wand2 size={18} />{generating ? "Generating Bundle..." : "Generate Premium Bundle"}</button>
@@ -494,6 +561,15 @@ export default function PremiumAdminDashboard() {
                     <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
                       <h3 className="text-3xl font-black">{getBundleTitle(selectedBundle)}</h3>
                       <p className="mt-3 text-sm leading-7 text-slate-300">{selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? draft.topic}</p>
+                      {selectedSelFocus.length > 0 ? (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {selectedSelFocus.map((item) => (
+                            <span key={item} className="rounded-full bg-fuchsia-500/18 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-200">
+                              {prettifySelFocus(item)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
                       <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950/55">
@@ -544,14 +620,54 @@ export default function PremiumAdminDashboard() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 className="text-2xl font-black">Content Library</h2>
-                    <p className="mt-2 text-sm text-slate-400">This now reads the real bundle format returned by the backend.</p>
+                    <p className="mt-2 text-sm text-slate-400">This now reads the real bundle format returned by the backend, including SEL focus.</p>
                   </div>
                   <button onClick={() => navigateTo("generate")} className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-rose-600 to-cyan-500 px-5 py-3 font-bold"><Plus size={18} />New Bundle</button>
+                </div>
+                <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-slate-950/45 p-4">
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <Filter size={16} />
+                    <p className="text-sm font-semibold">Filter by SEL Focus</p>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selFocusOptions.map((option) => {
+                      const selected = selFocusFilter.includes(option);
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() =>
+                            setSelFocusFilter((current) =>
+                              current.includes(option)
+                                ? current.filter((value) => value !== option)
+                                : [...current, option],
+                            )
+                          }
+                          className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
+                            selected
+                              ? "bg-cyan-500/20 text-cyan-200 ring-1 ring-cyan-400/40"
+                              : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {prettifySelFocus(option)}
+                        </button>
+                      );
+                    })}
+                    {selFocusFilter.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelFocusFilter([])}
+                        className="rounded-full bg-red-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-red-200 ring-1 ring-red-400/20"
+                      >
+                        Clear Filter
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-white/10">
                   <div className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 border-b border-white/10 bg-slate-950/55 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"><span>Bundle</span><span>Subject</span><span>Status</span><span className="text-right">Action</span></div>
                   <div className="divide-y divide-white/5">
-                    {loading.content ? <div className="px-5 py-10 text-center text-sm text-slate-400">Loading premium bundles...</div> : libraryItems.length === 0 ? <div className="px-5 py-10 text-center text-sm text-slate-400">No premium bundles were returned by the backend yet.</div> : libraryItems.map((item) => <div key={item._id} className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 px-5 py-4 text-sm text-slate-300"><div><p className="font-semibold">{item.title}</p><p className="mt-1 text-xs text-slate-500">{prettyDate(item.updatedAt ?? item.createdAt)}</p></div><div className="text-slate-400">{item.subject ?? item.theme ?? "General"}</div><div><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">{item.status ?? "draft"}</span></div><div className="flex justify-end gap-2"><button onClick={() => void handleOpenBundle(item._id)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">{openingId === item._id ? "Opening..." : "View"}</button>{item.status !== "published" ? <button onClick={() => void handlePublish(item._id)} disabled={publishingId === item._id} className="rounded-xl bg-emerald-500 px-3 py-2 font-semibold text-slate-950 disabled:opacity-60">{publishingId === item._id ? "Publishing..." : "Publish"}</button> : null}</div></div>)}
+                    {loading.content ? <div className="px-5 py-10 text-center text-sm text-slate-400">Loading premium bundles...</div> : libraryItems.length === 0 ? <div className="px-5 py-10 text-center text-sm text-slate-400">{selFocusFilter.length > 0 ? "No premium bundles matched the selected SEL focus yet." : "No premium bundles were returned by the backend yet."}</div> : libraryItems.map((item) => <div key={item._id} className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 px-5 py-4 text-sm text-slate-300"><div><p className="font-semibold">{item.title}</p><p className="mt-1 text-xs text-slate-500">{prettyDate(item.updatedAt ?? item.createdAt)}</p>{item.selFocus?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{item.selFocus.slice(0, 2).map((focus) => <span key={focus} className="rounded-full bg-fuchsia-500/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-fuchsia-200">{prettifySelFocus(focus)}</span>)}</div> : null}</div><div className="text-slate-400">{item.subject ?? item.theme ?? "General"}</div><div><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">{item.status ?? "draft"}</span></div><div className="flex justify-end gap-2"><button onClick={() => void handleOpenBundle(item._id)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">{openingId === item._id ? "Opening..." : "View"}</button>{item.status !== "published" ? <button onClick={() => void handlePublish(item._id)} disabled={publishingId === item._id} className="rounded-xl bg-emerald-500 px-3 py-2 font-semibold text-slate-950 disabled:opacity-60">{publishingId === item._id ? "Publishing..." : "Publish"}</button> : null}</div></div>)}
                   </div>
                 </div>
               </section>
@@ -562,6 +678,15 @@ export default function PremiumAdminDashboard() {
                     <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
                       <h3 className="text-3xl font-black">{getBundleTitle(selectedBundle)}</h3>
                       <p className="mt-3 text-sm leading-7 text-slate-300">{selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? "No short description provided yet."}</p>
+                      {selectedSelFocus.length > 0 ? (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {selectedSelFocus.map((item) => (
+                            <span key={item} className="rounded-full bg-fuchsia-500/18 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-200">
+                              {prettifySelFocus(item)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                       <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
                         <div className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-slate-900/70">
                           {selectedCoverImage ? (

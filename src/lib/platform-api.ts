@@ -22,6 +22,7 @@ export interface PlatformContentItem {
   gradeLevels?: string[];
   subject?: string;
   skillFocus?: string[];
+  selFocus?: string[];
   estimatedDurationMinutes?: number;
   publication?: {
     publicationScope?: string;
@@ -117,6 +118,7 @@ export interface GeneratePlatformContentInput {
   gradeLevels: string[];
   subject: string;
   skillFocus: string[];
+  selFocus: string[];
   difficulty: string;
   estimatedStoryDurationMinutes?: number;
   language: string;
@@ -269,6 +271,7 @@ const normalizeContentItem = (value: unknown): PlatformContentItem | null => {
     gradeLevels: toStringArray(value.gradeLevels),
     subject: typeof value.subject === "string" ? value.subject : undefined,
     skillFocus: toStringArray(value.skillFocus),
+    selFocus: toStringArray(value.selFocus),
     estimatedDurationMinutes:
       typeof value.estimatedDurationMinutes === "number" ? value.estimatedDurationMinutes : undefined,
     publication: isRecord(value.publication)
@@ -445,8 +448,19 @@ const normalizeSchool = (value: unknown): PlatformSchool | null => {
   };
 };
 
-export const getPlatformContentItems = async () => {
-  const payload = await platformRequest<unknown>("/api/v1/platform/content");
+export const getPlatformContentItems = async (filters?: { selFocus?: string[] }) => {
+  const searchParams = new URLSearchParams();
+
+  filters?.selFocus?.forEach((value) => {
+    if (value.trim()) {
+      searchParams.append("selFocus", value.trim());
+    }
+  });
+
+  const query = searchParams.toString();
+  const payload = await platformRequest<unknown>(
+    `/api/v1/platform/content${query ? `?${query}` : ""}`,
+  );
   return pickArray(payload, ["contents", "data", "results"], normalizeContentItem);
 };
 
