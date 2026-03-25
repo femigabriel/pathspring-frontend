@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, ClipboardCheck, Clock3, School2, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, ClipboardCheck, Clock3, Eye, EyeOff, Lock, School2, Sparkles, User } from "lucide-react";
 import ParentShell from "@/src/components/parent/layout/ParentShell";
 import {
   getParentChildOverview,
@@ -25,6 +25,7 @@ export default function ParentChildOverviewPage({ childId }: { childId: string }
   const [overview, setOverview] = useState<ParentChildOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCredentials, setShowCredentials] = useState(false);
 
   useEffect(() => {
     const loadOverview = async () => {
@@ -151,6 +152,43 @@ export default function ParentChildOverviewPage({ childId }: { childId: string }
               <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl dark:border-white/10 dark:bg-white/5">
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">Reading snapshot</h2>
                 <div className="mt-5 space-y-4">
+                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/40">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Student Login</p>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Hidden by default for privacy.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowCredentials((current) => !current)}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
+                      >
+                        {showCredentials ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {showCredentials ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className={`rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/40 ${showCredentials ? "" : "hidden"}`}>
+                      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <User size={16} />
+                        <p className="text-xs uppercase tracking-[0.18em]">Student Username</p>
+                      </div>
+                      <p className="mt-2 text-xl font-black text-slate-900 dark:text-white">
+                        {showCredentials ? `@${child.username ?? "not-set"}` : "Hidden"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/40">
+                      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <Lock size={16} />
+                        <p className="text-xs uppercase tracking-[0.18em]">Student PIN</p>
+                      </div>
+                      <p className="mt-2 text-xl font-black text-slate-900 dark:text-white">••••</p>
+                    </div>
+                  </div>
+
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/40">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Submissions</p>
                     <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">

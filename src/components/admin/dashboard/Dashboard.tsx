@@ -11,9 +11,16 @@ import {
   filterStudentsForTeacher,
   filterTeachersForTeacher,
   getAdminDashboardSnapshot,
+  getTeacherDashboard,
   type AdminStudent,
+  type TeacherAssignmentOverviewItem,
+  type TeacherCompletionItem,
+  type TeacherDashboardData,
+  type TeacherLowScoreItem,
 } from "@/src/lib/admin-api";
 import {
+  AlertTriangle,
+  Bell,
   Users,
   GraduationCap,
   BookOpen,
@@ -27,6 +34,8 @@ import {
   Calendar,
   Award,
   Star,
+  ClipboardCheck,
+  Clock3,
   ChevronRight,
   X,
 } from "lucide-react";
@@ -75,6 +84,65 @@ const QuickAction = ({ icon: Icon, label, onClick, color }: any) => {
     </motion.button>
   );
 };
+
+const formatDateTime = (value?: string) =>
+  value
+    ? new Date(value).toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "No date";
+
+const TeacherAssignmentCard = ({ assignment }: { assignment: TeacherAssignmentOverviewItem }) => (
+  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/50 dark:shadow-none">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+          {assignment.title ?? "Story Assignment"}
+        </h3>
+        <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+          {assignment.classroomName ?? "Classroom not set"}
+        </p>
+      </div>
+      <span className="rounded-full bg-purple-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-purple-700 dark:bg-purple-500/10 dark:text-purple-300">
+        {assignment.status ?? "active"}
+      </span>
+    </div>
+    <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-gray-600 dark:text-slate-400">
+      <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-slate-900/50">
+        <p>Assigned</p>
+        <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{assignment.assignedCount ?? 0}</p>
+      </div>
+      <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-slate-900/50">
+        <p>Completed</p>
+        <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{assignment.completedCount ?? 0}</p>
+      </div>
+    </div>
+    <p className="mt-4 text-xs text-gray-500 dark:text-slate-400">
+      Due {assignment.dueAt ? formatDateTime(assignment.dueAt) : "when you decide"}
+    </p>
+  </div>
+);
+
+const TeacherEventCard = ({
+  title,
+  subtitle,
+  meta,
+  accent,
+}: {
+  title: string;
+  subtitle: string;
+  meta: string;
+  accent: string;
+}) => (
+  <div className={`rounded-xl border p-4 shadow-sm dark:shadow-none ${accent}`}>
+    <p className="text-sm font-semibold text-gray-900 dark:text-white">{title}</p>
+    <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">{subtitle}</p>
+    <p className="mt-3 text-xs text-gray-500 dark:text-slate-400">{meta}</p>
+  </div>
+);
 
 // Student Card Component
 const StudentCard = ({ student, workspaceBase }: any) => {
@@ -347,6 +415,7 @@ export default function AdminDashboard() {
   const [showCreateStudent, setShowCreateStudent] = useState(false);
   const [students, setStudents] = useState<AdminStudent[]>([]);
   const [teacherClassCount, setTeacherClassCount] = useState(0);
+  const [teacherDashboard, setTeacherDashboard] = useState<TeacherDashboardData | null>(null);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -365,36 +434,28 @@ export default function AdminDashboard() {
 
   const loadDashboard = async () => {
     try {
-      const snapshot = await getAdminDashboardSnapshot();
       if (isTeacher) {
+        const [teacherData, snapshot] = await Promise.all([
+          getTeacherDashboard(),
+          getAdminDashboardSnapshot(),
+        ]);
         const scopedClasses = filterClassesForTeacher(snapshot.classes, user);
         const scopedStudents = filterStudentsForTeacher(snapshot.students, snapshot.classes, user);
-        const scopedTeachers = filterTeachersForTeacher(snapshot.teachers, user);
-        const totalStories = scopedStudents.reduce((sum, student) => sum + (Number(student.storiesRead) || 0), 0);
-        const progressValues = scopedStudents
-          .map((student) => {
-            if (typeof student.progress === "number") return student.progress;
-            if (typeof student.completionRate === "number") return student.completionRate;
-            return null;
-          })
-          .filter((value): value is number => value !== null);
-        const avgProgress =
-          progressValues.length > 0
-            ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length)
-            : 0;
-
         setStudents(scopedStudents);
-        setTeacherClassCount(scopedClasses.length);
+        setTeacherDashboard(teacherData);
+        setTeacherClassCount(teacherData.summary.classCount || scopedClasses.length);
         setStats({
-          totalStudents: scopedStudents.length,
-          totalTeachers: scopedTeachers.length || 1,
-          totalStories,
-          avgProgress,
+          totalStudents: teacherData.summary.studentCount || scopedStudents.length,
+          totalTeachers: teacherData.summary.activeAssignments,
+          totalStories: teacherData.summary.completionsThisWeek,
+          avgProgress: teacherData.summary.lowScoreCount,
         });
         return;
       }
 
+      const snapshot = await getAdminDashboardSnapshot();
       setStudents(snapshot.students);
+      setTeacherDashboard(null);
       setTeacherClassCount(snapshot.classes.length);
       setStats(snapshot.stats);
     } catch (error) {

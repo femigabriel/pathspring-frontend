@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, HeartHandshake, Menu } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
@@ -26,9 +26,15 @@ export default function ParentHeader({ setSidebarOpen }: ParentHeaderProps) {
             <Menu size={20} className="text-gray-500 dark:text-slate-400" />
           </button>
           <div className="hidden md:block">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white md:text-lg">
-              Parent Portal
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white md:text-lg">
+                Parent Portal
+              </h2>
+              <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-300">
+                <HeartHandshake size={12} />
+                <span>Parent</span>
+              </div>
+            </div>
             <p className="text-xs text-gray-500 dark:text-slate-400">Follow your child&apos;s reading journey</p>
           </div>
         </div>

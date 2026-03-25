@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookMarked, BookOpen, Brain, ClipboardCheck, ClipboardList, Home, LogOut, X } from "lucide-react";
+import { BookMarked, BookOpen, Brain, ClipboardCheck, ClipboardList, Home, LogOut, Stars, X } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 interface StudentSidebarProps {
@@ -43,14 +43,28 @@ export default function StudentSidebar({ sidebarOpen, setSidebarOpen }: StudentS
       </div>
 
       <div className="mx-4 mt-5 rounded-[1.6rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-cyan-50 p-4 dark:border-white/10 dark:from-emerald-500/10 dark:to-cyan-500/10">
-        <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Reader</p>
-        <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
-          {user?.fullName ?? user?.username ?? "Young Reader"}
-        </p>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{school?.name ?? user?.school ?? "PathSpring School"}</p>
-        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
-          {user?.classroom?.name ?? user?.gradeLevel ?? "Story Explorer"}
-        </p>
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 text-white shadow-lg">
+            <span className="text-sm font-black">
+              {(user?.fullName ?? user?.username ?? "R").charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-bold text-slate-900 dark:text-white">
+              {user?.fullName ?? user?.username ?? "Young Reader"}
+            </p>
+            <p className="mt-1 truncate text-sm text-slate-600 dark:text-slate-300">
+              {user?.email ?? `@${user?.username ?? "reader"}`}
+            </p>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+              <Stars size={12} />
+              <span>Student</span>
+            </div>
+            <p className="mt-2 text-xs uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+              {user?.classroom?.name ?? user?.gradeLevel ?? "Story Explorer"}
+            </p>
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 space-y-2 px-4 py-5">

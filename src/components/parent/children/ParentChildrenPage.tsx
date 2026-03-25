@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake, School2, Users } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, HeartHandshake, Lock, School2, User, Users } from "lucide-react";
 import ParentShell from "@/src/components/parent/layout/ParentShell";
 import { getParentChildren, type ParentChild } from "@/src/lib/parent-api";
 
@@ -10,6 +10,7 @@ export default function ParentChildrenPage() {
   const [children, setChildren] = useState<ParentChild[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [visibleCredentials, setVisibleCredentials] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadChildren = async () => {
@@ -90,6 +91,34 @@ export default function ParentChildrenPage() {
                   <div className="flex items-center gap-2">
                     <Users size={16} className="text-cyan-500" />
                     <span>{child.classroomName ?? "Classroom not set yet"}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      Student Login
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setVisibleCredentials((current) => ({
+                          ...current,
+                          [child.id]: !current[child.id],
+                        }));
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
+                    >
+                      {visibleCredentials[child.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {visibleCredentials[child.id] ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User size={16} className="text-rose-500" />
+                    <span>{visibleCredentials[child.id] ? `@${child.username ?? "not-set"}` : "Credentials hidden"}</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${visibleCredentials[child.id] ? "" : "hidden"}`}>
+                    <Lock size={16} className="text-emerald-500" />
+                    <span>PIN: ••••</span>
                   </div>
                 </div>
 

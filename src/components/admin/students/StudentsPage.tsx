@@ -29,6 +29,7 @@ import {
   Calendar,
   Star,
   Eye,
+  EyeOff,
   UserPlus,
   RefreshCw,
   Mail,
@@ -79,6 +80,7 @@ const Notification = ({ message, type, onClose }: { message: string; type: "succ
 // ============ STUDENT CARD COMPONENT ============
 const StudentCard = ({ student, classes, onEdit, onDelete, onView, onLinkParent }: any) => {
   const studentClass = classes.find((c: any) => c.id === student.classroom);
+  const [showCredentials, setShowCredentials] = useState(false);
   
   return (
     <motion.div
@@ -159,6 +161,28 @@ const StudentCard = ({ student, classes, onEdit, onDelete, onView, onLinkParent 
             <Phone size={14} />
             <span>{student.parentPhone || "No phone"}</span>
           </div>
+          <div className="flex items-center justify-between rounded-xl border border-dashed border-gray-200 bg-gray-50/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/40">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-slate-400">
+              <Lock size={14} />
+              <span>Student Login</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowCredentials((current) => !current)}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {showCredentials ? <EyeOff size={14} /> : <Eye size={14} />}
+              {showCredentials ? "Hide" : "Show"}
+            </button>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
+            <User size={14} />
+            <span>{showCredentials ? `@${student.username || "not-set"}` : "Credentials hidden"}</span>
+          </div>
+          <div className={`flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400 ${showCredentials ? "" : "hidden"}`}>
+            <Lock size={14} />
+            <span>PIN: ••••</span>
+          </div>
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
             <Calendar size={14} />
             <span>Age: {student.age || "N/A"} years</span>
@@ -184,6 +208,7 @@ const StudentCard = ({ student, classes, onEdit, onDelete, onView, onLinkParent 
 // ============ STUDENT TABLE ROW COMPONENT ============
 const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, onLinkParent, index }: any) => {
   const studentClass = classes.find((c: any) => c.id === student.classroom);
+  const [showCredentials, setShowCredentials] = useState(false);
   
   return (
     <motion.tr
@@ -205,7 +230,10 @@ const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, onLinkPar
           </div>
           <div>
             <p className="font-medium text-gray-900 dark:text-white">{student.fullName}</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400">@{student.username || student.fullName?.toLowerCase().replace(" ", ".")}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              {showCredentials ? `@${student.username || student.fullName?.toLowerCase().replace(" ", ".")}` : "Credentials hidden"}
+            </p>
+            <p className={`text-xs text-gray-400 dark:text-slate-500 ${showCredentials ? "" : "hidden"}`}>PIN: ••••</p>
           </div>
         </div>
           </td>
@@ -240,6 +268,18 @@ const StudentTableRow = ({ student, classes, onEdit, onDelete, onView, onLinkPar
           </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCredentials((current) => !current)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            title={showCredentials ? "Hide login details" : "Show login details"}
+          >
+            {showCredentials ? (
+              <EyeOff size={16} className="text-gray-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400" />
+            ) : (
+              <Eye size={16} className="text-gray-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400" />
+            )}
+          </button>
           <button
             onClick={() => onView(student)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
@@ -783,6 +823,7 @@ const EditStudentModal = ({ isOpen, onClose, onUpdate, student, classes, showNot
 // ============ VIEW STUDENT MODAL ============
 const ViewStudentModal = ({ student, classes, isOpen, onClose }: any) => {
   const studentClass = classes.find((c: any) => c.id === student?.classroom);
+  const [showCredentials, setShowCredentials] = useState(false);
   
   if (!isOpen || !student) return null;
 
@@ -887,15 +928,30 @@ const ViewStudentModal = ({ student, classes, isOpen, onClose }: any) => {
 
           {/* Login Info */}
           <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Login Information</h3>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Login Information</h3>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Hidden by default for privacy.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCredentials((current) => !current)}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                {showCredentials ? <EyeOff size={14} /> : <Eye size={14} />}
+                {showCredentials ? "Hide" : "Show"}
+              </button>
+            </div>
             <div className="flex items-center gap-3">
               <User size={18} className="text-yellow-600 dark:text-yellow-400" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-slate-400">Username</p>
-                <p className="text-gray-900 dark:text-white font-mono">@{student.username || student.fullName?.toLowerCase().replace(" ", ".")}</p>
+                <p className="text-gray-900 dark:text-white font-mono">
+                  {showCredentials ? `@${student.username || student.fullName?.toLowerCase().replace(" ", ".")}` : "Hidden"}
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-3 ${showCredentials ? "" : "hidden"}`}>
               <Lock size={18} className="text-red-600 dark:text-red-400" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-slate-400">PIN</p>

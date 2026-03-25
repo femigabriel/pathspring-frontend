@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, Search, ChevronDown, X } from "lucide-react";
+import { Menu, Search, ChevronDown, X, Shield, UserCog } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import ThemeToggle from "./ThemeToggle";
@@ -18,6 +18,9 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const isTeacher = user?.role === "TEACHER";
+  const HeaderBadgeIcon = isTeacher ? UserCog : Shield;
+  const headerBadgeLabel = isTeacher ? "Teacher" : "Admin";
 
   useEffect(() => {
     const checkMobile = () => {
@@ -40,11 +43,17 @@ const Header = ({ setSidebarOpen }: HeaderProps) => {
             <Menu size={20} className="text-gray-500 dark:text-slate-400" />
           </button>
           <div className="hidden md:block">
-            <h2 className="text-sm md:text-lg font-semibold text-gray-900 dark:text-white">
-              {school?.name || "PathSpring"}
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm md:text-lg font-semibold text-gray-900 dark:text-white">
+                {school?.name || "PathSpring"}
+              </h2>
+              <div className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-purple-700 dark:border-purple-400/30 dark:bg-purple-500/10 dark:text-purple-300">
+                <HeaderBadgeIcon size={12} />
+                <span>{headerBadgeLabel}</span>
+              </div>
+            </div>
             <p className="text-xs text-gray-500 dark:text-slate-400 hidden md:block">
-              {user?.role?.replace("_", " ")}
+              {isTeacher ? "Classroom and student workspace" : "School operations workspace"}
             </p>
           </div>
         </div>

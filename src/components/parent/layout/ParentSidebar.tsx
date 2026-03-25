@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Home, LogOut, Users, X } from "lucide-react";
+import { Bell, HeartHandshake, Home, LogOut, Users, X } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 interface ParentSidebarProps {
@@ -41,11 +41,26 @@ export default function ParentSidebar({ sidebarOpen, setSidebarOpen }: ParentSid
       </div>
 
       <div className="mx-4 mt-5 rounded-[1.6rem] border border-rose-100 bg-gradient-to-br from-rose-50 to-amber-50 p-4 dark:border-white/10 dark:from-rose-500/10 dark:to-amber-500/10">
-        <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Parent</p>
-        <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
-          {user?.fullName ?? user?.email ?? "Parent"}
-        </p>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <div className="flex items-start gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg">
+            <span className="text-sm font-black">
+              {(user?.fullName ?? user?.email ?? "P").charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-bold text-slate-900 dark:text-white">
+              {user?.fullName ?? "Parent"}
+            </p>
+            <p className="mt-1 truncate text-sm text-slate-600 dark:text-slate-300">
+              {user?.email ?? "No email"}
+            </p>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-300">
+              <HeartHandshake size={12} />
+              <span>Parent</span>
+            </div>
+          </div>
+        </div>
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
           Read-only child progress and school updates
         </p>
       </div>

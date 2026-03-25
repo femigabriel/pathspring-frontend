@@ -100,6 +100,62 @@ interface DashboardSnapshot {
   };
 }
 
+export interface TeacherAssignmentOverviewItem {
+  id: string;
+  contentId?: string;
+  title?: string;
+  classroomId?: string;
+  classroomName?: string;
+  dueAt?: string;
+  status?: string;
+  assignedCount?: number;
+  completedCount?: number;
+  inProgressCount?: number;
+  overdueCount?: number;
+  notStartedCount?: number;
+  [key: string]: unknown;
+}
+
+export interface TeacherCompletionItem {
+  id: string;
+  studentId?: string;
+  studentName?: string;
+  contentId?: string;
+  contentTitle?: string;
+  score?: number;
+  completedAt?: string;
+  classroomName?: string;
+  [key: string]: unknown;
+}
+
+export interface TeacherLowScoreItem {
+  id: string;
+  studentId?: string;
+  studentName?: string;
+  contentId?: string;
+  contentTitle?: string;
+  score?: number;
+  classroomName?: string;
+  submittedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface TeacherDashboardData {
+  summary: {
+    classCount: number;
+    studentCount: number;
+    activeAssignments: number;
+    overdueAssignments: number;
+    completionsThisWeek: number;
+    lowScoreCount: number;
+    unreadNotifications: number;
+  };
+  classes: AdminClassroom[];
+  assignments: TeacherAssignmentOverviewItem[];
+  recentCompletions: TeacherCompletionItem[];
+  lowScoreStudents: TeacherLowScoreItem[];
+}
+
 interface RequestResult<T> {
   data: T;
   path: string;
@@ -295,6 +351,82 @@ const normalizeClassroom = (classroom: AdminClassroom) => ({
   isActive: typeof classroom.isActive === "boolean" ? classroom.isActive : true,
 });
 
+const normalizeTeacherAssignmentOverview = (
+  assignment: Record<string, unknown>,
+): TeacherAssignmentOverviewItem => ({
+  ...assignment,
+  id: typeof (assignment.id ?? assignment._id) === "string" ? String(assignment.id ?? assignment._id) : "",
+  contentId: typeof assignment.contentId === "string" ? assignment.contentId : undefined,
+  title:
+    typeof assignment.title === "string"
+      ? assignment.title
+      : typeof assignment.contentTitle === "string"
+        ? assignment.contentTitle
+        : typeof assignment.name === "string"
+          ? assignment.name
+          : undefined,
+  classroomId: typeof assignment.classroomId === "string" ? assignment.classroomId : undefined,
+  classroomName:
+    typeof assignment.classroomName === "string"
+      ? assignment.classroomName
+      : typeof assignment.className === "string"
+        ? assignment.className
+        : undefined,
+  dueAt: typeof assignment.dueAt === "string" ? assignment.dueAt : undefined,
+  status: typeof assignment.status === "string" ? assignment.status : undefined,
+  assignedCount: typeof assignment.assignedCount === "number" ? assignment.assignedCount : 0,
+  completedCount: typeof assignment.completedCount === "number" ? assignment.completedCount : 0,
+  inProgressCount: typeof assignment.inProgressCount === "number" ? assignment.inProgressCount : 0,
+  overdueCount: typeof assignment.overdueCount === "number" ? assignment.overdueCount : 0,
+  notStartedCount: typeof assignment.notStartedCount === "number" ? assignment.notStartedCount : 0,
+});
+
+const normalizeTeacherCompletion = (
+  item: Record<string, unknown>,
+): TeacherCompletionItem => ({
+  ...item,
+  id: typeof (item.id ?? item._id) === "string" ? String(item.id ?? item._id) : "",
+  studentId: typeof item.studentId === "string" ? item.studentId : undefined,
+  studentName:
+    typeof item.studentName === "string"
+      ? item.studentName
+      : typeof item.fullName === "string"
+        ? item.fullName
+        : undefined,
+  contentId: typeof item.contentId === "string" ? item.contentId : undefined,
+  contentTitle:
+    typeof item.contentTitle === "string"
+      ? item.contentTitle
+      : typeof item.title === "string"
+        ? item.title
+        : undefined,
+  score: typeof item.score === "number" ? item.score : undefined,
+  completedAt:
+    typeof item.completedAt === "string"
+      ? item.completedAt
+      : typeof item.submittedAt === "string"
+        ? item.submittedAt
+        : undefined,
+  classroomName:
+    typeof item.classroomName === "string"
+      ? item.classroomName
+      : typeof item.className === "string"
+        ? item.className
+        : undefined,
+});
+
+const normalizeTeacherLowScore = (
+  item: Record<string, unknown>,
+): TeacherLowScoreItem => ({
+  ...normalizeTeacherCompletion(item),
+  submittedAt:
+    typeof item.submittedAt === "string"
+      ? item.submittedAt
+      : typeof item.completedAt === "string"
+        ? item.completedAt
+        : undefined,
+});
+
 export const getAdminStudents = async () => {
   const { data } = await requestJsonFromCandidates<unknown>([
     "/api/v1/school/students",
@@ -421,5 +553,44 @@ export const getAdminDashboardSnapshot = async (): Promise<DashboardSnapshot> =>
       totalStories,
       avgProgress,
     },
+  };
+};
+
+export const getTeacherDashboard = async (): Promise<TeacherDashboardData> => {
+  const { data } = await requestJson<unknown>("/api/v1/school/teacher-dashboard");
+  const record = isRecord(data) ? data : {};
+  const summaryRecord = isRecord(record.summary)
+    ? record.summary
+    : isRecord(record.cards)
+      ? record.cards
+      : {};
+
+  return {
+    summary: {
+      classCount: typeof summaryRecord.classCount === "number" ? summaryRecord.classCount : 0,
+      studentCount: typeof summaryRecord.studentCount === "number" ? summaryRecord.studentCount : 0,
+      activeAssignments:
+        typeof summaryRecord.activeAssignments === "number" ? summaryRecord.activeAssignments : 0,
+      overdueAssignments:
+        typeof summaryRecord.overdueAssignments === "number" ? summaryRecord.overdueAssignments : 0,
+      completionsThisWeek:
+        typeof summaryRecord.completionsThisWeek === "number" ? summaryRecord.completionsThisWeek : 0,
+      lowScoreCount: typeof summaryRecord.lowScoreCount === "number" ? summaryRecord.lowScoreCount : 0,
+      unreadNotifications:
+        typeof summaryRecord.unreadNotifications === "number" ? summaryRecord.unreadNotifications : 0,
+    },
+    classes: pickArray<AdminClassroom>(record, ["classes", "classrooms"]).map(normalizeClassroom),
+    assignments: pickArray<Record<string, unknown>>(record, [
+      "assignments",
+      "assignmentOverview",
+    ]).map(normalizeTeacherAssignmentOverview),
+    recentCompletions: pickArray<Record<string, unknown>>(record, [
+      "recentCompletions",
+      "completions",
+    ]).map(normalizeTeacherCompletion),
+    lowScoreStudents: pickArray<Record<string, unknown>>(record, [
+      "lowScoreStudents",
+      "lowScores",
+    ]).map(normalizeTeacherLowScore),
   };
 };

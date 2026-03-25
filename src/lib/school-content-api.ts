@@ -78,11 +78,38 @@ export interface SchoolContentAssignment {
   id: string;
   contentId?: string;
   classroomId?: string;
+  title?: string;
+  classroomName?: string;
   studentUserIds: string[];
   dueAt?: string;
   notes?: string;
   createdAt?: string;
   [key: string]: unknown;
+}
+
+export interface SchoolAssignmentTrackingRow {
+  id: string;
+  studentId?: string;
+  studentName?: string;
+  username?: string;
+  classroomName?: string;
+  status?: string;
+  progress?: number;
+  score?: number;
+  submittedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface SchoolAssignmentTracking {
+  assignment: SchoolContentAssignment | null;
+  summary: {
+    assigned: number;
+    completed: number;
+    inProgress: number;
+    notStarted: number;
+    overdue: number;
+  };
+  rows: SchoolAssignmentTrackingRow[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -285,10 +312,58 @@ const normalizeAssignment = (value: unknown): SchoolContentAssignment | null => 
     id,
     contentId: typeof value.contentId === "string" ? value.contentId : undefined,
     classroomId: typeof value.classroomId === "string" ? value.classroomId : undefined,
+    title:
+      typeof value.title === "string"
+        ? value.title
+        : typeof value.contentTitle === "string"
+          ? value.contentTitle
+          : undefined,
+    classroomName:
+      typeof value.classroomName === "string"
+        ? value.classroomName
+        : typeof value.className === "string"
+          ? value.className
+          : undefined,
     studentUserIds: toStringArray(value.studentUserIds),
     dueAt: typeof value.dueAt === "string" ? value.dueAt : undefined,
     notes: typeof value.notes === "string" ? value.notes : undefined,
     createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined,
+  };
+};
+
+const normalizeAssignmentTrackingRow = (value: unknown): SchoolAssignmentTrackingRow | null => {
+  if (!isRecord(value)) return null;
+
+  const rawId = value.id ?? value._id ?? value.studentId;
+  const id = typeof rawId === "string" ? rawId : "";
+  if (!id) return null;
+
+  return {
+    ...value,
+    id,
+    studentId: typeof value.studentId === "string" ? value.studentId : undefined,
+    studentName:
+      typeof value.studentName === "string"
+        ? value.studentName
+        : typeof value.fullName === "string"
+          ? value.fullName
+          : undefined,
+    username: typeof value.username === "string" ? value.username : undefined,
+    classroomName:
+      typeof value.classroomName === "string"
+        ? value.classroomName
+        : typeof value.className === "string"
+          ? value.className
+          : undefined,
+    status: typeof value.status === "string" ? value.status : undefined,
+    progress: typeof value.progress === "number" ? value.progress : undefined,
+    score: typeof value.score === "number" ? value.score : undefined,
+    submittedAt:
+      typeof value.submittedAt === "string"
+        ? value.submittedAt
+        : typeof value.completedAt === "string"
+          ? value.completedAt
+          : undefined,
   };
 };
 
@@ -353,6 +428,35 @@ export const getContentAssignments = async () => {
   return assignments
     .map((item) => normalizeAssignment(item))
     .filter((item): item is SchoolContentAssignment => item !== null);
+};
+
+export const getContentAssignmentTracking = async (
+  assignmentId: string,
+): Promise<SchoolAssignmentTracking> => {
+  const payload = await schoolRequest<unknown>(`/api/v1/content/assignments/${assignmentId}/tracking`);
+  const record = isRecord(payload) ? payload : {};
+  const summary = isRecord(record.summary) ? record.summary : {};
+  const rows = Array.isArray(record.rows)
+    ? record.rows
+    : Array.isArray(record.students)
+      ? record.students
+      : Array.isArray(record.tracking)
+        ? record.tracking
+        : [];
+
+  return {
+    assignment: normalizeAssignment(record.assignment),
+    summary: {
+      assigned: typeof summary.assigned === "number" ? summary.assigned : 0,
+      completed: typeof summary.completed === "number" ? summary.completed : 0,
+      inProgress: typeof summary.inProgress === "number" ? summary.inProgress : 0,
+      notStarted: typeof summary.notStarted === "number" ? summary.notStarted : 0,
+      overdue: typeof summary.overdue === "number" ? summary.overdue : 0,
+    },
+    rows: rows
+      .map((item) => normalizeAssignmentTrackingRow(item))
+      .filter((item): item is SchoolAssignmentTrackingRow => item !== null),
+  };
 };
 
 export const recordStudentContentProgress = async (

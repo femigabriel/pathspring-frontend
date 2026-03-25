@@ -19,6 +19,8 @@ import {
   School,
   Bell,
   X,
+  Shield,
+  UserCog,
 } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { getSchoolWorkspaceBaseRoute } from "@/src/lib/auth";
@@ -99,6 +101,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const filteredMenu = menuItems.filter((item) =>
     item.roles.includes(user?.role || "")
   );
+  const roleLabel = user?.role === "TEACHER" ? "Teacher" : "Admin";
+  const RoleIcon = user?.role === "TEACHER" ? UserCog : Shield;
+  const emailInitial = user?.email?.charAt(0).toUpperCase() || "U";
 
   // Desktop Sidebar
   const DesktopSidebar = () => (
@@ -173,12 +178,21 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
         {/* User Info & Logout */}
         <div className="p-6 border-t border-gray-200 dark:border-white/10">
           {!collapsed && (
-            <div className="mb-4 p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
-              <p className="text-xs text-gray-500 dark:text-slate-400">Logged in as</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                {user?.email}
-              </p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{user?.role}</p>
+            <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-sm">
+                  <span className="text-sm font-bold">{emailInitial}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    {user?.email || "No email"}
+                  </p>
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-purple-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-purple-700 dark:border-purple-400/30 dark:bg-purple-500/10 dark:text-purple-300">
+                    <RoleIcon size={12} />
+                    <span>{roleLabel}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           <button
@@ -249,12 +263,21 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
             </nav>
 
             <div className="p-6 border-t border-gray-200 dark:border-white/10">
-              <div className="mb-4 p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
-                <p className="text-xs text-gray-500 dark:text-slate-400">Logged in as</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                  {user?.email}
-                </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{user?.role}</p>
+              <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-sm">
+                    <span className="text-sm font-bold">{emailInitial}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                      {user?.email || "No email"}
+                    </p>
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-purple-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-purple-700 dark:border-purple-400/30 dark:bg-purple-500/10 dark:text-purple-300">
+                      <RoleIcon size={12} />
+                      <span>{roleLabel}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               <button
                 onClick={logout}

@@ -1,7 +1,8 @@
 "use client";
 
-import { GraduationCap, Menu, School2, Sparkles } from "lucide-react";
+import { GraduationCap, Menu, School2, Sparkles, Stars } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
+import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
 
 interface StudentHeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -22,16 +23,26 @@ export default function StudentHeader({ setSidebarOpen }: StudentHeaderProps) {
           </button>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">
-              Story Adventure
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">
+                Story Adventure
+              </p>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <Stars size={12} />
+                <span>Student</span>
+              </div>
+            </div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white md:text-2xl">
               Hi, {user?.fullName?.split(" ")[0] ?? user?.username ?? "Reader"}
             </h1>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="flex flex-col gap-3 lg:items-end">
+          <div className="flex items-center justify-end">
+            <ThemeToggle />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
               <School2 size={16} />
@@ -58,6 +69,7 @@ export default function StudentHeader({ setSidebarOpen }: StudentHeaderProps) {
             <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
               {user?.classroom?.name ?? user?.gradeLevel ?? "Ready to read"}
             </p>
+          </div>
           </div>
         </div>
       </div>

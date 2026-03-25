@@ -24,6 +24,7 @@ import {
   Users,
   Wand2,
   RotateCcw,
+  Crown,
   X,
 } from "lucide-react";
 import { clearAuthSession, getStoredUser } from "@/src/lib/auth";
@@ -166,6 +167,9 @@ export default function PremiumAdminDashboard() {
   });
 
   const activeTab = isPremiumTab(searchParams.get("tab")) ? searchParams.get("tab") : "overview";
+  const currentUser = getStoredUser();
+  const premiumEmail = currentUser?.email ?? "premium@pathspring.ai";
+  const premiumInitial = premiumEmail.charAt(0).toUpperCase();
 
   const libraryItems = useMemo(() => {
     const stories = contentItems.filter((item) => item.type === "STORY");
@@ -520,6 +524,21 @@ export default function PremiumAdminDashboard() {
           <p className="mt-2 text-lg font-bold">Live premium bundle operations in one calmer workspace.</p>
         </div>
 
+        <div className="mb-8 rounded-[1.75rem] border border-white/10 bg-white/6 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-rose-500 to-cyan-400 text-white shadow-lg">
+              <span className="text-sm font-black">{premiumInitial}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{premiumEmail}</p>
+              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-fuchsia-200">
+                <Crown size={12} />
+                <span>Premium</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <nav className="space-y-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -567,7 +586,13 @@ export default function PremiumAdminDashboard() {
                 <Menu size={18} />
               </button>
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Premium Admin</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Premium Admin</p>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-fuchsia-200">
+                    <Crown size={12} />
+                    <span>Premium</span>
+                  </div>
+                </div>
                 <h1 className="text-2xl font-black">{tabs.find((tab) => tab.id === activeTab)?.label ?? "Overview"}</h1>
                 <p className="text-sm text-slate-400">Live bundle, analytics, and school data.</p>
               </div>
