@@ -26,6 +26,12 @@ export interface SchoolStoryContent {
   [key: string]: unknown;
 }
 
+export interface SchoolCatalogProduct extends SchoolStoryContent {
+  isSelectedForSchool?: boolean;
+  schoolSelection?: Record<string, unknown> | null;
+  catalogPublication?: Record<string, unknown> | null;
+}
+
 export interface SchoolStoryChapter {
   _id?: string;
   title?: string;
@@ -250,6 +256,19 @@ const normalizeContent = (value: unknown): SchoolStoryContent | null => {
   };
 };
 
+const normalizeCatalogProduct = (value: unknown): SchoolCatalogProduct | null => {
+  const content = normalizeContent(value);
+  if (!content || !isRecord(value)) return content;
+
+  return {
+    ...content,
+    isSelectedForSchool:
+      typeof value.isSelectedForSchool === "boolean" ? value.isSelectedForSchool : false,
+    schoolSelection: isRecord(value.schoolSelection) ? value.schoolSelection : null,
+    catalogPublication: isRecord(value.catalogPublication) ? value.catalogPublication : null,
+  };
+};
+
 const normalizeNode = (value: unknown): SchoolBundleNode | null => {
   if (!isRecord(value)) return null;
   const content = normalizeContent(value.content);
@@ -383,6 +402,54 @@ export const getPublishedSchoolContents = async () => {
     return [];
   }
 };
+
+export const getSchoolCatalogProducts = async () => {
+  const payload = await schoolRequest<unknown>("/api/v1/school/catalog");
+  const record = isRecord(payload) ? payload : {};
+  const products = Array.isArray(record.products)
+    ? record.products
+    : Array.isArray(record.contents)
+      ? record.contents
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+  return products
+    .map((item) => normalizeCatalogProduct(item))
+    .filter((item): item is SchoolCatalogProduct => item !== null)
+    .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK");
+};
+
+export const getSchoolSelectedProducts = async () => {
+  const payload = await schoolRequest<unknown>("/api/v1/school/products");
+  const record = isRecord(payload) ? payload : {};
+  const products = Array.isArray(record.products)
+    ? record.products
+    : Array.isArray(record.contents)
+      ? record.contents
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+  return products
+    .map((item) => normalizeCatalogProduct(item))
+    .filter((item): item is SchoolCatalogProduct => item !== null)
+    .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK");
+};
+
+export const selectSchoolProduct = async (
+  contentId: string,
+  payload?: { selectionType?: string; notes?: string },
+) =>
+  schoolRequest(`/api/v1/school/products/${contentId}/select`, {
+    method: "POST",
+    body: JSON.stringify(payload ?? { selectionType: "selected" }),
+  });
+
+export const removeSchoolProductSelection = async (contentId: string) =>
+  schoolRequest(`/api/v1/school/products/${contentId}/select`, {
+    method: "DELETE",
+  });
 
 export const getPublishedSchoolStoryBundle = async (contentId: string) => {
   const payload = await schoolRequest<unknown>(`/api/v1/content/${contentId}/full`);

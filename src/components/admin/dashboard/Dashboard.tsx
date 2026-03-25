@@ -504,25 +504,25 @@ export default function AdminDashboard() {
             trend={isTeacher ? `${teacherClassCount} class${teacherClassCount === 1 ? "" : "es"}` : "+12%"}
           />
           <StatsCard
-            title={isTeacher ? "My Classes" : "Total Teachers"}
-            value={isTeacher ? teacherClassCount : stats.totalTeachers}
-            icon={Users}
+            title={isTeacher ? "Active Assignments" : "Total Teachers"}
+            value={isTeacher ? stats.totalTeachers : stats.totalTeachers}
+            icon={isTeacher ? ClipboardCheck : Users}
             color="from-blue-500 to-cyan-500"
-            trend={isTeacher ? "Focused view" : "+2"}
+            trend={isTeacher ? `${teacherDashboard?.summary.overdueAssignments ?? 0} overdue` : "+2"}
           />
           <StatsCard
-            title={isTeacher ? "Class Stories Read" : "Stories Read"}
+            title={isTeacher ? "Completions This Week" : "Stories Read"}
             value={stats.totalStories}
             icon={BookOpen}
             color="from-green-500 to-emerald-500"
-            trend={isTeacher ? "Live class data" : "+23%"}
+            trend={isTeacher ? `${teacherDashboard?.summary.unreadNotifications ?? 0} unread alerts` : "+23%"}
           />
           <StatsCard
-            title={isTeacher ? "Class Progress" : "Avg Progress"}
-            value={`${stats.avgProgress}%`}
-            icon={TrendingUp}
+            title={isTeacher ? "Low-Score Alerts" : "Avg Progress"}
+            value={isTeacher ? stats.avgProgress : `${stats.avgProgress}%`}
+            icon={isTeacher ? AlertTriangle : TrendingUp}
             color="from-orange-500 to-red-500"
-            trend={isTeacher ? "Updated live" : "+5%"}
+            trend={isTeacher ? "Needs follow-up" : "+5%"}
           />
         </div>
 
@@ -535,6 +535,80 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
+
+        {isTeacher && teacherDashboard ? (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50 dark:shadow-none">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Assignment Overview</h2>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Live tracking from your teacher dashboard feed.</p>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+                  <Clock3 size={12} />
+                  <span>{teacherDashboard.summary.activeAssignments} active</span>
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {teacherDashboard.assignments.length > 0 ? (
+                  teacherDashboard.assignments.slice(0, 4).map((assignment) => (
+                    <TeacherAssignmentCard key={assignment.id} assignment={assignment} />
+                  ))
+                ) : (
+                  <div className="md:col-span-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                    No assignments have been returned yet for this teacher.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50 dark:shadow-none">
+                <div className="flex items-center gap-2 mb-4">
+                  <Bell size={18} className="text-blue-600 dark:text-blue-400" />
+                  <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Recent Completions</h2>
+                </div>
+                <div className="space-y-3">
+                  {teacherDashboard.recentCompletions.length > 0 ? (
+                    teacherDashboard.recentCompletions.slice(0, 4).map((completion) => (
+                      <TeacherEventCard
+                        key={completion.id}
+                        title={completion.studentName ?? "Student"}
+                        subtitle={completion.contentTitle ?? "Completed an assignment"}
+                        meta={`${completion.score ?? 0}% • ${formatDateTime(completion.completedAt)}`}
+                        accent="border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/10"
+                      />
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-slate-400">No recent completions yet.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50 dark:shadow-none">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertTriangle size={18} className="text-orange-600 dark:text-orange-400" />
+                  <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Students Needing Support</h2>
+                </div>
+                <div className="space-y-3">
+                  {teacherDashboard.lowScoreStudents.length > 0 ? (
+                    teacherDashboard.lowScoreStudents.slice(0, 4).map((item) => (
+                      <TeacherEventCard
+                        key={item.id}
+                        title={item.studentName ?? "Student"}
+                        subtitle={item.contentTitle ?? "Low score alert"}
+                        meta={`${item.score ?? 0}% • ${item.classroomName ?? "Classroom"}`}
+                        accent="border-orange-200 bg-orange-50 dark:border-orange-500/20 dark:bg-orange-500/10"
+                      />
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-slate-400">No low-score alerts right now.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {/* Recent Students */}
         <div>
