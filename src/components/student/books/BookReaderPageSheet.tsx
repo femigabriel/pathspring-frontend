@@ -8,6 +8,7 @@ interface BookReaderPageSheetProps {
   body: string;
   label: string;
   kind: "cover" | "story" | "end";
+  imageUrl?: string;
   chapterNumber?: number;
   sectionNumber?: number;
 }
@@ -22,20 +23,44 @@ const pageThemes = {
 };
 
 const BookReaderPageSheet = forwardRef<HTMLDivElement, BookReaderPageSheetProps>(
-  ({ title, body, label, kind, chapterNumber, sectionNumber }, ref) => {
+  ({ title, body, label, kind, imageUrl, chapterNumber, sectionNumber }, ref) => {
     return (
-      <div ref={ref} className="h-full w-full p-2 md:p-3">
+      <div ref={ref} className="h-full w-full p-1.5 md:p-3">
         <div
           className={`relative h-full w-full overflow-hidden rounded-[1.5rem] border border-[#d6c7a6] shadow-[0_24px_60px_rgba(120,53,15,0.12)] ${pageThemes[kind]}`}
         >
           <div className="absolute inset-y-0 left-0 w-5 bg-[linear-gradient(180deg,rgba(120,53,15,0.16),rgba(120,53,15,0.04))]" />
           <div className="absolute inset-y-0 right-0 w-3 bg-[linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0.12))]" />
-          <div className="relative flex h-full flex-col px-6 py-6 text-slate-800 md:px-9 md:py-8">
+          {kind === "cover" && imageUrl ? (
+            <>
+              <img
+                src={imageUrl}
+                alt={title}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08),rgba(15,23,42,0.48))]" />
+            </>
+          ) : null}
+          <div
+            className={`relative flex h-full flex-col px-4 py-4 text-slate-800 md:px-8 md:py-7 ${
+              kind === "cover" && imageUrl ? "text-white" : ""
+            }`}
+          >
             <div className="flex items-center justify-between gap-3">
-              <span className="rounded-full bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">
+              <span
+                className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] ${
+                  kind === "cover" && imageUrl
+                    ? "bg-white/18 text-white backdrop-blur"
+                    : "bg-white/70 text-slate-600"
+                }`}
+              >
                 {label}
               </span>
-              <div className="flex items-center gap-2 text-slate-500">
+              <div
+                className={`flex items-center gap-2 ${
+                  kind === "cover" && imageUrl ? "text-white/80" : "text-slate-500"
+                }`}
+              >
                 {kind === "story" ? <BookOpen size={18} /> : <Sparkles size={18} />}
                 <Stars size={16} />
               </div>
@@ -44,7 +69,11 @@ const BookReaderPageSheet = forwardRef<HTMLDivElement, BookReaderPageSheetProps>
             <div className="mt-6 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 {chapterNumber ? (
-                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-emerald-700">
+                  <p
+                    className={`text-xs font-bold uppercase tracking-[0.24em] ${
+                      kind === "cover" && imageUrl ? "text-white/80" : "text-emerald-700"
+                    }`}
+                  >
                     Chapter {chapterNumber}
                   </p>
                 ) : null}
@@ -55,20 +84,43 @@ const BookReaderPageSheet = forwardRef<HTMLDivElement, BookReaderPageSheetProps>
                 ) : null}
               </div>
               <h3
-                className={`mt-2 font-black leading-tight text-slate-900 ${
-                  kind === "cover" ? "text-4xl md:text-5xl" : "text-[1.8rem] md:text-[2.2rem]"
+                className={`mt-2 text-[1.15rem] font-bold leading-snug md:text-[1.55rem] ${
+                  kind === "cover" && imageUrl ? "text-white" : "text-slate-900"
                 }`}
               >
                 {title}
               </h3>
-              <div className="mt-5 flex-1 rounded-[1.3rem] border border-[#eadfc7] bg-white/65 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] md:px-5 md:py-5">
-                <p className="whitespace-pre-line text-[14px] leading-7 text-slate-700 md:text-[15px] md:leading-8">
+              {kind === "story" && imageUrl ? (
+                <div className="mt-4 overflow-hidden rounded-[1.2rem] border border-[#eadfc7] bg-[#fff8e7] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                  <img
+                    src={imageUrl}
+                    alt={title}
+                    className="h-36 w-full object-cover md:h-52"
+                  />
+                </div>
+              ) : null}
+              <div
+                className={`mt-4 flex-1 rounded-[1.3rem] border px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] md:px-5 md:py-5 ${
+                  kind === "cover" && imageUrl
+                    ? "border-white/20 bg-slate-950/28 backdrop-blur"
+                    : "border-[#eadfc7] bg-white/72"
+                }`}
+              >
+                <p
+                  className={`whitespace-pre-line text-[12.5px] leading-7 md:text-[14px] md:leading-8 ${
+                    kind === "cover" && imageUrl ? "text-white/95" : "text-slate-700"
+                  }`}
+                >
                   {body}
                 </p>
               </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            <div
+              className={`mt-5 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] ${
+                kind === "cover" && imageUrl ? "text-white/75" : "text-slate-500"
+              }`}
+            >
               <span>PathSpring Storybook</span>
               <span>{kind === "story" ? "Keep Flipping" : "Story Magic"}</span>
             </div>

@@ -17,8 +17,6 @@ import BookReaderPageSheet from "@/src/components/student/books/BookReaderPageSh
 import { isBookAllowedForStudent } from "@/src/lib/student-book-eligibility";
 import {
   getPublishedSchoolStoryBundle,
-  submitStudentContentAnswers,
-  type SchoolQuestion,
   type SchoolStoryBundle,
 } from "@/src/lib/school-content-api";
 
@@ -28,14 +26,49 @@ interface ReaderPage {
   body: string;
   label: string;
   kind: "cover" | "story" | "end";
+  imageUrl?: string;
   chapterNumber?: number;
   sectionNumber?: number;
 }
 
 const defaultRate = 0.95;
-const chapterPageCharacterLimit = 980;
+const pageWidthToHeightRatio = 0.76;
+const desktopSidebarWidth = 288;
 
-const splitChapterIntoSections = (body?: string) => {
+const splitLongParagraph = (paragraph: string, limit: number) => {
+  if (paragraph.length <= limit) return [paragraph];
+
+  const sentenceChunks =
+    paragraph.match(/[^.!?]+[.!?"]?\s*/g)?.map((chunk) => chunk.trim()) ?? [];
+  const sourceChunks = sentenceChunks.length > 1 ? sentenceChunks : paragraph.split(/\s+/);
+  const pieces: string[] = [];
+  let current = "";
+
+  sourceChunks.forEach((chunk) => {
+    const separator = sentenceChunks.length > 1 ? " " : " ";
+    const candidate = current ? `${current}${separator}${chunk}` : chunk;
+
+    if (candidate.length > limit && current) {
+      pieces.push(current.trim());
+      current = chunk;
+      return;
+    }
+
+    current = candidate;
+  });
+
+  if (current.trim()) {
+    pieces.push(current.trim());
+  }
+
+  return pieces.length ? pieces : [paragraph];
+};
+
+const splitChapterIntoSections = (
+  body?: string,
+  firstSectionLimit = 880,
+  followingSectionLimit = 1120,
+) => {
   const normalized = (body ?? "").trim();
   if (!normalized) return ["No chapter text returned yet."];
 
@@ -48,16 +81,20 @@ const splitChapterIntoSections = (body?: string) => {
 
   const sections: string[] = [];
   let current = "";
+  let currentLimit = firstSectionLimit;
 
   paragraphs.forEach((paragraph) => {
-    const candidate = current ? `${current}\n\n${paragraph}` : paragraph;
-    if (candidate.length > chapterPageCharacterLimit && current) {
-      sections.push(current);
-      current = paragraph;
-      return;
-    }
+    splitLongParagraph(paragraph, currentLimit).forEach((piece) => {
+      const candidate = current ? `${current}\n\n${piece}` : piece;
+      if (candidate.length > currentLimit && current) {
+        sections.push(current);
+        current = piece;
+        currentLimit = followingSectionLimit;
+        return;
+      }
 
-    current = candidate;
+      current = candidate;
+    });
   });
 
   if (current) {
@@ -71,7 +108,10 @@ const buildReaderPages = (bundle: SchoolStoryBundle | null): ReaderPage[] => {
   if (!bundle) return [];
 
   const title =
-    bundle.story?.content.title ?? bundle.contentPack?.title ?? bundle.requestedContent?.title ?? "Story Book";
+    bundle.story?.content.title ??
+    bundle.contentPack?.title ??
+    bundle.requestedContent?.title ??
+    "Story Book";
   const summary =
     bundle.story?.content.summary ??
     bundle.story?.content.description ??
@@ -84,11 +124,16 @@ const buildReaderPages = (bundle: SchoolStoryBundle | null): ReaderPage[] => {
       body: `${summary}\n\nWritten by PathSpring`,
       label: "Cover",
       kind: "cover",
+      imageUrl: bundle.story?.content.coverImageUrl,
     },
   ];
 
   (bundle.story?.chapters ?? []).forEach((chapter, index) => {
-    const sections = splitChapterIntoSections(chapter.body);
+    const sections = splitChapterIntoSections(
+      chapter.body,
+      chapter.imageUrl ? 620 : 900,
+      1120,
+    );
 
     sections.forEach((section, sectionIndex) => {
       pages.push({
@@ -97,6 +142,7 @@ const buildReaderPages = (bundle: SchoolStoryBundle | null): ReaderPage[] => {
         body: section,
         label: `Page ${pages.length + 1}`,
         kind: "story",
+        imageUrl: sectionIndex === 0 ? chapter.imageUrl : undefined,
         chapterNumber: index + 1,
         sectionNumber: sections.length > 1 ? sectionIndex + 1 : undefined,
       });
@@ -114,23 +160,20 @@ const buildReaderPages = (bundle: SchoolStoryBundle | null): ReaderPage[] => {
   return pages;
 };
 
-const normalizeAnswer = (value?: string) => (value ?? "").trim().toLowerCase();
-
 export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
   const { user } = useAuth();
   const [bundle, setBundle] = useState<SchoolStoryBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [voiceRate, setVoiceRate] = useState(defaultRate);
-  const [submitting, setSubmitting] = useState(false);
-  const [submissionMessage, setSubmissionMessage] = useState("");
+  const [bookSize, setBookSize] = useState({ width: 520, height: 684 });
   const startTimeRef = useRef<number>(Date.now());
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const bookRef = useRef<any>(null);
+  const bookViewportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const loadBundle = async () => {
@@ -140,17 +183,23 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
       try {
         const nextBundle = await getPublishedSchoolStoryBundle(bookId);
         const restrictedContent =
-          nextBundle.story?.content ?? nextBundle.contentPack ?? nextBundle.requestedContent;
+          nextBundle.story?.content ??
+          nextBundle.contentPack ??
+          nextBundle.requestedContent;
 
         if (!isBookAllowedForStudent(restrictedContent, user)) {
-          throw new Error("This book is for another class level, so it is not available in your reader.");
+          throw new Error(
+            "This book is for another class level, so it is not available in your reader.",
+          );
         }
 
         setBundle(nextBundle);
         setCurrentPage(0);
         startTimeRef.current = Date.now();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load this story.");
+        setError(
+          err instanceof Error ? err.message : "Failed to load this story.",
+        );
       } finally {
         setLoading(false);
       }
@@ -167,8 +216,6 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
 
   const readerPages = useMemo(() => buildReaderPages(bundle), [bundle]);
   const activePage = readerPages[currentPage];
-  const quizQuestions = (bundle?.quiz?.questions?.length ? bundle.quiz.questions : bundle?.story?.questions) ?? [];
-  const storyContentId = bundle?.requestedContent?._id ?? bundle?.story?.content._id ?? bookId;
 
   const stopSpeaking = () => {
     if (typeof window === "undefined") return;
@@ -183,7 +230,9 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
 
     stopSpeaking();
 
-    const utterance = new SpeechSynthesisUtterance(`${activePage.title}. ${activePage.body}`);
+    const utterance = new SpeechSynthesisUtterance(
+      `${activePage.title}. ${activePage.body}`,
+    );
     utterance.rate = voiceRate;
     utterance.pitch = 1;
     utterance.onend = () => {
@@ -210,78 +259,51 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
     }
   };
 
-  const handleAnswerChange = (questionId: string, answer: string) => {
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [questionId]: answer,
-    }));
-  };
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  const handleSubmitQuiz = async () => {
-    if (!quizQuestions.length) return;
+    const updateBookSize = () => {
+      const containerWidth =
+        bookViewportRef.current?.clientWidth ??
+        window.innerWidth - (window.innerWidth >= 1024 ? desktopSidebarWidth : 0);
+      const isMobile = window.innerWidth < 768;
+      const isTablet = window.innerWidth < 1280;
+      const availableWidth = Math.max(260, containerWidth - (isMobile ? 12 : 36));
+      const reservedHeight = isMobile ? 380 : isTablet ? 340 : 320;
+      const availableHeight = Math.max(420, window.innerHeight - reservedHeight);
+      const landscapePageWidth = (availableWidth - 28) / 2;
+      const portraitPageWidth = availableWidth - 12;
+      const targetPageWidth = availableWidth < 900 ? portraitPageWidth : landscapePageWidth;
 
-    setSubmitting(true);
-    setSubmissionMessage("");
+      let width = Math.min(660, Math.max(240, targetPageWidth));
+      let height = width / pageWidthToHeightRatio;
 
-    try {
-      let correctCount = 0;
-      const answers = quizQuestions.map((question, index) => {
-        const key = question._id ?? `question-${index}`;
-        const answer = selectedAnswers[key] ?? "";
-        return {
-          questionId: key,
-          answer,
-        };
+      if (height > availableHeight) {
+        height = availableHeight;
+        width = height * pageWidthToHeightRatio;
+      }
+
+      setBookSize({
+        width: Math.round(width),
+        height: Math.round(height),
       });
+    };
 
-      quizQuestions.forEach((question, index) => {
-        const key = question._id ?? `question-${index}`;
-        const chosen = normalizeAnswer(selectedAnswers[key]);
-        const acceptedAnswers = (question.correctAnswers ?? []).map((answer) => normalizeAnswer(answer));
-        if (chosen && acceptedAnswers.includes(chosen)) {
-          correctCount += 1;
-        }
-      });
+    updateBookSize();
 
-      const score = Math.round((correctCount / quizQuestions.length) * 100);
-      const elapsedSeconds = Math.max(60, Math.round((Date.now() - startTimeRef.current) / 1000));
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && bookViewportRef.current
+        ? new ResizeObserver(() => updateBookSize())
+        : null;
 
-      const strengths = quizQuestions
-        .filter((question, index) => {
-          const key = question._id ?? `question-${index}`;
-          const chosen = normalizeAnswer(selectedAnswers[key]);
-          return (question.correctAnswers ?? []).map(normalizeAnswer).includes(chosen);
-        })
-        .map((question) => question.prompt ?? "Correct answer");
+    resizeObserver?.observe(bookViewportRef.current as Element);
+    window.addEventListener("resize", updateBookSize);
 
-      const struggleAreas = quizQuestions
-        .filter((question, index) => {
-          const key = question._id ?? `question-${index}`;
-          const chosen = normalizeAnswer(selectedAnswers[key]);
-          return !(question.correctAnswers ?? []).map(normalizeAnswer).includes(chosen);
-        })
-        .map((question) => question.prompt ?? "Needs review");
-
-      await submitStudentContentAnswers(storyContentId, {
-        answers,
-        timeSpentSeconds: elapsedSeconds,
-        startedAt: new Date(startTimeRef.current).toISOString(),
-        feedback:
-          [
-            strengths.length ? `Strengths: ${strengths.slice(0, 3).join(", ")}` : "",
-            struggleAreas.length ? `Review: ${struggleAreas.slice(0, 3).join(", ")}` : "",
-          ]
-            .filter(Boolean)
-            .join(" | ") || undefined,
-      });
-
-      setSubmissionMessage(`Quiz submitted. You scored ${score}%.`);
-    } catch (err) {
-      setSubmissionMessage(err instanceof Error ? err.message : "Failed to submit quiz.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateBookSize);
+    };
+  }, []);
 
   return (
     <StudentShell>
@@ -294,7 +316,7 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
           {error}
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           <section className="overflow-hidden rounded-[2.4rem] border border-white/70 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.18),transparent_24%),linear-gradient(180deg,#fffef2_0%,#eefcf6_100%)] p-6 shadow-xl dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.14),transparent_28%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.14),transparent_24%),linear-gradient(180deg,#0b1120_0%,#111827_100%)] md:p-8">
             <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
               <div>
@@ -302,11 +324,13 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
                   <Sparkles size={16} />
                   Storybook Reader
                 </div>
-                <h2 className="mt-5 text-4xl font-black leading-tight text-slate-900 dark:text-white">
+                <h2 className="mt-5 text-3xl font-black leading-tight text-slate-900 dark:text-white md:text-4xl">
                   {getBundleTitle(bundle)}
                 </h2>
                 <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600 dark:text-slate-300">
-                  Flip each page like a real book, listen with voice reading, and then finish the quiz and story activities below.
+                  Flip each page like a real book and listen with voice reading.
+                  When you finish, open the separate quiz page from the Quiz
+                  Time menu.
                 </p>
               </div>
 
@@ -320,7 +344,7 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
             </div>
           </section>
 
-          <section className="rounded-[2.3rem] border border-white/70 bg-white/90 p-5 shadow-[0_35px_100px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5 md:p-7">
+          <section className="rounded-[2.3rem] border border-white/70 bg-white/90 p-3 shadow-[0_35px_100px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-white/5 sm:p-4 md:p-6">
             <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -350,14 +374,18 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
 
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Voice Speed</span>
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    Voice Speed
+                  </span>
                   <input
                     type="range"
                     min="0.7"
                     max="1.2"
                     step="0.05"
                     value={voiceRate}
-                    onChange={(event) => setVoiceRate(Number(event.target.value))}
+                    onChange={(event) =>
+                      setVoiceRate(Number(event.target.value))
+                    }
                     className="accent-emerald-500"
                   />
                 </div>
@@ -370,19 +398,23 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
               </div>
             </div>
 
-            <div className="rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_24%),radial-gradient(circle_at_top_right,rgba(45,212,191,0.16),transparent_26%),linear-gradient(180deg,#fff7db_0%,#fffdf4_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(45,212,191,0.12),transparent_26%),linear-gradient(180deg,#111827_0%,#0b1120_100%)] md:p-6">
-              <div className="flex items-center justify-center">
-                <div className="w-full max-w-[76rem]">
+            <div className="rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_24%),radial-gradient(circle_at_top_right,rgba(45,212,191,0.16),transparent_26%),linear-gradient(180deg,#fff7db_0%,#fffdf4_100%)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(45,212,191,0.12),transparent_26%),linear-gradient(180deg,#111827_0%,#0b1120_100%)] sm:p-3 md:p-5">
+              <div
+                ref={bookViewportRef}
+                className="flex min-h-[52vh] items-start justify-center overflow-hidden rounded-[1.7rem] bg-slate-950/10 px-1 py-3 dark:bg-slate-950/20 md:min-h-[60vh] md:px-3"
+              >
+                <div className="w-full">
                   <HTMLFlipBook
+                    key={`${readerPages.length}-${bookSize.width}-${bookSize.height}`}
                     ref={bookRef}
-                    width={860}
-                    height={1060}
-                    className="mx-auto"
+                    width={bookSize.width}
+                    height={bookSize.height}
+                    className="mx-auto rounded bg-[#FFFEE9] shadow-xl"
                     style={{}}
-                    minWidth={320}
-                    maxWidth={860}
-                    minHeight={560}
-                    maxHeight={1060}
+                    minWidth={220}
+                    maxWidth={bookSize.width}
+                    minHeight={360}
+                    maxHeight={bookSize.height}
                     size="stretch"
                     drawShadow
                     flippingTime={1000}
@@ -410,6 +442,7 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
                         body={page.body}
                         label={page.label}
                         kind={page.kind}
+                        imageUrl={page.imageUrl}
                         chapterNumber={page.chapterNumber}
                         sectionNumber={page.sectionNumber}
                       />
@@ -438,117 +471,6 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
             </div>
           </section>
 
-          <section className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
-            <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white">Quiz Time</h3>
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  {quizQuestions.length} questions
-                </span>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {quizQuestions.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 px-5 py-10 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                    No quiz questions were attached to this story yet.
-                  </div>
-                ) : (
-                  quizQuestions.map((question: SchoolQuestion, index) => {
-                    const key = question._id ?? `question-${index}`;
-                    return (
-                      <div key={key} className="rounded-[1.5rem] border border-emerald-100 bg-emerald-50 p-4 dark:border-white/10 dark:bg-white/5">
-                        <p className="text-sm font-bold leading-7 text-slate-900 dark:text-white">
-                          {index + 1}. {question.prompt ?? "Question"}
-                        </p>
-                        <div className="mt-3 grid gap-2">
-                          {(question.options ?? []).map((option) => {
-                            const active = selectedAnswers[key] === option;
-                            return (
-                              <button
-                                key={option}
-                                onClick={() => handleAnswerChange(key, option)}
-                                className={`rounded-2xl border px-4 py-3 text-left text-sm transition-all ${
-                                  active
-                                    ? "border-emerald-400 bg-white text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-                                    : "border-transparent bg-white/80 text-slate-700 hover:border-emerald-200 dark:bg-slate-950/50 dark:text-slate-300 dark:hover:border-white/10"
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {quizQuestions.length > 0 ? (
-                <div className="mt-6">
-                  <button
-                    onClick={() => void handleSubmitQuiz()}
-                    disabled={submitting}
-                    className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-3 font-bold text-white shadow-lg disabled:opacity-60"
-                  >
-                    <Sparkles size={18} />
-                    {submitting ? "Saving your score..." : "Submit My Answers"}
-                  </button>
-                  {submissionMessage ? (
-                    <p className="mt-3 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                      {submissionMessage}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white">Story Activities</h3>
-                <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
-                  {bundle?.activities.length ?? 0}
-                </span>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {(bundle?.activities ?? []).length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-cyan-200 bg-cyan-50 px-5 py-10 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                    No extra activities were attached yet.
-                  </div>
-                ) : (
-                  bundle?.activities.map((activity, index) => (
-                    <div
-                      key={activity._id ?? `${activity.title}-${index}`}
-                      className="rounded-[1.5rem] border border-cyan-100 bg-cyan-50 p-4 dark:border-white/10 dark:bg-white/5"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h4 className="text-lg font-bold text-slate-900 dark:text-white">{activity.title}</h4>
-                        <span className="rounded-full bg-white px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-cyan-700 dark:bg-white/10 dark:text-cyan-300">
-                          {activity.configuration?.activityType ?? "activity"}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                        {activity.summary ?? activity.description ?? "Enjoy this classroom activity after reading."}
-                      </p>
-                      {activity.configuration?.tasks?.length ? (
-                        <div className="mt-4 space-y-2">
-                          {activity.configuration.tasks.map((task) => (
-                            <div
-                              key={task}
-                              className="rounded-2xl bg-white/90 px-4 py-3 text-sm text-slate-700 dark:bg-slate-950/50 dark:text-slate-200"
-                            >
-                              {task}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </section>
         </div>
       )}
     </StudentShell>
@@ -556,4 +478,7 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
 }
 
 const getBundleTitle = (bundle: SchoolStoryBundle | null) =>
-  bundle?.story?.content.title ?? bundle?.contentPack?.title ?? bundle?.requestedContent?.title ?? "Story Book";
+  bundle?.story?.content.title ??
+  bundle?.contentPack?.title ??
+  bundle?.requestedContent?.title ??
+  "Story Book";

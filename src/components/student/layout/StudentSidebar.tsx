@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookMarked, BookOpen, Home, LogOut, X } from "lucide-react";
+import { BookMarked, BookOpen, ClipboardCheck, ClipboardList, Home, LogOut, X } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 interface StudentSidebarProps {
@@ -14,6 +14,8 @@ interface StudentSidebarProps {
 const menuItems = [
   { name: "My Space", href: "/student/dashboard", icon: Home },
   { name: "Bookshelf", href: "/student/books", icon: BookMarked },
+  { name: "Quiz Time", href: "/student/quizzes", icon: ClipboardCheck },
+  { name: "Story Activities", href: "/student/activities", icon: ClipboardList },
 ];
 
 export default function StudentSidebar({ sidebarOpen, setSidebarOpen }: StudentSidebarProps) {
@@ -83,7 +85,7 @@ export default function StudentSidebar({ sidebarOpen, setSidebarOpen }: StudentS
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-80 border-r border-emerald-100 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/90 lg:block">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-emerald-100 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/90 lg:block">
         <SidebarContent />
       </aside>
 
@@ -98,11 +100,11 @@ export default function StudentSidebar({ sidebarOpen, setSidebarOpen }: StudentS
               onClick={() => setSidebarOpen(false)}
             />
             <motion.aside
-              initial={{ x: -320 }}
+              initial={{ x: -288 }}
               animate={{ x: 0 }}
-              exit={{ x: -320 }}
+              exit={{ x: -288 }}
               transition={{ duration: 0.25 }}
-              className="fixed inset-y-0 left-0 z-50 w-80 border-r border-emerald-100 bg-white/95 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/95 lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-72 border-r border-emerald-100 bg-white/95 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/95 lg:hidden"
             >
               <SidebarContent />
             </motion.aside>
