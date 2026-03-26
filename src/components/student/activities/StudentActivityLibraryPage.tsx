@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowRight, ClipboardList, Search, Sparkles } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import StudentShell from "@/src/components/student/layout/StudentShell";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
 import { filterBooksForStudent } from "@/src/lib/student-book-eligibility";
 import { getPublishedSchoolContents, type SchoolStoryContent } from "@/src/lib/school-content-api";
 
@@ -56,6 +58,10 @@ export default function StudentActivityLibraryPage() {
               <p className="mt-3 max-w-2xl text-sm leading-8 text-slate-600 dark:text-slate-300">
                 Choose a book title to see its classroom activities, prompts, and task steps in one clean page.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <AppBadge label={`${allowedStories.length} activity books`} tone="cyan" />
+                <AppBadge label="Story tasks" tone="emerald" />
+              </div>
             </div>
 
             <div className="flex items-center gap-3 rounded-2xl border border-sky-100 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -91,10 +97,7 @@ export default function StudentActivityLibraryPage() {
                 >
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
-                        <ClipboardList size={14} />
-                        Activity Set {index + 1}
-                      </div>
+                      <AppBadge label={`Activity Set ${index + 1}`} icon={ClipboardList} tone="cyan" />
                       <h3 className="mt-3 text-2xl font-black text-slate-900 dark:text-white">{story.title}</h3>
                       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                         Open this page to see the story-linked activities for the book.
@@ -110,9 +113,12 @@ export default function StudentActivityLibraryPage() {
               ))}
 
               {filteredStories.length === 0 ? (
-                <div className="rounded-[1.7rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  No story activities are available for your class right now.
-                </div>
+                <AppEmptyState
+                  icon={ClipboardList}
+                  title="No story activities are available right now"
+                  body="When your school selects books for your class, their activity pages will appear here."
+                  className="rounded-[1.7rem] border-slate-200 bg-slate-50 px-6 py-14 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-600 dark:[&_p]:text-slate-300"
+                />
               ) : null}
             </div>
           </section>

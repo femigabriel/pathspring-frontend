@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { LibraryBig, Search, Sparkles } from "lucide-react";
 import StudentShell from "@/src/components/student/layout/StudentShell";
 import StoryBookCard from "@/src/components/student/books/StoryBookCard";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
+import AppSkeletonCard from "@/src/components/shared/ui/AppSkeletonCard";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { filterBooksForStudent } from "@/src/lib/student-book-eligibility";
 import { getPublishedSchoolContents, type SchoolStoryContent } from "@/src/lib/school-content-api";
@@ -61,6 +64,10 @@ export default function StudentBookshelfPage() {
               <p className="mt-3 max-w-2xl text-sm leading-8 text-slate-600 dark:text-slate-300">
                 Your stories now sit in roomy, tidy cards so the titles and summaries stay inside the covers instead of spilling out.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <AppBadge label={`${allowedStories.length} shelf books`} tone="emerald" />
+                <AppBadge label="Class-matched" tone="cyan" />
+              </div>
             </div>
 
             <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -117,15 +124,26 @@ export default function StudentBookshelfPage() {
         ) : null}
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <AppSkeletonCard />
+            <AppSkeletonCard />
+            <AppSkeletonCard />
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredStories.map((story, index) => (
-              <StoryBookCard key={story._id} story={story} index={index} />
-            ))}
-          </div>
+          filteredStories.length === 0 ? (
+            <AppEmptyState
+              icon={LibraryBig}
+              title="No books on this shelf yet"
+              body="When your school selects books for your class, your bookshelf will fill up here."
+              className="py-16 [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-600 dark:[&_p]:text-slate-300"
+            />
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredStories.map((story, index) => (
+                <StoryBookCard key={story._id} story={story} index={index} />
+              ))}
+            </div>
+          )
         )}
       </div>
     </StudentShell>

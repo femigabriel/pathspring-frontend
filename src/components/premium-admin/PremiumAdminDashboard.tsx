@@ -26,6 +26,17 @@ import {
   RotateCcw,
   Crown,
   X,
+  ChevronRight,
+  Zap,
+  Eye,
+  FolderOpen,
+  ChevronLeft,
+  Clock,
+  Target,
+  Bookmark,
+  MessageSquare,
+  HelpCircle,
+  ChevronDown,
 } from "lucide-react";
 import { clearAuthSession, getStoredUser } from "@/src/lib/auth";
 import {
@@ -47,15 +58,18 @@ import {
   type PlatformSchool,
 } from "@/src/lib/platform-api";
 import { prettifySelFocus, selFocusDescriptions, selFocusOptions } from "@/src/lib/sel-focus";
+import AppActionButton from "@/src/components/shared/ui/AppActionButton";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
 
 type PremiumTab = "overview" | "content" | "generate" | "schools" | "analytics";
 
-const tabs: Array<{ id: PremiumTab; label: string; icon: typeof BarChart3 }> = [
-  { id: "overview", label: "Overview", icon: BarChart3 },
-  { id: "content", label: "Content Library", icon: BookOpen },
-  { id: "generate", label: "Generate Story", icon: Wand2 },
-  { id: "schools", label: "Manage Schools", icon: Users },
-  { id: "analytics", label: "Analytics", icon: TrendingUp },
+const tabs: Array<{ id: PremiumTab; label: string; icon: typeof BarChart3; description: string }> = [
+  { id: "overview", label: "Overview", icon: BarChart3, description: "Platform insights at a glance" },
+  { id: "content", label: "Content Library", icon: BookOpen, description: "Manage your premium stories" },
+  { id: "generate", label: "Generate Story", icon: Wand2, description: "Create new premium bundles" },
+  { id: "schools", label: "Manage Schools", icon: Users, description: "School partnerships" },
+  { id: "analytics", label: "Analytics", icon: TrendingUp, description: "Performance metrics" },
 ];
 
 const isPremiumTab = (value: string | null): value is PremiumTab =>
@@ -73,21 +87,13 @@ const getStoryId = (bundle: PlatformBundle | null) =>
   "";
 
 const prettyDate = (value?: string) =>
-  value ? new Date(value).toLocaleDateString() : "Recently updated";
+  value ? new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recently updated";
 
 const splitCsv = (value: string) =>
   value
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-
-const EmptyPanel = ({ title, body }: { title: string; body: string }) => (
-  <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-white/10 bg-slate-950/45 px-6 text-center">
-    <Sparkles size={40} className="text-fuchsia-300" />
-    <h3 className="mt-4 text-2xl font-bold">{title}</h3>
-    <p className="mt-3 max-w-md text-sm leading-6 text-slate-400">{body}</p>
-  </div>
-);
 
 export default function PremiumAdminDashboard() {
   const router = useRouter();
@@ -96,6 +102,7 @@ export default function PremiumAdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [contentItems, setContentItems] = useState<PlatformContentItem[]>([]);
   const [selectedBundle, setSelectedBundle] = useState<PlatformBundle | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [analytics, setAnalytics] = useState<PlatformAnalyticsResponse>({
     overview: {
       totalContents: 0,
@@ -188,7 +195,7 @@ export default function PremiumAdminDashboard() {
 
   const navigateTo = (tab: PremiumTab) => {
     setSidebarOpen(false);
-    router.replace(`/premium-admin/dashboard?tab=${tab}`, { scroll: false });
+    router.push(`/premium-admin/dashboard?tab=${tab}`, { scroll: false });
   };
 
   const refreshData = async () => {
@@ -286,6 +293,7 @@ export default function PremiumAdminDashboard() {
         moralLesson: draft.moralLesson,
       });
       setSelectedBundle(bundle);
+      setDrawerOpen(true);
       setNotice("Premium bundle generated successfully.");
       await refreshData();
       navigateTo("content");
@@ -316,7 +324,9 @@ export default function PremiumAdminDashboard() {
     setOpeningId(contentId);
     setError("");
     try {
-      setSelectedBundle(await getPlatformContentBundle(contentId));
+      const bundle = await getPlatformContentBundle(contentId);
+      setSelectedBundle(bundle);
+      setDrawerOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to open bundle.");
     } finally {
@@ -471,6 +481,7 @@ export default function PremiumAdminDashboard() {
     try {
       await deletePlatformStory(selectedStoryId);
       setSelectedBundle(null);
+      setDrawerOpen(false);
       await refreshData();
       setNotice("Story deleted successfully.");
     } catch (err) {
@@ -482,8 +493,13 @@ export default function PremiumAdminDashboard() {
 
   if (!authorized) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-fuchsia-500 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div className="relative">
+          <div className="h-16 w-16 animate-spin rounded-full border-4 border-fuchsia-500/30 border-t-fuchsia-500" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full bg-fuchsia-500/20 animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -501,170 +517,222 @@ export default function PremiumAdminDashboard() {
     selectedBundle?.requestedContent?.selFocus ??
     [];
 
+  const StatCard = ({ icon: Icon, label, value, loading: isLoading, gradient = false }: any) => (
+    <div className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 transition-all duration-300 hover:border-white/20 hover:bg-white/10 ${gradient ? "bg-gradient-to-br from-fuchsia-500/10 via-transparent to-cyan-500/10" : ""}`}>
+      <div className="absolute right-0 top-0 -mr-4 -mt-4 h-24 w-24 rounded-full bg-fuchsia-500/5 blur-2xl group-hover:bg-fuchsia-500/10 transition-all" />
+      <Icon className="mb-4 h-5 w-5 text-fuchsia-400" />
+      <p className="text-sm font-medium text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-bold tracking-tight text-white">
+        {isLoading ? <span className="inline-block h-8 w-16 animate-pulse rounded bg-white/10" /> : value}
+      </p>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.14),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] text-white">
-      <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-80 flex-col overflow-y-auto border-r border-white/10 bg-slate-950/95 px-5 py-6 backdrop-blur-2xl transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="mb-8 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="rounded-2xl bg-gradient-to-br from-fuchsia-500 via-rose-500 to-cyan-400 p-3">
-              <BookOpen size={22} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 flex h-screen w-80 flex-col border-r border-white/5 bg-slate-950/95 backdrop-blur-xl transition-transform duration-300 ease-out lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex h-16 items-center justify-between border-b border-white/5 px-6">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="rounded-xl bg-gradient-to-br from-fuchsia-500 to-cyan-500 p-2 shadow-lg transition-all group-hover:scale-105">
+              <BookOpen className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-black">PathSpring</p>
-              <p className="text-xs uppercase tracking-[0.18em] text-fuchsia-300">Premium Control</p>
+              <p className="text-lg font-bold tracking-tight">PathSpring</p>
+              <p className="text-[10px] uppercase tracking-wider text-fuchsia-400">Premium Control</p>
             </div>
           </Link>
-          <button onClick={() => setSidebarOpen(false)} className="rounded-xl border border-white/10 p-2 lg:hidden">
-            <X size={18} />
+          <button onClick={() => setSidebarOpen(false)} className="rounded-lg border border-white/10 p-2 transition-colors hover:bg-white/10 lg:hidden">
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mb-8 rounded-[1.75rem] border border-white/10 bg-white/6 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Studio</p>
-          <p className="mt-2 text-lg font-bold">Live premium bundle operations in one calmer workspace.</p>
-        </div>
-
-        <div className="mb-8 rounded-[1.75rem] border border-white/10 bg-white/6 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 via-rose-500 to-cyan-400 text-white shadow-lg">
-              <span className="text-sm font-black">{premiumInitial}</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">{premiumEmail}</p>
-              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-fuchsia-200">
-                <Crown size={12} />
-                <span>Premium</span>
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          {/* User Card */}
+          <div className="mb-6 rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-fuchsia-500 to-cyan-500">
+                <span className="text-sm font-bold">{premiumInitial}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-white">{premiumEmail}</p>
+                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-fuchsia-500/10 px-2 py-0.5">
+                  <Crown className="h-3 w-3 text-fuchsia-400" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-fuchsia-400">Premium</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Navigation */}
+          <nav className="space-y-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const active = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => navigateTo(tab.id)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 ${
+                    active
+                      ? "bg-gradient-to-r from-fuchsia-500/20 to-cyan-500/20 text-white"
+                      : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 ${active ? "text-fuchsia-400" : ""}`} />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium">{tab.label}</span>
+                    <p className="text-xs text-slate-500">{tab.description}</p>
+                  </div>
+                  {active && <ChevronRight className="h-4 w-4 text-fuchsia-400" />}
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        <nav className="space-y-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = tab.id === activeTab;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => navigateTo(tab.id)}
-                className={`flex w-full items-center gap-4 rounded-2xl border px-4 py-3 text-left transition-all ${active ? "border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-500/25 to-cyan-500/20" : "border-transparent bg-white/5 text-slate-300 hover:border-white/10 hover:bg-white/10"}`}
-              >
-                <div className={`rounded-xl p-2 ${active ? "bg-white/15" : "bg-black/20"}`}>
-                  <Icon size={18} />
-                </div>
-                <span className="font-semibold">{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="mt-auto space-y-2 border-t border-white/10 pt-6">
-          <button className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-300">
-            <Settings size={18} />
-            <span className="font-semibold">Workspace Settings</span>
-          </button>
+        <div className="border-t border-white/5 p-4">
           <button
             onClick={() => {
               clearAuthSession();
               router.replace("/login");
             }}
-            className="flex w-full items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-300"
+            className="flex w-full items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-400 transition-colors hover:bg-red-500/20"
           >
-            <LogOut size={18} />
-            <span className="font-semibold">Log Out</span>
+            <LogOut className="h-4 w-4" />
+            <span className="text-sm font-medium">Log Out</span>
           </button>
         </div>
       </aside>
 
-      {sidebarOpen ? <button className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
 
+      {/* Main content */}
       <div className="lg:pl-80">
-        <header className="sticky top-0 z-20 mb-8 border-b border-white/10 bg-slate-950/70 px-4 py-4 backdrop-blur-2xl sm:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6">
             <div className="flex items-center gap-3">
-              <button onClick={() => setSidebarOpen(true)} className="rounded-2xl border border-white/10 bg-white/5 p-3 lg:hidden">
-                <Menu size={18} />
+              <button onClick={() => setSidebarOpen(true)} className="rounded-lg border border-white/10 p-2 transition-colors hover:bg-white/10 lg:hidden">
+                <Menu className="h-5 w-5" />
               </button>
               <div>
-                <div className="flex items-center gap-3">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Premium Admin</p>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-fuchsia-200">
-                    <Crown size={12} />
-                    <span>Premium</span>
-                  </div>
-                </div>
-                <h1 className="text-2xl font-black">{tabs.find((tab) => tab.id === activeTab)?.label ?? "Overview"}</h1>
-                <p className="text-sm text-slate-400">Live bundle, analytics, and school data.</p>
+                <h1 className="text-xl font-bold tracking-tight">
+                  {tabs.find((tab) => tab.id === activeTab)?.label ?? "Overview"}
+                </h1>
+                <p className="text-xs text-slate-500">
+                  {tabs.find((tab) => tab.id === activeTab)?.description}
+                </p>
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Bundle Packs</p>
-                <p className="mt-1 text-sm font-semibold">{loading.content ? "Refreshing..." : libraryItems.length}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Published</p>
-                <p className="mt-1 text-sm font-semibold">{loading.content ? "Refreshing..." : publishedBundles}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-fuchsia-500/18 to-cyan-500/15 px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Schools</p>
-                <p className="mt-1 text-sm font-semibold">{loading.schools ? "Refreshing..." : schools.length}</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => refreshData()}
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm transition-colors hover:bg-white/10"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
-          {error ? <div className="mb-5 rounded-2xl border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-300">{error}</div> : null}
-          {notice ? <div className="mb-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-300">{notice}</div> : null}
-          {activeTab === "overview" ? (
-            <div className="space-y-8">
-              <section className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-fuchsia-500/20 via-slate-900 to-cyan-500/20 p-6 sm:p-8">
-                <p className="text-xs uppercase tracking-[0.24em] text-fuchsia-200">Platform Command Center</p>
-                <h2 className="mt-3 max-w-3xl text-4xl font-black leading-tight">Premium publishing now runs on live backend data.</h2>
-                <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">Generate full story bundles, inspect chapters and activities, and track rollout with live counts instead of placeholders.</p>
-              </section>
-
-              <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><Layers size={20} className="mb-4" /><p className="text-sm text-slate-400">Content Packs</p><p className="mt-2 text-4xl font-black">{loading.analytics ? "..." : analytics.overview.contentPacks}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><Send size={20} className="mb-4" /><p className="text-sm text-slate-400">Published Contents</p><p className="mt-2 text-4xl font-black">{loading.analytics ? "..." : analytics.overview.publishedContents}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><School size={20} className="mb-4" /><p className="text-sm text-slate-400">Connected Schools</p><p className="mt-2 text-4xl font-black">{loading.schools ? "..." : schools.length}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><Activity size={20} className="mb-4" /><p className="text-sm text-slate-400">Activities</p><p className="mt-2 text-4xl font-black">{loading.analytics ? "..." : analytics.overview.activities}</p></div>
-              </section>
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          {/* Notifications */}
+          {error && (
+            <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
-          ) : null}
+          )}
+          {notice && (
+            <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+              <p className="text-sm text-emerald-400">{notice}</p>
+            </div>
+          )}
 
-          {activeTab === "generate" ? (
-            <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
-                <h2 className="text-2xl font-black">Story Creation Studio</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-400">This form now sends the full generation brief expected by the backend, including social-emotional learning focus areas.</p>
-                <div className="mt-6 space-y-4">
-                  <input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Bundle title" />
+          {/* Overview Tab */}
+          {activeTab === "overview" && (
+            <div className="space-y-8">
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 via-slate-900/50 to-cyan-500/10 p-8">
+                <div className="flex items-center gap-2 text-fuchsia-400">
+                  <Zap className="h-5 w-5" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Platform Command Center</span>
+                </div>
+                <h2 className="mt-4 text-3xl font-bold tracking-tight lg:text-4xl">
+                  Premium Publishing Dashboard
+                </h2>
+                <p className="mt-3 max-w-2xl text-slate-400">
+                  Generate full story bundles, inspect chapters and activities, and track rollout with live data.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard icon={Layers} label="Content Packs" value={loading.analytics ? "..." : analytics.overview.contentPacks} loading={loading.analytics} />
+                <StatCard icon={Send} label="Published Contents" value={loading.analytics ? "..." : analytics.overview.publishedContents} loading={loading.analytics} />
+                <StatCard icon={School} label="Connected Schools" value={loading.schools ? "..." : schools.length} loading={loading.schools} />
+                <StatCard icon={Activity} label="Activities" value={loading.analytics ? "..." : analytics.overview.activities} loading={loading.analytics} gradient />
+              </div>
+            </div>
+          )}
+
+          {/* Generate Tab */}
+          {activeTab === "generate" && (
+            <div className="grid gap-8 lg:grid-cols-2">
+              {/* Form Section */}
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                <div className="mb-6 flex items-center gap-2">
+                  <Wand2 className="h-5 w-5 text-fuchsia-400" />
+                  <h2 className="text-xl font-bold">Story Creation Studio</h2>
+                </div>
+                <p className="mb-6 text-sm text-slate-400">
+                  Fill in the details below to generate a complete premium story bundle with SEL focus areas.
+                </p>
+                
+                <div className="space-y-4">
+                  <input
+                    value={draft.title}
+                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm outline-none transition-all focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500"
+                    placeholder="Bundle title"
+                  />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <input type="number" value={draft.ageRangeMin} onChange={(event) => setDraft({ ...draft, ageRangeMin: Number(event.target.value) })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Min age" />
-                    <input type="number" value={draft.ageRangeMax} onChange={(event) => setDraft({ ...draft, ageRangeMax: Number(event.target.value) })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Max age" />
+                    <input
+                      type="number"
+                      value={draft.ageRangeMin}
+                      onChange={(e) => setDraft({ ...draft, ageRangeMin: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm outline-none focus:border-fuchsia-500"
+                      placeholder="Min age"
+                    />
+                    <input
+                      type="number"
+                      value={draft.ageRangeMax}
+                      onChange={(e) => setDraft({ ...draft, ageRangeMax: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm outline-none focus:border-fuchsia-500"
+                      placeholder="Max age"
+                    />
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <input value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Subject" />
-                    <input value={draft.theme} onChange={(event) => setDraft({ ...draft, theme: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Theme" />
+                    <input
+                      value={draft.subject}
+                      onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+                      className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm outline-none focus:border-fuchsia-500"
+                      placeholder="Subject"
+                    />
+                    <input
+                      value={draft.theme}
+                      onChange={(e) => setDraft({ ...draft, theme: e.target.value })}
+                      className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm outline-none focus:border-fuchsia-500"
+                      placeholder="Theme"
+                    />
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <input value={draft.difficulty} onChange={(event) => setDraft({ ...draft, difficulty: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Difficulty" />
-                    <input value={draft.language} onChange={(event) => setDraft({ ...draft, language: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Language code" />
-                  </div>
-                  <input value={draft.gradeLevels} onChange={(event) => setDraft({ ...draft, gradeLevels: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Grade levels separated by commas" />
-                  <input value={draft.skillFocus} onChange={(event) => setDraft({ ...draft, skillFocus: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Skill focus separated by commas" />
-                  <div className="space-y-3">
-                    <input value={draft.selFocus} onChange={(event) => setDraft({ ...draft, selFocus: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="SEL focus separated by commas" />
-                    <p className="text-sm leading-6 text-slate-400">
-                      Choose one or more social-emotional learning goals. These tags stay attached to the generated bundle and help you filter the library later.
-                    </p>
-                  </div>
-                  <div className="rounded-[1.4rem] border border-white/10 bg-slate-950/45 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Quick SEL Picks</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                  
+                  {/* SEL Focus Section */}
+                  <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/5 p-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-fuchsia-400">SEL Focus Areas</p>
+                    <div className="flex flex-wrap gap-2">
                       {selFocusOptions.map((option) => {
                         const selected = splitCsv(draft.selFocus).includes(option);
                         return (
@@ -677,15 +745,15 @@ export default function PremiumAdminDashboard() {
                                 return {
                                   ...prev,
                                   selFocus: nextValues.includes(option)
-                                    ? nextValues.filter((value) => value !== option).join(", ")
+                                    ? nextValues.filter((v) => v !== option).join(", ")
                                     : [...nextValues, option].join(", "),
                                 };
                               })
                             }
-                            className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
+                            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                               selected
-                                ? "bg-fuchsia-500/20 text-fuchsia-200 ring-1 ring-fuchsia-400/40"
-                                : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
+                                ? "bg-fuchsia-500 text-white"
+                                : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
                             }`}
                           >
                             {prettifySelFocus(option)}
@@ -694,96 +762,129 @@ export default function PremiumAdminDashboard() {
                       })}
                     </div>
                   </div>
-                  <div className="rounded-[1.4rem] border border-fuchsia-400/20 bg-gradient-to-br from-fuchsia-500/10 via-slate-950/60 to-cyan-500/10 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-fuchsia-200">SEL Guide</p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      {selFocusOptions.map((option) => (
-                        <div key={option} className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                          <p className="text-sm font-semibold text-white">{prettifySelFocus(option)}</p>
-                          <p className="mt-2 text-sm leading-6 text-slate-400">{selFocusDescriptions[option]}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <textarea rows={3} value={draft.topic} onChange={(event) => setDraft({ ...draft, topic: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Topic" />
-                  <textarea rows={3} value={draft.moralLesson} onChange={(event) => setDraft({ ...draft, moralLesson: event.target.value })} className="w-full rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 outline-none focus:border-fuchsia-400" placeholder="Moral lesson" />
-                  <button onClick={() => void handleGenerate()} disabled={generating} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-rose-600 to-cyan-500 px-5 py-3 font-bold disabled:opacity-60"><Wand2 size={18} />{generating ? "Generating Bundle..." : "Generate Premium Bundle"}</button>
+                  
+                  <textarea
+                    rows={3}
+                    value={draft.topic}
+                    onChange={(e) => setDraft({ ...draft, topic: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm outline-none focus:border-fuchsia-500"
+                    placeholder="Topic"
+                  />
+                  <textarea
+                    rows={3}
+                    value={draft.moralLesson}
+                    onChange={(e) => setDraft({ ...draft, moralLesson: e.target.value })}
+                    className="w-full rounded-xl border border-white/10 bg-slate-900/50 px-4 py-3 text-sm outline-none focus:border-fuchsia-500"
+                    placeholder="Moral lesson"
+                  />
+                  
+                  <button
+                    onClick={() => void handleGenerate()}
+                    disabled={generating}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-cyan-600 px-6 py-3 font-semibold transition-all hover:shadow-lg hover:shadow-fuchsia-500/20 disabled:opacity-50"
+                  >
+                    <Wand2 className="h-5 w-5" />
+                    {generating ? "Generating..." : "Generate Premium Bundle"}
+                  </button>
                 </div>
-              </section>
+              </div>
 
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
+              {/* Preview Section */}
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
                 {selectedBundle ? (
-                  <div className="space-y-5">
-                    <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
-                      <h3 className="text-3xl font-black">{getBundleTitle(selectedBundle)}</h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-300">{selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? draft.topic}</p>
-                      {selectedSelFocus.length > 0 ? (
+                  <div className="space-y-6">
+                    <div className="rounded-xl border border-white/10 bg-slate-900/50 p-5">
+                      <h3 className="text-2xl font-bold">{getBundleTitle(selectedBundle)}</h3>
+                      <p className="mt-3 text-sm text-slate-400">
+                        {selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? draft.topic}
+                      </p>
+                      {selectedSelFocus.length > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2">
                           {selectedSelFocus.map((item) => (
-                            <span key={item} className="rounded-full bg-fuchsia-500/18 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-200">
+                            <span key={item} className="rounded-full bg-fuchsia-500/20 px-3 py-1 text-xs font-medium text-fuchsia-300">
                               {prettifySelFocus(item)}
                             </span>
                           ))}
                         </div>
-                      ) : null}
+                      )}
                     </div>
-                    <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-                      <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950/55">
-                        {selectedCoverImage ? (
-                          <img src={selectedCoverImage} alt={getBundleTitle(selectedBundle)} className="h-72 w-full object-cover" />
-                        ) : (
-                          <div className="flex h-72 items-center justify-center bg-gradient-to-br from-fuchsia-500/20 via-slate-900 to-cyan-500/20 text-center text-sm text-slate-400">
-                            Cover art will appear here after image generation.
-                          </div>
-                        )}
-                      </div>
-                      <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Story Art</p>
-                            <h4 className="mt-2 text-xl font-bold">Generate cover and chapter images</h4>
-                          </div>
-                          <ImageIcon size={20} className="text-fuchsia-300" />
-                        </div>
-                        <p className="mt-3 text-sm leading-7 text-slate-400">
-                          Use the saved story prompts to create the book cover and chapter illustrations, then refresh the bundle preview instantly.
-                        </p>
-                        <button
-                          onClick={() => void handleGenerateImages()}
-                          disabled={!selectedStoryId || !!generatingImagesId}
-                          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-rose-500 to-fuchsia-600 px-5 py-3 font-bold text-slate-950 disabled:opacity-60"
-                        >
-                          <ImageIcon size={18} />
-                          {generatingImagesId === selectedStoryId ? "Generating Images..." : "Generate Story Images"}
-                        </button>
-                      </div>
-                    </div>
+                    
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Chapters</p><p className="mt-2 text-3xl font-black">{selectedStoryChapters.length}</p></div>
-                      <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Activities</p><p className="mt-2 text-3xl font-black">{selectedActivities.length}</p></div>
+                      <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Chapters</p>
+                        <p className="mt-2 text-3xl font-bold">{selectedStoryChapters.length}</p>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
+                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Activities</p>
+                        <p className="mt-2 text-3xl font-bold">{selectedActivities.length}</p>
+                      </div>
                     </div>
-                    <button onClick={() => void handlePublish(selectedBundleId)} disabled={!selectedBundleId || publishingId === selectedBundleId} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-bold text-slate-950 disabled:opacity-60"><Send size={18} />{publishingId === selectedBundleId ? "Publishing..." : "Publish Bundle to Schools"}</button>
+                    
+                    <button
+                      onClick={() => void handlePublish(selectedBundleId)}
+                      disabled={!selectedBundleId || publishingId === selectedBundleId}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 font-semibold transition-all hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      <Send className="h-5 w-5" />
+                      {publishingId === selectedBundleId ? "Publishing..." : "Publish Bundle"}
+                    </button>
                   </div>
                 ) : (
-                  <EmptyPanel title="Your generated bundle will appear here." body="Generate a premium package to inspect it and publish it to schools." />
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <Sparkles className="mb-4 h-12 w-12 text-slate-600" />
+                    <h3 className="text-lg font-semibold text-white">No Bundle Generated Yet</h3>
+                    <p className="mt-2 text-sm text-slate-400">
+                      Fill out the form and click generate to create your first premium bundle.
+                    </p>
+                  </div>
                 )}
-              </section>
+              </div>
             </div>
-          ) : null}
-          {activeTab === "content" ? (
-            <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
+          )}
+
+          {/* Content Tab */}
+          {activeTab === "content" && (
+            <div className="space-y-8">
+              {/* Library Header */}
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-2xl font-black">Content Library</h2>
-                    <p className="mt-2 text-sm text-slate-400">This now reads the real bundle format returned by the backend, including SEL focus.</p>
+                    <div className="flex items-center gap-2 text-fuchsia-400">
+                      <FolderOpen className="h-5 w-5" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">Content Library</span>
+                    </div>
+                    <h2 className="mt-2 text-2xl font-bold">Premium Stories</h2>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Browse and manage all your premium story bundles
+                    </p>
                   </div>
-                  <button onClick={() => navigateTo("generate")} className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-rose-600 to-cyan-500 px-5 py-3 font-bold"><Plus size={18} />New Bundle</button>
+                  <AppActionButton onClick={() => navigateTo("generate")} tone="primary">
+                    <Plus className="h-4 w-4" />
+                    <span>New Story</span>
+                  </AppActionButton>
                 </div>
-                <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-slate-950/45 p-4">
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <Filter size={16} />
-                    <p className="text-sm font-semibold">Filter by SEL Focus</p>
+                
+                {/* Stats Grid */}
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
+                    <p className="text-sm text-slate-400">Total Stories</p>
+                    <p className="mt-1 text-2xl font-bold">{loading.content ? "..." : libraryItems.length}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-slate-900/50 p-4">
+                    <p className="text-sm text-slate-400">Published</p>
+                    <p className="mt-1 text-2xl font-bold">{loading.content ? "..." : publishedBundles}</p>
+                  </div>
+                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                    <p className="text-sm text-slate-400">Active Filter</p>
+                    <p className="mt-1 text-2xl font-bold">{selFocusFilter.length > 0 ? selFocusFilter.length : "All"}</p>
+                  </div>
+                </div>
+                
+                {/* Filter */}
+                <div className="mt-6 rounded-xl border border-white/10 bg-slate-900/30 p-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-medium">Filter by SEL Focus</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {selFocusOptions.map((option) => {
@@ -795,283 +896,483 @@ export default function PremiumAdminDashboard() {
                           onClick={() =>
                             setSelFocusFilter((current) =>
                               current.includes(option)
-                                ? current.filter((value) => value !== option)
-                                : [...current, option],
+                                ? current.filter((v) => v !== option)
+                                : [...current, option]
                             )
                           }
-                          className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
+                          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                             selected
-                              ? "bg-cyan-500/20 text-cyan-200 ring-1 ring-cyan-400/40"
-                              : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
+                              ? "bg-cyan-500 text-white"
+                              : "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
                           }`}
                         >
                           {prettifySelFocus(option)}
                         </button>
                       );
                     })}
-                    {selFocusFilter.length > 0 ? (
+                    {selFocusFilter.length > 0 && (
                       <button
                         type="button"
                         onClick={() => setSelFocusFilter([])}
-                        className="rounded-full bg-red-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-red-200 ring-1 ring-red-400/20"
+                        className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400"
                       >
-                        Clear Filter
+                        Clear All
                       </button>
-                    ) : null}
+                    )}
                   </div>
                 </div>
-                <div className="mt-6 overflow-hidden rounded-[1.75rem] border border-white/10">
-                  <div className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 border-b border-white/10 bg-slate-950/55 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"><span>Bundle</span><span>Subject</span><span>Status</span><span className="text-right">Action</span></div>
-                  <div className="divide-y divide-white/5">
-                    {loading.content ? <div className="px-5 py-10 text-center text-sm text-slate-400">Loading premium stories...</div> : libraryItems.length === 0 ? <div className="px-5 py-10 text-center text-sm text-slate-400">{selFocusFilter.length > 0 ? "No premium stories matched the selected SEL focus yet." : "No premium stories were returned by the backend yet."}</div> : libraryItems.map((item) => <div key={item._id} className="grid grid-cols-[1.2fr_0.85fr_0.7fr_0.8fr] gap-3 px-5 py-4 text-sm text-slate-300"><div><p className="font-semibold">{item.title}</p><p className="mt-1 text-xs text-slate-500">{prettyDate(item.updatedAt ?? item.createdAt)}</p>{item.selFocus?.length ? <div className="mt-2 flex flex-wrap gap-1.5">{item.selFocus.slice(0, 2).map((focus) => <span key={focus} className="rounded-full bg-fuchsia-500/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-fuchsia-200">{prettifySelFocus(focus)}</span>)}</div> : null}</div><div className="text-slate-400">{item.subject ?? item.theme ?? "General"}</div><div><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">{item.status ?? "draft"}</span></div><div className="flex justify-end gap-2"><button onClick={() => void handleOpenBundle(item._id)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">{openingId === item._id ? "Opening..." : "View"}</button>{item.status !== "published" ? <button onClick={() => void handlePublish(item._id)} disabled={publishingId === item._id} className="rounded-xl bg-emerald-500 px-3 py-2 font-semibold text-slate-950 disabled:opacity-60">{publishingId === item._id ? "Publishing..." : "Publish"}</button> : null}</div></div>)}
-                  </div>
+              </div>
+              
+              {/* Story Grid */}
+              {loading.content ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-64 animate-pulse rounded-xl border border-white/10 bg-white/5" />
+                  ))}
                 </div>
-              </section>
-
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
-                {selectedBundle ? (
-                  <div className="space-y-6">
-                    <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
-                      <h3 className="text-3xl font-black">{getBundleTitle(selectedBundle)}</h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-300">{selectedBundle.story?.content.summary ?? selectedBundle.story?.content.description ?? "No short description provided yet."}</p>
-                      <div className="mt-5 flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setEditingStory((current) => !current)}
-                          disabled={!selectedStoryId}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 disabled:opacity-50"
-                        >
-                          <PencilLine size={16} />
-                          {editingStory ? "Close Edit" : "Edit Story"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleRegenerateStory()}
-                          disabled={!selectedStoryId || regeneratingStory}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 disabled:opacity-50"
-                        >
-                          <RotateCcw size={16} />
-                          {regeneratingStory ? "Regenerating..." : "Redo Story"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteStory()}
-                          disabled={!selectedStoryId || deletingStory}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 disabled:opacity-50"
-                        >
-                          <Trash2 size={16} />
-                          {deletingStory ? "Deleting..." : "Delete Story"}
-                        </button>
-                      </div>
-                      {selectedSelFocus.length > 0 ? (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {selectedSelFocus.map((item) => (
-                            <span key={item} className="rounded-full bg-fuchsia-500/18 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-fuchsia-200">
-                              {prettifySelFocus(item)}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-                      {editingStory ? (
-                        <div className="mt-5 space-y-4 rounded-[1.35rem] border border-white/10 bg-white/5 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-white">Edit Story Details</p>
-                              <p className="mt-1 text-sm text-slate-400">Update the visible story details without generating a brand new package.</p>
-                            </div>
+              ) : libraryItems.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-12 text-center">
+                  <Sparkles className="mx-auto mb-4 h-12 w-12 text-slate-600" />
+                  <h3 className="text-lg font-semibold text-white">No stories found</h3>
+                  <p className="mt-2 text-sm text-slate-400">
+                    {selFocusFilter.length > 0
+                      ? "No stories match the selected SEL filters. Try clearing some filters."
+                      : "Generate your first premium story to get started."}
+                  </p>
+                  {selFocusFilter.length > 0 && (
+                    <button
+                      onClick={() => setSelFocusFilter([])}
+                      className="mt-4 rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-medium text-white"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {libraryItems.map((item) => {
+                    const isActive = selectedBundleId === item._id || selectedStoryId === item._id;
+                    return (
+                      <article
+                        key={item._id}
+                        className={`group cursor-pointer rounded-xl border p-5 transition-all hover:border-white/20 hover:bg-white/5 ${
+                          isActive && drawerOpen ? "border-fuchsia-500/50 bg-fuchsia-500/5" : "border-white/10 bg-white/5"
+                        }`}
+                        onClick={() => void handleOpenBundle(item._id)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-white line-clamp-1">{item.title}</h3>
+                            <p className="mt-1 text-xs text-slate-500">{prettyDate(item.updatedAt ?? item.createdAt)}</p>
                           </div>
-                          <input value={storyEditDraft.title} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, title: event.target.value })} placeholder="Story title" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
-                          <textarea rows={3} value={storyEditDraft.summary} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, summary: event.target.value })} placeholder="Short summary" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
-                          <textarea rows={4} value={storyEditDraft.description} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, description: event.target.value })} placeholder="Long description" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <input value={storyEditDraft.theme} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, theme: event.target.value })} placeholder="Theme" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
-                            <input value={storyEditDraft.status} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, status: event.target.value })} placeholder="Status" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
-                          </div>
-                          <input value={storyEditDraft.selFocus} onChange={(event) => setStoryEditDraft({ ...storyEditDraft, selFocus: event.target.value })} placeholder="SEL focus separated by commas" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-fuchsia-400" />
-                          <div className="flex flex-wrap gap-2">
-                            {selFocusOptions.map((option) => {
-                              const selected = splitCsv(storyEditDraft.selFocus).includes(option);
-                              return (
-                                <button
-                                  key={`edit-${option}`}
-                                  type="button"
-                                  onClick={() =>
-                                    setStoryEditDraft((prev) => {
-                                      const nextValues = splitCsv(prev.selFocus);
-                                      return {
-                                        ...prev,
-                                        selFocus: nextValues.includes(option)
-                                          ? nextValues.filter((value) => value !== option).join(", ")
-                                          : [...nextValues, option].join(", "),
-                                      };
-                                    })
-                                  }
-                                  className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
-                                    selected
-                                      ? "bg-fuchsia-500/20 text-fuchsia-200 ring-1 ring-fuchsia-400/40"
-                                      : "bg-white/5 text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
-                                  }`}
-                                >
-                                  {prettifySelFocus(option)}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <button onClick={() => void handleSaveStory()} disabled={!selectedStoryId || savingStory || !storyEditDraft.title.trim()} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-rose-600 to-cyan-500 px-5 py-3 font-bold disabled:opacity-60">
-                            <PencilLine size={18} />
-                            {savingStory ? "Saving Story..." : "Save Story Changes"}
-                          </button>
+                          <AppBadge label={item.status ?? "draft"} tone="slate" className="border-white/10 bg-white/10 text-xs" />
                         </div>
-                      ) : null}
-                      <div className="mt-5 rounded-[1.35rem] border border-cyan-400/15 bg-cyan-500/5 p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-semibold text-white">Regenerate Story Content</p>
-                            <p className="mt-1 text-sm leading-6 text-slate-400">
-                              Use this when the story needs a stronger rewrite. It refreshes the story body, chapters, and story questions from the saved brief.
-                            </p>
+                        
+                        <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+                          <span>{item.subject ?? item.theme ?? "General"}</span>
+                          <span>•</span>
+                          <span>{item.type === "STORY" ? "Story" : "Bundle"}</span>
+                        </div>
+                        
+                        {item.selFocus && item.selFocus.length > 0 && (
+  <div className="mt-3 flex flex-wrap gap-1.5">
+    {item.selFocus.slice(0, 2).map((focus) => (
+                              <span key={focus} className="rounded-full bg-fuchsia-500/10 px-2 py-0.5 text-[10px] font-medium text-fuchsia-400">
+                                {prettifySelFocus(focus)}
+                              </span>
+                            ))}
+                            {item.selFocus.length > 2 && (
+                              <span className="text-[10px] text-slate-500">+{item.selFocus.length - 2}</span>
+                            )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => void handleRegenerateStory()}
-                            disabled={!selectedStoryId || regeneratingStory}
-                            className="hidden rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60 md:inline-flex"
-                          >
-                            {regeneratingStory ? "Working..." : "Run Now"}
-                          </button>
-                        </div>
-                        <div className="mt-4 grid gap-4 md:grid-cols-2">
-                          <input value={regenerateDraft.theme} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, theme: event.target.value })} placeholder="Theme override" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
-                          <input type="number" value={regenerateDraft.chapterCount} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, chapterCount: Number(event.target.value) || 1 })} placeholder="Chapter count" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
-                        </div>
-                        <input value={regenerateDraft.selFocus} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, selFocus: event.target.value })} placeholder="SEL focus separated by commas" className="mt-4 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <textarea rows={2} value={regenerateDraft.tone} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, tone: event.target.value })} placeholder="Tone" className="mt-4 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <textarea rows={4} value={regenerateDraft.customPromptNotes} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, customPromptNotes: event.target.value })} placeholder="Custom prompt notes" className="mt-4 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <label className="mt-4 flex items-center gap-3 text-sm text-slate-300">
-                          <input type="checkbox" checked={regenerateDraft.clearCoverImage} onChange={(event) => setRegenerateDraft({ ...regenerateDraft, clearCoverImage: event.target.checked })} className="h-4 w-4 rounded border-white/20 bg-slate-950/70" />
-                          Clear the old cover image so a fresh one can be generated after the rewrite.
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => void handleRegenerateStory()}
-                          disabled={!selectedStoryId || regeneratingStory}
-                          className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-bold text-slate-950 disabled:opacity-60 md:hidden"
-                        >
-                          <RotateCcw size={18} />
-                          {regeneratingStory ? "Regenerating Story..." : "Regenerate Story"}
-                        </button>
-                      </div>
-                      <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-                        <div className="overflow-hidden rounded-[1.35rem] border border-white/10 bg-slate-900/70">
-                          {selectedCoverImage ? (
-                            <img src={selectedCoverImage} alt={getBundleTitle(selectedBundle)} className="h-64 w-full object-cover" />
-                          ) : (
-                            <div className="flex h-64 items-center justify-center bg-gradient-to-br from-fuchsia-500/20 via-slate-900 to-cyan-500/20 text-center text-sm text-slate-400">
-                              No cover image yet. Generate story images to populate this preview.
-                            </div>
+                        )}
+                        
+                        <div className="mt-4 flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-xs text-slate-500">
+                            <Eye className="h-3 w-3" />
+                            <span>View details</span>
+                          </div>
+                          {item.status !== "published" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handlePublish(item._id);
+                              }}
+                              disabled={publishingId === item._id}
+                              className="rounded-lg bg-emerald-600/20 px-3 py-1 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-600/30"
+                            >
+                              {publishingId === item._id ? "..." : "Publish"}
+                            </button>
                           )}
                         </div>
-                        <div className="rounded-[1.35rem] border border-white/10 bg-white/5 p-4">
-                          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Image Workflow</p>
-                          <p className="mt-3 text-sm leading-7 text-slate-400">
-                            After a story package is generated, click the button below to create the cover art and chapter illustrations from the saved prompts.
-                          </p>
-                          <button
-                            onClick={() => void handleGenerateImages()}
-                            disabled={!selectedStoryId || !!generatingImagesId}
-                            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 via-rose-500 to-fuchsia-600 px-5 py-3 font-bold text-slate-950 disabled:opacity-60"
-                          >
-                            <ImageIcon size={18} />
-                            {generatingImagesId === selectedStoryId ? "Generating Images..." : "Generate Story Images"}
-                          </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Schools Tab */}
+          {activeTab === "schools" && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
+                <div className="flex items-center gap-2 text-fuchsia-400">
+                  <Users className="h-5 w-5" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">School Management</span>
+                </div>
+                <h2 className="mt-3 text-3xl font-bold">Manage Partner Schools</h2>
+                <p className="mt-2 max-w-2xl text-slate-400">
+                  View and manage all schools connected to your premium content.
+                </p>
+              </div>
+              
+              <div className="grid gap-4 sm:grid-cols-3">
+                <StatCard icon={School} label="Total Schools" value={loading.schools ? "..." : schools.length} loading={loading.schools} />
+                <StatCard icon={CheckCircle2} label="Active Schools" value={loading.schools ? "..." : activeSchools} loading={loading.schools} />
+                <StatCard icon={TrendingUp} label="Rollout Status" value={loading.schools ? "..." : schools.length > 0 ? "Active" : "Pending"} loading={loading.schools} gradient />
+              </div>
+              
+              {schoolsNotice && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+                  <p className="text-sm text-amber-400">{schoolsNotice}</p>
+                </div>
+              )}
+              
+              <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                <div className="grid grid-cols-4 gap-4 border-b border-white/10 bg-slate-900/50 px-6 py-4 text-xs font-medium uppercase tracking-wider text-slate-500">
+                  <span>School</span>
+                  <span>Code</span>
+                  <span>Status</span>
+                  <span>Location</span>
+                </div>
+                <div className="divide-y divide-white/5">
+                  {loading.schools ? (
+                    <div className="px-6 py-12 text-center text-sm text-slate-500">Loading schools...</div>
+                  ) : schools.length === 0 ? (
+                    <div className="px-6 py-12 text-center text-sm text-slate-500">No schools found</div>
+                  ) : (
+                    schools.map((school) => (
+                      <div key={school.id} className="grid grid-cols-4 gap-4 px-6 py-4 text-sm">
+                        <div>
+                          <p className="font-medium text-white">{school.name}</p>
+                          <p className="mt-1 text-xs text-slate-500">{prettyDate(school.createdAt)}</p>
+                        </div>
+                        <div className="text-slate-400">{school.schoolCode ?? "N/A"}</div>
+                        <div>
+                          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                            (school.status ?? "active") === "active" 
+                              ? "bg-emerald-500/20 text-emerald-400" 
+                              : "bg-red-500/20 text-red-400"
+                          }`}>
+                            {school.status ?? "active"}
+                          </span>
+                        </div>
+                        <div className="text-slate-400">{school.location ?? "Not specified"}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === "analytics" && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-8">
+                <div className="flex items-center gap-2 text-fuchsia-400">
+                  <BarChart3 className="h-5 w-5" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Performance Metrics</span>
+                </div>
+                <h2 className="mt-3 text-3xl font-bold">Content Analytics</h2>
+                <p className="mt-2 max-w-2xl text-slate-400">
+                  Track engagement and performance across all your premium content.
+                </p>
+              </div>
+              
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard icon={BookOpen} label="Stories" value={loading.analytics ? "..." : analytics.overview.stories} loading={loading.analytics} />
+                <StatCard icon={Activity} label="Quizzes" value={loading.analytics ? "..." : analytics.overview.quizzes} loading={loading.analytics} />
+                <StatCard icon={Sparkles} label="Games" value={loading.analytics ? "..." : analytics.overview.games} loading={loading.analytics} />
+                <StatCard icon={Layers} label="Total Content" value={loading.analytics ? "..." : analytics.overview.totalContents} loading={loading.analytics} gradient />
+              </div>
+              
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+                <div className="mb-6 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Engagement Summary</h3>
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-400">
+                    {analytics.engagementSummary.length} items
+                  </span>
+                </div>
+                
+                {loading.analytics ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-20 animate-pulse rounded-xl bg-white/5" />
+                    ))}
+                  </div>
+                ) : analytics.engagementSummary.length === 0 ? (
+                  <div className="py-12 text-center text-sm text-slate-500">No engagement data available yet</div>
+                ) : (
+                  <div className="space-y-3">
+                    {analytics.engagementSummary.slice(0, 6).map((entry, idx) => (
+                      <div key={idx} className="rounded-xl border border-white/10 bg-slate-900/30 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="font-medium text-white">{String(entry.title ?? "Untitled")}</p>
+                            <p className="text-sm text-slate-500">{String(entry.type ?? "Content")}</p>
+                          </div>
+                          <div className="flex gap-4 text-sm">
+                            <div className="text-center">
+                              <p className="text-xs text-slate-500">Attempts</p>
+                              <p className="font-semibold text-white">{String(entry.totalAttempts ?? 0)}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-slate-500">Best Score</p>
+                              <p className="font-semibold text-white">{String(entry.averageBestScore ?? 0)}%</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-slate-500">Completed</p>
+                              <p className="font-semibold text-white">{String(entry.completedCount ?? 0)}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
-                      <div className="mb-4 flex items-center justify-between"><h4 className="text-lg font-bold">Story Chapters</h4><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">{selectedStoryChapters.length}</span></div>
-                      <div className="space-y-3">
-                        {selectedStoryChapters.length === 0 ? <p className="text-sm text-slate-400">No chapters returned yet.</p> : selectedStoryChapters.map((chapter, index) => <div key={chapter._id ?? `${chapter.title}-${index}`} className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4">{chapter.imageUrl ? <img src={chapter.imageUrl} alt={chapter.title ?? `Chapter ${index + 1}`} className="mb-4 h-44 w-full rounded-2xl object-cover" /> : <div className="mb-4 flex h-44 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-slate-950/45 text-center text-xs uppercase tracking-[0.18em] text-slate-500">No chapter image yet</div>}<p className="text-xs uppercase tracking-[0.16em] text-slate-500">Chapter {chapter.order ?? index + 1}</p><h5 className="mt-1 font-semibold">{chapter.title ?? `Chapter ${index + 1}`}</h5><p className="mt-2 line-clamp-6 text-sm leading-6 text-slate-400">{chapter.body ?? "No chapter body returned."}</p></div>)}
-                      </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5"><div className="mb-3 flex items-center justify-between"><h4 className="text-lg font-bold">Story Questions</h4><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">{selectedStoryQuestions.length}</span></div><div className="space-y-2">{selectedStoryQuestions.length === 0 ? <p className="text-sm text-slate-400">No story questions returned.</p> : selectedStoryQuestions.slice(0, 3).map((question, index) => <div key={question._id ?? `${question.prompt}-${index}`} className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">{question.prompt ?? `Question ${index + 1}`}</div>)}</div></div>
-                      <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5"><div className="mb-3 flex items-center justify-between"><h4 className="text-lg font-bold">Quiz Questions</h4><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">{selectedQuizQuestions.length}</span></div><div className="space-y-2">{selectedQuizQuestions.length === 0 ? <p className="text-sm text-slate-400">No quiz questions returned.</p> : selectedQuizQuestions.slice(0, 3).map((question, index) => <div key={question._id ?? `${question.prompt}-${index}`} className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-300">{question.prompt ?? `Quiz Question ${index + 1}`}</div>)}</div></div>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
-                      <div className="flex items-center justify-between"><h4 className="text-lg font-bold">Premium Activities</h4><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">{selectedActivities.length}</span></div>
-                      <div className="mt-4 space-y-3">
-                        {selectedActivities.length === 0 ? <p className="text-sm text-slate-400">No activities attached yet.</p> : selectedActivities.map((activity: PlatformActivity, index) => <div key={activity._id ?? `${activity.title}-${index}`} className="rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-center justify-between gap-3"><h5 className="font-semibold">{activity.title}</h5><span className="rounded-full bg-blue-500/15 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-blue-300">{activity.configuration?.activityType ?? "activity"}</span></div><p className="mt-2 text-sm text-slate-400">{activity.summary ?? activity.description ?? "No summary yet."}</p></div>)}
-                      </div>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
-                      <h4 className="text-lg font-bold">Add Activity</h4>
-                      <div className="mt-4 space-y-4">
-                        <input value={activityDraft.title} onChange={(event) => setActivityDraft({ ...activityDraft, title: event.target.value })} placeholder="Activity title" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <input value={activityDraft.summary} onChange={(event) => setActivityDraft({ ...activityDraft, summary: event.target.value })} placeholder="Short summary" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <textarea rows={3} value={activityDraft.instructions} onChange={(event) => setActivityDraft({ ...activityDraft, instructions: event.target.value })} placeholder="Teacher instructions" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <input value={activityDraft.activityType} onChange={(event) => setActivityDraft({ ...activityDraft, activityType: event.target.value })} placeholder="Activity type" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                          <input type="number" value={activityDraft.estimatedDurationMinutes} onChange={(event) => setActivityDraft({ ...activityDraft, estimatedDurationMinutes: Number(event.target.value) })} placeholder="Duration" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                        </div>
-                        <input value={activityDraft.materialsNeeded} onChange={(event) => setActivityDraft({ ...activityDraft, materialsNeeded: event.target.value })} placeholder="Materials separated by commas" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <textarea rows={4} value={activityDraft.tasks} onChange={(event) => setActivityDraft({ ...activityDraft, tasks: event.target.value })} placeholder="One task per line" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <textarea rows={3} value={activityDraft.teacherNotes} onChange={(event) => setActivityDraft({ ...activityDraft, teacherNotes: event.target.value })} placeholder="Teacher notes" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none focus:border-cyan-400" />
-                        <button onClick={() => void handleAddActivity()} disabled={!selectedBundleId || addingActivity || !activityDraft.title.trim()} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 font-bold text-slate-950 disabled:opacity-60"><Activity size={18} />{addingActivity ? "Saving Activity..." : "Save Activity"}</button>
-                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Drawer Component */}
+      {drawerOpen && selectedBundle && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setDrawerOpen(false)}
+          />
+          
+          {/* Drawer */}
+          <div className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl overflow-y-auto bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl transition-transform duration-300 ease-out animate-in slide-in-from-right">
+            {/* Drawer Header */}
+            <div className="sticky top-0 z-10 border-b border-white/10 bg-slate-900/95 backdrop-blur-xl">
+              <div className="flex items-center justify-between px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-gradient-to-br from-fuchsia-500 to-cyan-500 p-2">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">{getBundleTitle(selectedBundle)}</h2>
+                    <p className="text-xs text-slate-400">Bundle Details</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+{selectedBundle.story?.content.status !== "published" && (           
+           <button
+                      onClick={() => void handlePublish(selectedBundleId)}
+                      disabled={publishingId === selectedBundleId}
+                      className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      {publishingId === selectedBundleId ? "Publishing..." : "Publish"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDrawerOpen(false)}
+                    className="rounded-lg border border-white/10 p-2 transition-colors hover:bg-white/10"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Drawer Content */}
+            <div className="space-y-6 p-6">
+              {/* Story Overview */}
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Story Overview</h3>
+                  <button
+                    onClick={() => setEditingStory(!editingStory)}
+                    className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-white/10"
+                  >
+                    <PencilLine className="inline h-4 w-4 mr-1" />
+                    Edit
+                  </button>
+                </div>
+                
+                {editingStory ? (
+                  <div className="space-y-4">
+                    <input
+                      value={storyEditDraft.title}
+                      onChange={(e) => setStoryEditDraft({ ...storyEditDraft, title: e.target.value })}
+                      className="w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-2 text-sm outline-none focus:border-fuchsia-500"
+                      placeholder="Title"
+                    />
+                    <textarea
+                      rows={2}
+                      value={storyEditDraft.summary}
+                      onChange={(e) => setStoryEditDraft({ ...storyEditDraft, summary: e.target.value })}
+                      className="w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-2 text-sm outline-none focus:border-fuchsia-500"
+                      placeholder="Summary"
+                    />
+                    <textarea
+                      rows={3}
+                      value={storyEditDraft.description}
+                      onChange={(e) => setStoryEditDraft({ ...storyEditDraft, description: e.target.value })}
+                      className="w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-2 text-sm outline-none focus:border-fuchsia-500"
+                      placeholder="Description"
+                    />
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => void handleSaveStory()}
+                        disabled={savingStory}
+                        className="flex-1 rounded-lg bg-fuchsia-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-fuchsia-500 disabled:opacity-50"
+                      >
+                        {savingStory ? "Saving..." : "Save Changes"}
+                      </button>
+                      <button
+                        onClick={() => setEditingStory(false)}
+                        className="rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-400 transition-colors hover:bg-white/10"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 ) : (
-                  <EmptyPanel title="Select a bundle to inspect the full premium package." body="Open a bundle from the library to review chapters, questions, activities, and publication status." />
+                  <>
+                    <h4 className="text-xl font-bold text-white mb-2">{selectedBundle.story?.content.title}</h4>
+                    <p className="text-sm text-slate-400 mb-4">{selectedBundle.story?.content.summary}</p>
+                    {selectedSelFocus.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSelFocus.map((item) => (
+                          <span key={item} className="rounded-full bg-fuchsia-500/20 px-3 py-1 text-xs font-medium text-fuchsia-300">
+                            {prettifySelFocus(item)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
-              </section>
-            </div>
-          ) : null}
+              </div>
 
-          {activeTab === "schools" ? (
-            <div className="space-y-6">
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-8">
-                <h2 className="text-4xl font-black">Manage Schools</h2>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-400">This panel now uses live data when a school-list endpoint exists and falls back cleanly when it does not.</p>
-                {schoolsNotice ? <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4 text-sm text-amber-200">{schoolsNotice}</div> : null}
-              </section>
-              <section className="grid gap-5 md:grid-cols-3">
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><Users size={20} className="mb-4" /><p className="text-sm text-slate-400">Total Schools</p><p className="mt-2 text-4xl font-black">{loading.schools ? "..." : schools.length}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><CheckCircle2 size={20} className="mb-4" /><p className="text-sm text-slate-400">Active Schools</p><p className="mt-2 text-4xl font-black">{loading.schools ? "..." : activeSchools}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><TrendingUp size={20} className="mb-4" /><p className="text-sm text-slate-400">Rollout Scope</p><p className="mt-2 text-4xl font-black">{loading.schools ? "..." : schools.length > 0 ? "Live" : "--"}</p></div>
-              </section>
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
-                <div className="overflow-hidden rounded-[1.5rem] border border-white/10">
-                  <div className="grid grid-cols-[1.1fr_0.7fr_0.8fr_0.8fr] gap-3 border-b border-white/10 bg-slate-950/55 px-5 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"><span>School</span><span>Code</span><span>Status</span><span>Location</span></div>
-                  <div className="divide-y divide-white/5">
-                    {loading.schools ? <div className="px-5 py-10 text-center text-sm text-slate-400">Loading schools...</div> : schools.length === 0 ? <div className="px-5 py-10 text-center text-sm text-slate-400">No schools could be loaded from the backend.</div> : schools.map((school) => <div key={school.id} className="grid grid-cols-[1.1fr_0.7fr_0.8fr_0.8fr] gap-3 px-5 py-4 text-sm text-slate-300"><div><p className="font-semibold">{school.name}</p><p className="mt-1 text-xs text-slate-500">{prettyDate(school.createdAt)}</p></div><div className="text-slate-400">{school.schoolCode ?? "N/A"}</div><div><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">{school.status ?? "active"}</span></div><div className="text-slate-400">{school.location ?? "Not provided"}</div></div>)}
+              {/* Cover Image */}
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Cover Image</h3>
+                  <button
+                    onClick={() => void handleGenerateImages()}
+                    disabled={!selectedStoryId || !!generatingImagesId}
+                    className="rounded-lg bg-gradient-to-r from-amber-500 to-fuchsia-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:shadow-lg disabled:opacity-50"
+                  >
+                    <ImageIcon className="inline h-4 w-4 mr-1" />
+                    {generatingImagesId === selectedStoryId ? "Generating..." : "Generate"}
+                  </button>
+                </div>
+                {selectedCoverImage ? (
+                  <img src={selectedCoverImage} alt="Cover" className="w-full rounded-lg object-cover max-h-64" />
+                ) : (
+                  <div className="flex h-48 items-center justify-center rounded-lg bg-slate-900/50 text-sm text-slate-500">
+                    No cover image yet
                   </div>
-                </div>
-              </section>
-            </div>
-          ) : null}
+                )}
+              </div>
 
-          {activeTab === "analytics" ? (
-            <div className="space-y-6">
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-8">
-                <h2 className="text-4xl font-black">Analytics</h2>
-                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-400">Overview cards are now powered by the backend analytics endpoint instead of placeholders.</p>
-              </section>
-              <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><BookOpen size={20} className="mb-4" /><p className="text-sm text-slate-400">Stories</p><p className="mt-2 text-4xl font-black">{loading.analytics ? "..." : analytics.overview.stories}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><Activity size={20} className="mb-4" /><p className="text-sm text-slate-400">Quizzes</p><p className="mt-2 text-4xl font-black">{loading.analytics ? "..." : analytics.overview.quizzes}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><Sparkles size={20} className="mb-4" /><p className="text-sm text-slate-400">Games</p><p className="mt-2 text-4xl font-black">{loading.analytics ? "..." : analytics.overview.games}</p></div>
-                <div className="rounded-[1.75rem] border border-white/10 bg-white/6 p-5"><Layers size={20} className="mb-4" /><p className="text-sm text-slate-400">Total Content</p><p className="mt-2 text-4xl font-black">{loading.analytics ? "..." : analytics.overview.totalContents}</p></div>
-              </section>
-              <section className="rounded-[2rem] border border-white/10 bg-white/6 p-6">
-                <div className="flex items-center justify-between"><h3 className="text-2xl font-black">Engagement Summary</h3><span className="rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-300">{analytics.engagementSummary.length}</span></div>
-                <div className="mt-5 space-y-3">
-                  {loading.analytics ? <div className="text-sm text-slate-400">Loading analytics...</div> : analytics.engagementSummary.length === 0 ? <div className="text-sm text-slate-400">No engagement analytics have been returned yet.</div> : analytics.engagementSummary.slice(0, 6).map((entry, index) => <div key={`${entry.contentId ?? index}`} className="rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">{String(entry.title ?? "Untitled Content")}</p><p className="mt-1 text-sm text-slate-400">{String(entry.type ?? "CONTENT")}</p></div><div className="grid grid-cols-3 gap-3 text-sm"><div className="rounded-xl bg-slate-950/60 px-3 py-2"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Attempts</p><p className="mt-1 font-semibold">{String(entry.totalAttempts ?? 0)}</p></div><div className="rounded-xl bg-slate-950/60 px-3 py-2"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Best Score</p><p className="mt-1 font-semibold">{String(entry.averageBestScore ?? 0)}</p></div><div className="rounded-xl bg-slate-950/60 px-3 py-2"><p className="text-xs uppercase tracking-[0.16em] text-slate-500">Completed</p><p className="mt-1 font-semibold">{String(entry.completedCount ?? 0)}</p></div></div></div></div>)}
+              {/* Chapters */}
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Chapters</h3>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-400">{selectedStoryChapters.length}</span>
                 </div>
-              </section>
+                {selectedStoryChapters.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-8">No chapters available</p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedStoryChapters.map((chapter, idx) => (
+                      <details key={idx} className="group rounded-lg border border-white/10 bg-slate-900/30">
+                        <summary className="flex cursor-pointer items-center justify-between p-4 font-medium text-white">
+                          <span>Chapter {chapter.order ?? idx + 1}: {chapter.title}</span>
+                          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <div className="border-t border-white/10 p-4">
+                          <p className="text-sm text-slate-400 whitespace-pre-wrap">{chapter.body}</p>
+                          {chapter.imageUrl && (
+                            <img src={chapter.imageUrl} alt={chapter.title} className="mt-3 rounded-lg max-h-48 w-full object-cover" />
+                          )}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Activities */}
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Activities</h3>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-slate-400">{selectedActivities.length}</span>
+                </div>
+                {selectedActivities.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-8">No activities added yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedActivities.map((activity, idx) => (
+                      <div key={idx} className="rounded-lg border border-white/10 bg-slate-900/30 p-4">
+                        <h4 className="font-medium text-white">{activity.title}</h4>
+                        <p className="text-sm text-slate-400 mt-1">{activity.summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Activity Form */}
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <h3 className="text-lg font-semibold mb-4">Add New Activity</h3>
+                <div className="space-y-3">
+                  <input
+                    value={activityDraft.title}
+                    onChange={(e) => setActivityDraft({ ...activityDraft, title: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-2 text-sm outline-none focus:border-fuchsia-500"
+                    placeholder="Activity title"
+                  />
+                  <input
+                    value={activityDraft.summary}
+                    onChange={(e) => setActivityDraft({ ...activityDraft, summary: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-slate-900/50 px-4 py-2 text-sm outline-none focus:border-fuchsia-500"
+                    placeholder="Brief summary"
+                  />
+                  <button
+                    onClick={() => void handleAddActivity()}
+                    disabled={!selectedBundleId || addingActivity || !activityDraft.title.trim()}
+                    className="w-full rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:shadow-lg disabled:opacity-50"
+                  >
+                    {addingActivity ? "Adding..." : "Add Activity"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
+                <h3 className="text-lg font-semibold text-red-400 mb-2">Danger Zone</h3>
+                <p className="text-sm text-slate-400 mb-4">Once you delete a story, there is no going back.</p>
+                <button
+                  onClick={() => void handleDeleteStory()}
+                  disabled={deletingStory}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+                >
+                  {deletingStory ? "Deleting..." : "Delete Story"}
+                </button>
+              </div>
             </div>
-          ) : null}
-        </main>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

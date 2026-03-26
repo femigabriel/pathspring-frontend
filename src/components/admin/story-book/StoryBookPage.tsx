@@ -20,6 +20,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import AppActionButton from "@/src/components/shared/ui/AppActionButton";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
+import AppSkeletonCard from "@/src/components/shared/ui/AppSkeletonCard";
+import AppStatCard from "@/src/components/shared/ui/AppStatCard";
 import {
   filterClassesForTeacher,
   filterStudentsForTeacher,
@@ -315,22 +320,9 @@ export default function StoryBookPage() {
             </div>
 
             <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[22rem] xl:w-[24rem]">
-              <div className="min-w-0 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-center backdrop-blur dark:border-white/10 dark:bg-white/5">
-                <p className="truncate text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                  {isSchoolAdmin ? "Selected" : "Published"}
-                </p>
-                <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{stories.length}</p>
-              </div>
-              <div className="min-w-0 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-center backdrop-blur dark:border-white/10 dark:bg-white/5">
-                <p className="truncate text-[11px] uppercase tracking-[0.18em] text-slate-500">Chapters</p>
-                <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{storyChapters.length}</p>
-              </div>
-              <div className="min-w-0 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-center backdrop-blur dark:border-white/10 dark:bg-white/5">
-                <p className="truncate text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                  {isSchoolAdmin ? "Catalog" : "Activities"}
-                </p>
-                <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{isSchoolAdmin ? catalogProducts.length : activities.length}</p>
-              </div>
+              <AppStatCard label={isSchoolAdmin ? "Selected" : "Published"} value={stories.length} icon={BookOpen} tone="emerald" />
+              <AppStatCard label="Chapters" value={storyChapters.length} icon={LibraryBig} tone="cyan" />
+              <AppStatCard label={isSchoolAdmin ? "Catalog" : "Activities"} value={isSchoolAdmin ? catalogProducts.length : activities.length} icon={Sparkles} tone="amber" />
             </div>
           </div>
         </motion.section>
@@ -351,28 +343,22 @@ export default function StoryBookPage() {
           <section className="rounded-[2rem] border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60">
             {isSchoolAdmin ? (
               <div className="mb-5 flex flex-wrap gap-3">
-                <button
+                <AppActionButton
                   onClick={() => setLibraryMode("selected")}
-                  className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                    libraryMode === "selected"
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-                      : "border-gray-200 bg-white text-slate-600 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                  }`}
+                  tone={libraryMode === "selected" ? "success" : "secondary"}
+                  size="lg"
                 >
                   <PackageCheck size={16} />
                   <span>School Library</span>
-                </button>
-                <button
+                </AppActionButton>
+                <AppActionButton
                   onClick={() => setLibraryMode("catalog")}
-                  className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                    libraryMode === "catalog"
-                      ? "border-cyan-300 bg-cyan-50 text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-500/10 dark:text-cyan-300"
-                      : "border-gray-200 bg-white text-slate-600 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                  }`}
+                  tone={libraryMode === "catalog" ? "primary" : "secondary"}
+                  size="lg"
                 >
                   <BookmarkCheck size={16} />
                   <span>Platform Catalog</span>
-                </button>
+                </AppActionButton>
               </div>
             ) : null}
 
@@ -392,17 +378,18 @@ export default function StoryBookPage() {
 
             <div className="mt-5 space-y-3">
               {loading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+                <div className="space-y-3 py-2">
+                  <AppSkeletonCard />
+                  <AppSkeletonCard />
+                  <AppSkeletonCard />
                 </div>
               ) : filteredStories.length === 0 ? (
-                <div className="rounded-[1.75rem] border border-dashed border-gray-200 bg-gray-50 px-6 py-16 text-center dark:border-white/10 dark:bg-white/5">
-                  <LibraryBig size={38} className="mx-auto text-emerald-500" />
-                  <h2 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">No published stories yet</h2>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    When the premium admin publishes bundles, they will appear here for schools.
-                  </p>
-                </div>
+                <AppEmptyState
+                  icon={LibraryBig}
+                  title="No published stories yet"
+                  body="When the premium admin publishes bundles, they will appear here for schools."
+                  className="py-16 [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-500 dark:[&_p]:text-slate-400"
+                />
               ) : (
                 filteredStories.map((story) => {
                   const activeId =
@@ -426,17 +413,9 @@ export default function StoryBookPage() {
                           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{story.subject ?? story.theme ?? "General"}</p>
                         </div>
                         <div className="flex flex-wrap gap-2 justify-end">
-                          <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:bg-white/10 dark:text-emerald-300">
-                            {story.type === "CONTENT_PACK" ? "Bundle" : "Story"}
-                          </span>
+                          <AppBadge label={story.type === "CONTENT_PACK" ? "Bundle" : "Story"} tone="emerald" />
                           {isCatalogMode ? (
-                            <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
-                              isSelectedForSchool
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-                                : "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300"
-                            }`}>
-                              {isSelectedForSchool ? "Selected" : "Available"}
-                            </span>
+                            <AppBadge label={isSelectedForSchool ? "Selected" : "Available"} tone={isSelectedForSchool ? "emerald" : "slate"} />
                           ) : null}
                         </div>
                       </div>
@@ -662,14 +641,16 @@ export default function StoryBookPage() {
                       </div>
                     </div>
 
-                    <button
+                    <AppActionButton
                       onClick={() => void handleAssignStory()}
                       disabled={assigning || !selectedStoryId}
-                      className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-3 font-semibold text-white disabled:opacity-60"
+                      tone="primary"
+                      size="lg"
+                      className="mt-5"
                     >
                       {assigning ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                       {assigning ? "Assigning story..." : "Assign story"}
-                    </button>
+                    </AppActionButton>
 
                     <div className="mt-6 rounded-[1.5rem] border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-slate-950/40">
                       <div className="flex items-center justify-between gap-3">
@@ -679,9 +660,7 @@ export default function StoryBookPage() {
                             Open a live tracking view for any assignment created from this story.
                           </p>
                         </div>
-                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs uppercase tracking-[0.16em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                          {assignmentCount} total
-                        </span>
+                        <AppBadge label={`${assignmentCount} total`} tone="emerald" />
                       </div>
 
                       <div className="mt-4 space-y-3">
@@ -704,13 +683,14 @@ export default function StoryBookPage() {
                                   {assignment.dueAt ? ` • Due ${prettyDate(assignment.dueAt)}` : ""}
                                 </p>
                               </div>
-                              <button
+                              <AppActionButton
                                 onClick={() => void handleOpenAssignmentTracking(assignment.id)}
-                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
+                                tone="secondary"
+                                size="md"
                               >
                                 {trackingId === assignment.id ? <Loader2 size={16} className="animate-spin" /> : <Eye size={16} />}
                                 {trackingId === assignment.id ? "Opening..." : "View tracking"}
-                              </button>
+                              </AppActionButton>
                             </div>
                           ))
                         )}
@@ -730,12 +710,13 @@ export default function StoryBookPage() {
                                   : ""}
                               </p>
                             </div>
-                            <button
+                            <AppActionButton
                               onClick={() => setAssignmentTracking(null)}
-                              className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-gray-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
+                              tone="secondary"
+                              size="md"
                             >
                               Close
-                            </button>
+                            </AppActionButton>
                           </div>
 
                           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -892,13 +873,12 @@ export default function StoryBookPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-[40rem] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-gray-200 bg-gray-50 px-6 text-center dark:border-white/10 dark:bg-white/5">
-                <BookOpen size={40} className="text-emerald-500" />
-                <h2 className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">Choose a published story</h2>
-                <p className="mt-3 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  Pick a story from the Story Book list to read the chapters and see the attached school activities.
-                </p>
-              </div>
+              <AppEmptyState
+                icon={BookOpen}
+                title="Choose a published story"
+                body="Pick a story from the Story Book list to read the chapters and see the attached school activities."
+                className="min-h-[40rem] [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-500 dark:[&_p]:text-slate-400"
+              />
             )}
           </section>
         </div>

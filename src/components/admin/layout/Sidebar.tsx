@@ -11,6 +11,7 @@ import {
   GraduationCap,
   BookOpen,
   LibraryBig,
+  ShoppingBag,
   LogOut,
   Medal,
   ChevronLeft,
@@ -71,6 +72,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       icon: School,
       href: `${workspaceBase}/classes`,
       roles: ["SCHOOL_ADMIN", "TEACHER"],
+    },
+    {
+      name: "Catalog",
+      icon: ShoppingBag,
+      href: "/admin/catalog",
+      roles: ["SCHOOL_ADMIN"],
     },
     {
       name: "Story Book",

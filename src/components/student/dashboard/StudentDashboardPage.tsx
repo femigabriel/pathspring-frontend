@@ -7,6 +7,8 @@ import { ArrowRight, BookOpen, Headphones, School2, Sparkles, Star, Waves } from
 import { useAuth } from "@/src/contexts/AuthContext";
 import StudentShell from "@/src/components/student/layout/StudentShell";
 import StoryBookCard from "@/src/components/student/books/StoryBookCard";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
 import { filterBooksForStudent } from "@/src/lib/student-book-eligibility";
 import { getPublishedSchoolContents, type SchoolStoryContent } from "@/src/lib/school-content-api";
 
@@ -36,6 +38,15 @@ export default function StudentDashboardPage() {
   const allowedStories = useMemo(() => filterBooksForStudent(stories, user), [stories, user]);
   const featuredStory = allowedStories[0] ?? null;
   const recentStories = useMemo(() => allowedStories.slice(0, 6), [allowedStories]);
+  const continueReadingStory = allowedStories[1] ?? featuredStory;
+  const selSpotlight = featuredStory?.selFocus?.[0] ?? null;
+  const classRecommendation = useMemo(
+    () =>
+      allowedStories.find((story) =>
+        story.gradeLevels?.some((grade) => grade === (user?.gradeLevel ?? user?.classroom?.name)),
+      ) ?? featuredStory,
+    [allowedStories, featuredStory, user],
+  );
 
   return (
     <StudentShell>
@@ -56,6 +67,10 @@ export default function StudentDashboardPage() {
             <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300">
               Pick a bright story, hear it read aloud, flip pages like a real book, and answer fun questions after each adventure.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selSpotlight ? <AppBadge label={`SEL: ${selSpotlight}`} tone="emerald" /> : null}
+              {user?.gradeLevel ? <AppBadge label={user.gradeLevel} tone="cyan" /> : null}
+            </div>
           </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -124,15 +139,45 @@ export default function StudentDashboardPage() {
                 </p>
               </div>
             </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="rounded-[1.7rem] border border-emerald-100 bg-emerald-50/70 p-5 dark:border-white/10 dark:bg-emerald-500/10">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                  Continue Reading
+                </p>
+                <h4 className="mt-2 text-lg font-black text-slate-900 dark:text-white">
+                  {continueReadingStory?.title ?? "Pick your first book"}
+                </h4>
+                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {continueReadingStory?.summary ?? "Open a story and keep your reading streak moving."}
+                </p>
+              </div>
+              <div className="rounded-[1.7rem] border border-cyan-100 bg-cyan-50/70 p-5 dark:border-white/10 dark:bg-cyan-500/10">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">
+                  Best For Your Class
+                </p>
+                <h4 className="mt-2 text-lg font-black text-slate-900 dark:text-white">
+                  {classRecommendation?.title ?? "Stories are coming soon"}
+                </h4>
+                <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {classRecommendation?.theme
+                    ? `Try this ${classRecommendation.theme.toLowerCase()} story next.`
+                    : "We recommend stories matched to your class level and reading journey."}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div>
             {featuredStory ? (
               <StoryBookCard story={featuredStory} index={0} variant="featured" />
             ) : (
-              <div className="rounded-[2rem] border border-dashed border-emerald-200 bg-white/70 p-8 text-sm text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                No published story is available yet.
-              </div>
+              <AppEmptyState
+                icon={BookOpen}
+                title="No published story is available yet"
+                body="Your bookshelf will brighten up here once your school selects stories for your class."
+                className="rounded-[2rem] border-emerald-200 bg-white/70 p-8 text-sm text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-600 dark:[&_p]:text-slate-300"
+              />
             )}
           </div>
         </section>

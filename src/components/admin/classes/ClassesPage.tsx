@@ -5,6 +5,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import AppActionButton from "@/src/components/shared/ui/AppActionButton";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
+import AppStatCard from "@/src/components/shared/ui/AppStatCard";
 import { getAccessToken } from "@/src/lib/auth";
 import {
   filterClassesForTeacher,
@@ -776,49 +779,24 @@ export default function ClassesPage() {
               <RefreshCw size={20} className="text-gray-600 dark:text-slate-400" />
             </button>
             {!isTeacher ? (
-              <button
+              <AppActionButton
                 onClick={() => setShowCreateModal(true)}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30 dark:shadow-none"
+                tone="primary"
+                size="lg"
               >
                 <Plus size={20} />
                 Create Class
-              </button>
+              </AppActionButton>
             ) : null}
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <School size={20} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-xs text-green-600 dark:text-green-400">{activeClasses} Active</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{classes.length}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Total Classes</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <Users size={20} className="text-purple-600 dark:text-purple-400" />
-              <TrendingUp size={14} className="text-green-600 dark:text-green-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalStudents}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Total Students</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <GraduationCap size={20} className="text-green-600 dark:text-green-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{teachers.length}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Available Teachers</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <CheckCircle size={20} className="text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{classesWithTeacher}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Classes with Teacher</p>
-          </div>
+          <AppStatCard label="Total Classes" value={classes.length} icon={School} tone="cyan" helper={`${activeClasses} active`} />
+          <AppStatCard label="Total Students" value={totalStudents} icon={Users} tone="purple" helper="Across visible classes" />
+          <AppStatCard label="Available Teachers" value={teachers.length} icon={GraduationCap} tone="emerald" helper="Visible in your scope" />
+          <AppStatCard label="Teacher Coverage" value={classesWithTeacher} icon={CheckCircle} tone="amber" helper="Classes with teacher" />
         </div>
 
         {/* School Details Card */}
@@ -894,13 +872,12 @@ export default function ClassesPage() {
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filteredClasses.length === 0 ? (
-          <div className="text-center py-20">
-            <School size={48} className="text-gray-400 dark:text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No classes found</h3>
-            <p className="text-gray-600 dark:text-slate-400">
-              {searchQuery ? "Try a different search term" : "Click 'Create Class' to get started"}
-            </p>
-          </div>
+          <AppEmptyState
+            icon={School}
+            title="No classes found"
+            body={searchQuery ? "Try a different search term." : "Click 'Create Class' to get started."}
+            className="py-20 [&_h3]:text-gray-900 dark:[&_h3]:text-white [&_p]:text-gray-600 dark:[&_p]:text-slate-400 [&_svg]:text-gray-400 dark:[&_svg]:text-slate-600"
+          />
         ) : viewMode === "grid" ? (
           // Grid View
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

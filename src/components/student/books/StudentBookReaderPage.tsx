@@ -35,6 +35,8 @@ interface ReaderPage {
 }
 
 const defaultRate = 0.95;
+const copyrightNotice =
+  "Copyright PathSpring. For classroom reading inside this platform only. Copying, sharing, printing, or reproducing this story outside PathSpring is not allowed.";
 
 const splitLongParagraph = (paragraph: string, limit: number) => {
   if (paragraph.length <= limit) return [paragraph];
@@ -332,6 +334,21 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
     };
   }, [bookId, user]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const blockedWithModifier =
+        (event.ctrlKey || event.metaKey) &&
+        ["c", "s", "p", "u"].includes(event.key.toLowerCase());
+
+      if (blockedWithModifier) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const readerPages = useMemo(() => buildReaderPages(bundle), [bundle]);
 
   const getCurrentPageText = () => {
@@ -426,6 +443,14 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
     setBookOrientation(e.data);
   }, []);
 
+  const preventCopyAction = useCallback((event: React.ClipboardEvent | React.MouseEvent | React.DragEvent) => {
+    event.preventDefault();
+  }, []);
+
+  const preventSelection = useCallback((event: React.SyntheticEvent) => {
+    event.preventDefault();
+  }, []);
+
     // Calculate book dimensions - MUCH LARGER now
   const getBookDimensions = () => {
     if (isFullscreen) {
@@ -463,7 +488,16 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
           {error}
         </div>
       ) : (
-        <div ref={containerRef} className="flex h-full flex-col gap-4 md:gap-5 lg:gap-6">
+        <div
+          ref={containerRef}
+          className="flex h-full flex-col gap-4 md:gap-5 lg:gap-6"
+          onCopy={preventCopyAction}
+          onCut={preventCopyAction}
+          onContextMenu={preventCopyAction}
+          onDragStart={preventCopyAction}
+          onSelect={preventSelection}
+          style={{ WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}
+        >
           {/* Header Section */}
           <section className="overflow-hidden rounded-xl bg-gradient-to-br from-amber-50 via-orange-50 to-emerald-50 p-4 shadow-lg md:p-5 lg:p-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -475,6 +509,14 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
                 <h2 className="mt-2 text-xl font-black leading-tight text-gray-900 md:mt-3 md:text-2xl lg:text-3xl">
                   {getBundleTitle(bundle)}
                 </h2>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                  <span className="rounded-full bg-white/80 px-3 py-1 text-slate-700 shadow-sm">
+                    Written by PathSpring
+                  </span>
+                  <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800 shadow-sm">
+                    Copyright protected
+                  </span>
+                </div>
               </div>
 
               <div className="flex gap-2">
@@ -542,6 +584,10 @@ export default function StudentBookReaderPage({ bookId }: { bookId: string }) {
                 Page {currentPage + 1} of {readerPages.length}
               </div>
             </div>
+          </div>
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-xs leading-6 text-amber-900 shadow-sm dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-100">
+            {copyrightNotice}
           </div>
 
           {/* Flip Book Container - Larger and more prominent */}

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AlarmClock, ArrowRight, ClipboardCheck, Search, Sparkles } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import StudentShell from "@/src/components/student/layout/StudentShell";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
 import { filterBooksForStudent } from "@/src/lib/student-book-eligibility";
 import { getPublishedSchoolContents, type SchoolStoryContent } from "@/src/lib/school-content-api";
 
@@ -56,6 +58,10 @@ export default function StudentQuizLibraryPage() {
               <p className="mt-3 max-w-2xl text-sm leading-8 text-slate-600 dark:text-slate-300">
                 Each quiz belongs to a book in your class level. Open one title and answer the questions with a running timer.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <AppBadge label={`${allowedStories.length} quiz books`} tone="emerald" />
+                <AppBadge label="Timed mode" tone="amber" />
+              </div>
             </div>
 
             <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5">
@@ -91,10 +97,7 @@ export default function StudentQuizLibraryPage() {
                 >
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                        <ClipboardCheck size={14} />
-                        Quiz {index + 1}
-                      </div>
+                      <AppBadge label={`Quiz ${index + 1}`} icon={ClipboardCheck} tone="emerald" />
                       <h3 className="mt-3 text-2xl font-black text-slate-900 dark:text-white">{story.title}</h3>
                       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                         Open this quiz for the book and answer with a running timer.
@@ -102,12 +105,7 @@ export default function StudentQuizLibraryPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 dark:border-white/10 dark:bg-white/5 dark:text-amber-300">
-                        <div className="flex items-center gap-2">
-                          <AlarmClock size={16} />
-                          Timed quiz
-                        </div>
-                      </div>
+                      <AppBadge label="Timed quiz" icon={AlarmClock} tone="amber" className="px-4 py-3 text-sm normal-case tracking-normal" />
                       <span className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white">
                         Open Quiz
                         <ArrowRight size={16} />
@@ -118,9 +116,12 @@ export default function StudentQuizLibraryPage() {
               ))}
 
               {filteredStories.length === 0 ? (
-                <div className="rounded-[1.7rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  No quizzes are available for your class right now.
-                </div>
+                <AppEmptyState
+                  icon={ClipboardCheck}
+                  title="No quizzes are available right now"
+                  body="When your school selects books for your class, their quizzes will appear here."
+                  className="rounded-[1.7rem] border-slate-200 bg-slate-50 px-6 py-14 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-600 dark:[&_p]:text-slate-300"
+                />
               ) : null}
             </div>
           </section>

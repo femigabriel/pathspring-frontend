@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Eye, EyeOff, HeartHandshake, Lock, School2, User, Users } from "lucide-react";
 import ParentShell from "@/src/components/parent/layout/ParentShell";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
 import { getParentChildren, type ParentChild } from "@/src/lib/parent-api";
 
 export default function ParentChildrenPage() {
@@ -43,6 +45,10 @@ export default function ParentChildrenPage() {
           <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
             Open any child card to view their reading summary, story progress, and recent learning activity.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <AppBadge label={`${children.length} linked`} tone="rose" />
+            <AppBadge label="Privacy first" tone="amber" />
+          </div>
         </section>
 
         {error ? (
@@ -56,13 +62,12 @@ export default function ParentChildrenPage() {
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-rose-500 border-t-transparent" />
           </div>
         ) : children.length === 0 ? (
-          <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white/80 px-6 py-16 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
-            <Users size={40} className="mx-auto text-rose-400" />
-            <p className="mt-4 text-xl font-bold text-slate-900 dark:text-white">No linked children yet</p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Once the school links a child to this account, their profile will appear here.
-            </p>
-          </div>
+          <AppEmptyState
+            icon={Users}
+            title="No linked children yet"
+            body="Once the school links a child to this account, their profile will appear here."
+            className="rounded-[2rem] border-slate-200 bg-white/80 px-6 py-16 text-center shadow-sm dark:border-white/10 dark:bg-white/5 [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-500 dark:[&_p]:text-slate-400 [&_svg]:text-rose-400"
+          />
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {children.map((child) => (
@@ -78,9 +83,7 @@ export default function ParentChildrenPage() {
                       {child.gradeLevel ?? "Grade not set"}{child.classroomName ? ` • ${child.classroomName}` : ""}
                     </p>
                   </div>
-                  <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-                    {child.relationship ?? "Child"}
-                  </span>
+                  <AppBadge label={child.relationship ?? "Child"} tone="rose" />
                 </div>
 
                 <div className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-300">

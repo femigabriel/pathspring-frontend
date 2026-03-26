@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Clock3, Eye, EyeOff, Lock, Sparkles, User, Users } from "lucide-react";
 import ParentShell from "@/src/components/parent/layout/ParentShell";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
 import { getParentChildren, getParentChildOverview, getParentProfile, type ParentChild, type ParentChildOverview, type ParentProfile } from "@/src/lib/parent-api";
 
 const minutesFromSeconds = (value: number) => `${Math.max(1, Math.round(value / 60))}m`;
@@ -46,6 +48,10 @@ export default function ParentDashboardPage() {
   }, []);
 
   const featuredChild = overview?.child ?? children[0] ?? null;
+  const supportMessage =
+    (overview?.stats.averageScore ?? 0) >= 70
+      ? "Your child is doing well. Keep encouraging regular reading."
+      : "A little extra reading support this week could make a big difference.";
 
   return (
     <ParentShell>
@@ -62,6 +68,10 @@ export default function ParentDashboardPage() {
             <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
               Follow your child&apos;s reading progress, check recent learning activity, and keep up with school messages in one calm space.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <AppBadge label="Read-only progress view" tone="rose" />
+              {children.length > 0 ? <AppBadge label={`${children.length} linked child${children.length === 1 ? "" : "ren"}`} tone="amber" /> : null}
+            </div>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -172,6 +182,15 @@ export default function ParentDashboardPage() {
                     </div>
                   </div>
 
+                  <div className="rounded-[1.5rem] border border-amber-100 bg-amber-50 p-4 dark:border-white/10 dark:bg-amber-500/10">
+                    <p className="text-xs uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
+                      Weekly Support Idea
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-200">
+                      {supportMessage}
+                    </p>
+                  </div>
+
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
                       <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
@@ -197,7 +216,12 @@ export default function ParentDashboardPage() {
                   </Link>
                 </div>
               ) : (
-                <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">Once a child is linked to this account, their overview will appear here.</p>
+                <AppEmptyState
+                  icon={Users}
+                  title="No child overview yet"
+                  body="Once a child is linked to this account, their reading overview will appear here."
+                  className="mt-5 min-h-[14rem] border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5 [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_p]:text-slate-500 dark:[&_p]:text-slate-400"
+                />
               )}
             </section>
           </div>

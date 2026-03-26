@@ -5,6 +5,10 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import AppActionButton from "@/src/components/shared/ui/AppActionButton";
+import AppBadge from "@/src/components/shared/ui/AppBadge";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
+import AppStatCard from "@/src/components/shared/ui/AppStatCard";
 import { getSchoolWorkspaceBaseRoute, getAccessToken } from "@/src/lib/auth";
 import {
   filterClassesForTeacher,
@@ -40,33 +44,6 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-
-// Stats Card Component
-const StatsCard = ({ title, value, icon: Icon, color, trend }: any) => {
-  return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      className="relative group"
-    >
-      <div className={`absolute inset-0 bg-gradient-to-r ${color} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl`} />
-      <div className="relative bg-white dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-gray-200 dark:border-slate-700 hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-all shadow-sm dark:shadow-none">
-        <div className="flex items-center justify-between mb-3 md:mb-4">
-          <div className={`w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r ${color} rounded-xl flex items-center justify-center`}>
-            <Icon className="text-white" size={20} />
-          </div>
-          {trend && (
-            <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-xs md:text-sm font-semibold">
-              <TrendingUp size={14} />
-              <span>{trend}</span>
-            </div>
-          )}
-        </div>
-        <p className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white mb-1">{value}</p>
-        <p className="text-xs md:text-sm text-gray-600 dark:text-slate-400 font-medium">{title}</p>
-      </div>
-    </motion.div>
-  );
-};
 
 // Quick Action Button
 const QuickAction = ({ icon: Icon, label, onClick, color }: any) => {
@@ -492,37 +469,53 @@ export default function AdminDashboard() {
           <p className="text-sm md:text-base text-white/90">
             Welcome back to {school?.name}. {isTeacher ? "Here is your teaching space for today." : "Here's what's happening with your school today."}
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <AppBadge
+              label={isTeacher ? "My Class Workspace" : "School Operations"}
+              icon={isTeacher ? GraduationCap : Users}
+              tone="default"
+              className="border-white/20 bg-white/10 text-white dark:border-white/20 dark:bg-white/10 dark:text-white"
+            />
+            {isTeacher && teacherDashboard ? (
+              <AppBadge
+                label={`${teacherDashboard.summary.unreadNotifications} unread`}
+                icon={Bell}
+                tone="default"
+                className="border-white/20 bg-white/10 text-white dark:border-white/20 dark:bg-white/10 dark:text-white"
+              />
+            ) : null}
+          </div>
         </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <StatsCard
-            title={isTeacher ? "My Students" : "Total Students"}
+          <AppStatCard
+            label={isTeacher ? "My Students" : "Total Students"}
             value={stats.totalStudents}
             icon={GraduationCap}
-            color="from-purple-500 to-pink-500"
-            trend={isTeacher ? `${teacherClassCount} class${teacherClassCount === 1 ? "" : "es"}` : "+12%"}
+            tone="purple"
+            helper={isTeacher ? `${teacherClassCount} class${teacherClassCount === 1 ? "" : "es"}` : "School-wide learners"}
           />
-          <StatsCard
-            title={isTeacher ? "Active Assignments" : "Total Teachers"}
+          <AppStatCard
+            label={isTeacher ? "Active Assignments" : "Total Teachers"}
             value={isTeacher ? stats.totalTeachers : stats.totalTeachers}
             icon={isTeacher ? ClipboardCheck : Users}
-            color="from-blue-500 to-cyan-500"
-            trend={isTeacher ? `${teacherDashboard?.summary.overdueAssignments ?? 0} overdue` : "+2"}
+            tone="cyan"
+            helper={isTeacher ? `${teacherDashboard?.summary.overdueAssignments ?? 0} overdue` : "Current staff count"}
           />
-          <StatsCard
-            title={isTeacher ? "Completions This Week" : "Stories Read"}
+          <AppStatCard
+            label={isTeacher ? "Completions This Week" : "Stories Read"}
             value={stats.totalStories}
             icon={BookOpen}
-            color="from-green-500 to-emerald-500"
-            trend={isTeacher ? `${teacherDashboard?.summary.unreadNotifications ?? 0} unread alerts` : "+23%"}
+            tone="emerald"
+            helper={isTeacher ? `${teacherDashboard?.summary.unreadNotifications ?? 0} unread alerts` : "Reading activity snapshot"}
           />
-          <StatsCard
-            title={isTeacher ? "Low-Score Alerts" : "Avg Progress"}
+          <AppStatCard
+            label={isTeacher ? "Low-Score Alerts" : "Avg Progress"}
             value={isTeacher ? stats.avgProgress : `${stats.avgProgress}%`}
             icon={isTeacher ? AlertTriangle : TrendingUp}
-            color="from-orange-500 to-red-500"
-            trend={isTeacher ? "Needs follow-up" : "+5%"}
+            tone="amber"
+            helper={isTeacher ? "Needs follow-up" : "Average learner progress"}
           />
         </div>
 
@@ -544,10 +537,7 @@ export default function AdminDashboard() {
                   <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Assignment Overview</h2>
                   <p className="text-sm text-gray-500 dark:text-slate-400">Live tracking from your teacher dashboard feed.</p>
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
-                  <Clock3 size={12} />
-                  <span>{teacherDashboard.summary.activeAssignments} active</span>
-                </div>
+                <AppBadge label={`${teacherDashboard.summary.activeAssignments} active`} icon={Clock3} tone="cyan" />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {teacherDashboard.assignments.length > 0 ? (
@@ -555,9 +545,12 @@ export default function AdminDashboard() {
                     <TeacherAssignmentCard key={assignment.id} assignment={assignment} />
                   ))
                 ) : (
-                  <div className="md:col-span-2 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
-                    No assignments have been returned yet for this teacher.
-                  </div>
+                  <AppEmptyState
+                    icon={ClipboardCheck}
+                    title="No assignments yet"
+                    body="Once you assign stories to your class, live progress tracking will appear here."
+                    className="md:col-span-2 min-h-[14rem] dark:border-slate-700 dark:bg-slate-900/50 [&_h3]:text-gray-900 dark:[&_h3]:text-white [&_p]:text-gray-500 dark:[&_p]:text-slate-400"
+                  />
                 )}
               </div>
             </div>
@@ -583,6 +576,14 @@ export default function AdminDashboard() {
                     <p className="text-sm text-gray-500 dark:text-slate-400">No recent completions yet.</p>
                   )}
                 </div>
+                <div className="mt-4">
+                  <Link href={`${workspaceBase}/story-book`}>
+                    <AppActionButton tone="secondary" size="md">
+                      <BookOpen size={15} />
+                      <span>Open Story Book</span>
+                    </AppActionButton>
+                  </Link>
+                </div>
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800/50 dark:shadow-none">
@@ -605,6 +606,14 @@ export default function AdminDashboard() {
                     <p className="text-sm text-gray-500 dark:text-slate-400">No low-score alerts right now.</p>
                   )}
                 </div>
+                <div className="mt-4">
+                  <Link href={`${workspaceBase}/students`}>
+                    <AppActionButton tone="secondary" size="md">
+                      <Users size={15} />
+                      <span>Review Students</span>
+                    </AppActionButton>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -623,10 +632,12 @@ export default function AdminDashboard() {
               <StudentCard key={student.id} student={student} workspaceBase={workspaceBase} />
             ))}
             {students.length === 0 && (
-              <div className="col-span-full text-center py-12">
-                <GraduationCap size={48} className="text-gray-400 dark:text-slate-600 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-slate-400">No students yet. Click "Add Student" to get started!</p>
-              </div>
+              <AppEmptyState
+                icon={GraduationCap}
+                title="No students yet"
+                body='Click "Add Student" to get started.'
+                className="col-span-full min-h-[14rem] dark:border-slate-700 dark:bg-slate-900/50 [&_h3]:text-gray-900 dark:[&_h3]:text-white [&_p]:text-gray-600 dark:[&_p]:text-slate-400"
+              />
             )}
           </div>
         </div>

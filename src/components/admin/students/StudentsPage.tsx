@@ -5,6 +5,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import AppActionButton from "@/src/components/shared/ui/AppActionButton";
+import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
+import AppStatCard from "@/src/components/shared/ui/AppStatCard";
 import { getAccessToken } from "@/src/lib/auth";
 import {
   filterClassesForTeacher,
@@ -1388,50 +1391,23 @@ export default function StudentsPage() {
             >
               <RefreshCw size={20} className="text-gray-600 dark:text-slate-400" />
             </button>
-            <button
+            <AppActionButton
               onClick={() => setShowCreateModal(true)}
-              className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-green-500/30 dark:shadow-none"
+              tone="primary"
+              size="lg"
             >
               <Plus size={20} />
               Add Student
-            </button>
+            </AppActionButton>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <Users size={20} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-xs text-green-600 dark:text-green-400">{activeStudents} Active</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalStudents}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Total Students</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <GraduationCap size={20} className="text-purple-600 dark:text-purple-400" />
-              <TrendingUp size={14} className="text-green-600 dark:text-green-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{classes.length}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Active Classes</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <Mail size={20} className="text-green-600 dark:text-green-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{studentsWithParent}</p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">With Parent Contact</p>
-          </div>
-          <div className="bg-white dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-sm dark:shadow-none">
-            <div className="flex items-center justify-between mb-2">
-              <Award size={20} className="text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {Math.round((activeStudents / totalStudents) * 100) || 0}%
-            </p>
-            <p className="text-sm text-gray-600 dark:text-slate-400">Active Rate</p>
-          </div>
+          <AppStatCard label="Total Students" value={totalStudents} icon={Users} tone="cyan" helper={`${activeStudents} active`} />
+          <AppStatCard label="Active Classes" value={classes.length} icon={GraduationCap} tone="purple" helper="Current class spaces" />
+          <AppStatCard label="Parent Contact" value={studentsWithParent} icon={Mail} tone="emerald" helper="Linked family contact" />
+          <AppStatCard label="Active Rate" value={`${Math.round((activeStudents / totalStudents) * 100) || 0}%`} icon={Award} tone="amber" helper="Student availability" />
         </div>
 
         {/* Search and Filters */}
@@ -1563,15 +1539,12 @@ export default function StudentsPage() {
             <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filteredStudents.length === 0 ? (
-          <div className="text-center py-20">
-            <Users size={48} className="text-gray-400 dark:text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No students found</h3>
-            <p className="text-gray-600 dark:text-slate-400">
-              {searchQuery || filterClass || filterGrade || filterStatus 
-                ? "Try adjusting your filters" 
-                : "Click 'Add Student' to get started"}
-            </p>
-          </div>
+          <AppEmptyState
+            icon={Users}
+            title="No students found"
+            body={searchQuery || filterClass || filterGrade || filterStatus ? "Try adjusting your filters." : "Click 'Add Student' to get started."}
+            className="py-20 [&_h3]:text-gray-900 dark:[&_h3]:text-white [&_p]:text-gray-600 dark:[&_p]:text-slate-400 [&_svg]:text-gray-400 dark:[&_svg]:text-slate-600"
+          />
         ) : viewMode === "grid" ? (
           // Grid View
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
