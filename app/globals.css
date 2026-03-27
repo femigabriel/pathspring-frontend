@@ -54,7 +54,8 @@ body {
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 5px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -67,7 +68,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--color-gray-900);
 }
 
 /* Smooth scroll behavior */

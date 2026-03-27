@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
+import { useAuth } from "@/src/contexts/AuthContext";
 import ParentHeader from "./ParentHeader";
 import ParentSidebar from "./ParentSidebar";
 
 export default function ParentShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user?.role === "PARENT" && user.accountMode === "family") {
+      router.replace("/family/dashboard");
+    }
+  }, [router, user]);
 
   return (
     <ProtectedRoute allowedRoles={["PARENT"]}>

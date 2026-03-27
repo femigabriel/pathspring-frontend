@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
-import { getAccessToken, type UserRole } from "@/src/lib/auth";
+import { getAccessToken, getDefaultRouteForRole, type UserRole } from "@/src/lib/auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -40,7 +40,7 @@ export default function ProtectedRoute({
           } else if (user.role === "TEACHER") {
             router.replace("/teacher/dashboard");
           } else if (user.role === "PARENT") {
-            router.replace("/parent/dashboard");
+            router.replace(getDefaultRouteForRole(user.role, user.accountMode));
           } else if (user.role === "STUDENT") {
             router.replace("/student/dashboard");
           } else {

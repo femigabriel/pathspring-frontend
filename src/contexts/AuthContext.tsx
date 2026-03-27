@@ -53,7 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    const nextRoute = getDefaultRouteForRole(user?.role) === "/student/dashboard" ? "/student/login" : "/login";
+    const nextRoute =
+      getDefaultRouteForRole(user?.role, user?.accountMode) === "/student/dashboard"
+        ? "/student/login"
+        : "/login";
     clearAuthSession();
     setUser(null);
     setSchool(null);
@@ -79,7 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userRole === "STUDENT"
           ? "/api/v1/auth/students/me"
           : userRole === "PARENT"
-            ? "/api/v1/parents/me"
+            ? storedUser?.accountMode === "family"
+              ? "/api/v1/family/me"
+              : "/api/v1/parents/me"
             : "/api/v1/auth/me";
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -123,6 +128,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 ...(storedUser ?? {}),
                 id: data.parent.id ?? storedUser?.id ?? "",
                 role: "PARENT" as const,
+                accountMode:
+                  data.parent.accountMode === "family" || storedUser?.accountMode === "family"
+                    ? "family"
+                    : "school",
                 email: data.parent.email ?? storedUser?.email,
                 fullName: data.parent.fullName ?? storedUser?.fullName,
                 phone: data.parent.phone ?? storedUser?.phone ?? null,
@@ -145,7 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               schoolCode: data.student.school.schoolCode ?? storedSchool?.schoolCode ?? "",
               logo: data.student.school.logo ?? storedSchool?.logo ?? null,
             }
-          : userRole === "PARENT" && data.parent?.students?.[0]?.school
+          : userRole === "PARENT" &&
+            storedUser?.accountMode !== "family" &&
+            data.parent?.students?.[0]?.school
             ? {
                 id: data.parent.students[0].school.id ?? storedSchool?.id ?? "",
                 name: data.parent.students[0].school.name ?? storedSchool?.name ?? "PathSpring School",

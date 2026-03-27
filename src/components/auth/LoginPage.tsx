@@ -26,6 +26,7 @@ import {
   Rainbow,
 } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { getDefaultRouteForRole } from "@/src/lib/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -465,8 +466,8 @@ export default function LoginPage() {
             break;
 
           case "PARENT":
-            console.log("Redirecting to parent dashboard");
-            router.push("/parent/dashboard");
+            console.log("Redirecting to parent workspace");
+            router.push(getDefaultRouteForRole(userRole, data.user.accountMode));
             break;
 
           default:

@@ -1,11 +1,13 @@
 "use client";
 
 export type UserRole = "PLATFORM_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
+export type AccountMode = "school" | "family";
 
 export interface AuthUser {
   id: string;
   email?: string;
   role: UserRole;
+  accountMode?: AccountMode;
   schoolId?: string;
   username?: string;
   fullName?: string;
@@ -91,7 +93,7 @@ const broadcastAuthEvent = (type: "logout" | "login") => {
   );
 };
 
-export const getDefaultRouteForRole = (role?: string | null) => {
+export const getDefaultRouteForRole = (role?: string | null, accountMode?: AccountMode | null) => {
   switch (role) {
     case "PLATFORM_ADMIN":
       return "/premium-admin/dashboard";
@@ -102,7 +104,7 @@ export const getDefaultRouteForRole = (role?: string | null) => {
     case "STUDENT":
       return "/student/dashboard";
     case "PARENT":
-      return "/parent/dashboard";
+      return accountMode === "family" ? "/family/dashboard" : "/parent/dashboard";
     default:
       return "/login";
   }
