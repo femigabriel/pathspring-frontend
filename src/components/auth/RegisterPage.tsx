@@ -30,13 +30,14 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { getDefaultRouteForRole } from "@/src/lib/auth";
+import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
 
 // ============ API CONFIGURATION ============
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // ============ DESIGN SYSTEM ============
 const INPUT_STYLE =
-  "w-full p-5 text-lg border-2 rounded-xl focus:outline-none focus:ring-2 transition-all bg-slate-800/50 border-slate-700 focus:border-purple-500 focus:ring-purple-500/20 text-white placeholder:text-slate-500";
+  "w-full rounded-xl border-2 border-slate-200 bg-white/85 p-5 text-lg text-slate-900 transition-all placeholder:text-slate-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:placeholder:text-slate-500";
 
 // ============ NOTIFICATION COMPONENT ============
 const Notification = ({
@@ -127,7 +128,7 @@ const RegisterHero = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="text-4xl md:text-5xl font-black text-white mb-4"
+        className="mb-4 text-4xl font-black text-slate-900 md:text-5xl dark:text-white"
       >
         Start Your Journey! 🚀
       </motion.h2>
@@ -136,7 +137,7 @@ const RegisterHero = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="text-xl text-slate-300 max-w-2xl mx-auto"
+        className="mx-auto max-w-2xl text-xl text-slate-600 dark:text-slate-300"
       >
         Create your school account and unlock a world of amazing stories!
       </motion.p>
@@ -189,14 +190,14 @@ const FeatureCards = () => {
           <div
             className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl`}
           />
-          <div className="relative bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 text-center border border-slate-700 shadow-sm hover:shadow-lg transition-all">
+          <div className="relative rounded-xl border border-slate-200 bg-white/80 p-4 text-center shadow-sm transition-all hover:shadow-lg dark:border-slate-700 dark:bg-slate-800/50">
             <div
               className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mx-auto mb-2`}
             >
               <feature.icon className="text-white" size={24} />
             </div>
-            <p className="text-sm font-bold text-white">{feature.title}</p>
-            <p className="text-xs text-slate-400">{feature.description}</p>
+            <p className="text-sm font-bold text-slate-900 dark:text-white">{feature.title}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{feature.description}</p>
           </div>
         </motion.div>
       ))}
@@ -222,11 +223,11 @@ const StatsSection = () => {
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="text-center p-3 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700"
+          className="rounded-xl border border-slate-200 bg-white/80 p-3 text-center backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/50"
         >
           <stat.icon className="w-5 h-5 text-purple-400 mx-auto mb-2" />
-          <p className="text-xl font-black text-white">{stat.value}</p>
-          <p className="text-xs text-slate-400">{stat.label}</p>
+          <p className="text-xl font-black text-slate-900 dark:text-white">{stat.value}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
         </div>
       ))}
     </motion.div>
@@ -363,7 +364,7 @@ const SchoolInfoStep = ({
     >
       {inputFields.map((field) => (
         <div key={field.name}>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
             {field.label}
           </label>
           <div className="relative group">
@@ -383,7 +384,7 @@ const SchoolInfoStep = ({
                 ${errors[field.name] ? "border-red-500 bg-red-500/10" : ""}
                 ${
                   focused === field.name
-                    ? "shadow-lg border-purple-500 bg-slate-700/50"
+                    ? "border-purple-500 shadow-lg bg-white dark:bg-slate-700/50"
                     : ""
                 }
               `}
@@ -482,7 +483,7 @@ const PasswordStep = ({
       className="space-y-5"
     >
       <div>
-        <label className="block text-sm font-semibold text-slate-300 mb-2">
+        <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
           Create a Strong Password
         </label>
         <div className="relative group">
@@ -503,13 +504,13 @@ const PasswordStep = ({
             className={`
               ${INPUT_STYLE} pl-12 pr-12
               ${errors ? "border-red-500 bg-red-500/10" : ""}
-              ${focused ? "shadow-lg border-purple-500 bg-slate-700/50" : ""}
+              ${focused ? "border-purple-500 shadow-lg bg-white dark:bg-slate-700/50" : ""}
             `}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-white"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
@@ -560,11 +561,11 @@ const PasswordStep = ({
           transition={{ delay: 0.2 }}
           className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-xl p-4 mt-4 border border-purple-500/20"
         >
-          <p className="font-semibold text-purple-300 mb-2 flex items-center gap-2 text-sm">
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-purple-700 dark:text-purple-300">
             <Shield size={16} />
             Password Requirements
           </p>
-          <ul className="space-y-1 text-xs text-slate-400">
+          <ul className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
             <li className="flex items-center gap-2">✓ At least 8 characters</li>
             <li className="flex items-center gap-2">
               ✓ One uppercase letter (A-Z)
@@ -582,7 +583,7 @@ const PasswordStep = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onBack}
-          className="flex-1 bg-slate-800 text-slate-300 py-3 rounded-xl font-semibold text-sm border border-slate-700 hover:bg-slate-700 transition-all"
+          className="flex-1 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           ← Back
         </motion.button>
@@ -830,7 +831,7 @@ export default function RegisterPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-950">
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(236,72,153,0.1),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] text-slate-900 dark:bg-slate-950 dark:text-white">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
@@ -880,7 +881,11 @@ export default function RegisterPage() {
         );
       })}
 
-      <div className="container mx-auto px-4 py-12 relative z-10">
+      <div className="fixed right-4 top-4 z-40 rounded-xl border border-slate-200 bg-white/85 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
+        <ThemeToggle />
+      </div>
+
+      <div className="container relative z-10 mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
           {/* Notification */}
           <AnimatePresence>
@@ -913,20 +918,20 @@ export default function RegisterPage() {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient" />
 
             {/* Card Content */}
-            <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10">
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/88 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
               <div className="p-8">
                 {/* Decorative Header */}
                 <div className="text-center mb-6">
-                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 px-4 py-2 rounded-full mb-4 border border-purple-500/30">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-gradient-to-r from-purple-500/15 to-pink-500/15 px-4 py-2 dark:from-purple-500/20 dark:to-pink-500/20">
                     <Sparkles className="text-purple-400" size={16} />
-                    <span className="text-sm font-semibold text-purple-300">
+                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
                       Create Your Account
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-white">
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
                     Get Started Today
                   </h3>
-                  <p className="text-slate-400 text-sm mt-1">
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Fill in your school details to begin
                   </p>
                 </div>
@@ -993,11 +998,11 @@ export default function RegisterPage() {
             transition={{ delay: 0.7 }}
             className="text-center mt-8"
           >
-            <p className="text-slate-400">
+            <p className="text-slate-500 dark:text-slate-400">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="text-purple-400 font-semibold hover:text-purple-300 transition-colors"
+                className="font-semibold text-purple-600 transition-colors hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
               >
                 Sign in here
               </Link>

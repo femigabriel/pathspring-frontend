@@ -23,6 +23,7 @@ import {
   X,
   Target,
 } from "lucide-react";
+import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
 
 const platformFeatures = [
   {
@@ -249,6 +250,9 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden items-center gap-3 lg:flex">
+            <div className="rounded-xl border border-slate-200 bg-white/80 p-1 shadow-sm dark:border-white/10 dark:bg-white/5">
+              <ThemeToggle />
+            </div>
             <Link
               href="/login"
               className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
@@ -265,13 +269,18 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="rounded-xl border border-slate-200 bg-white p-2.5 transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 lg:hidden"
-          >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-2 lg:hidden">
+            <div className="rounded-xl border border-slate-200 bg-white/80 p-1 shadow-sm dark:border-white/10 dark:bg-white/5">
+              <ThemeToggle />
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="rounded-xl border border-slate-200 bg-white p-2.5 transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -293,7 +302,10 @@ export default function LandingPage() {
                   {link.label}
                 </Link>
               ))}
-              <div className="grid grid-cols-2 gap-3 pt-4">
+              <div className="grid grid-cols-[auto_1fr_1fr] gap-3 pt-4">
+                <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white/80 p-1 dark:border-white/10 dark:bg-white/5">
+                  <ThemeToggle />
+                </div>
                 <Link
                   href="/login"
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-medium text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200"
