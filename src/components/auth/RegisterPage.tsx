@@ -361,50 +361,55 @@ const SchoolInfoStep = ({
         e.preventDefault();
         handleNext();
       }}
-      className="space-y-5"
+      className="space-y-6"
     >
-      {inputFields.map((field) => (
-        <div key={field.name}>
-          <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-            {field.label}
-          </label>
-          <div className="relative group">
-            <field.icon
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-400 transition-colors"
-              size={20}
-            />
-            <input
-              type={field.type}
-              value={formData[field.name]}
-              onChange={(e) => onChange(field.name, e.target.value)}
-              onFocus={() => setFocused(field.name)}
-              onBlur={() => setFocused("")}
-              placeholder={field.placeholder}
-              className={`
-                ${INPUT_STYLE} pl-12
-                ${errors[field.name] ? "border-red-500 bg-red-500/10" : ""}
-                ${
-                  focused === field.name
-                    ? "border-purple-500 shadow-lg bg-white dark:bg-slate-700/50"
-                    : ""
-                }
-              `}
-            />
+      <div className="grid gap-5 md:grid-cols-2">
+        {inputFields.map((field) => (
+          <div
+            key={field.name}
+            className={field.name === "schoolName" || field.name === "email" ? "md:col-span-2" : ""}
+          >
+            <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {field.label}
+            </label>
+            <div className="relative group">
+              <field.icon
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-400 transition-colors"
+                size={20}
+              />
+              <input
+                type={field.type}
+                value={formData[field.name]}
+                onChange={(e) => onChange(field.name, e.target.value)}
+                onFocus={() => setFocused(field.name)}
+                onBlur={() => setFocused("")}
+                placeholder={field.placeholder}
+                className={`
+                  ${INPUT_STYLE} pl-12
+                  ${errors[field.name] ? "border-red-500 bg-red-500/10" : ""}
+                  ${
+                    focused === field.name
+                      ? "border-purple-500 shadow-lg bg-white dark:bg-slate-700/50"
+                      : ""
+                  }
+                `}
+              />
+            </div>
+            {errors[field.name] && (
+              <motion.p
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-1 text-sm font-medium text-red-400"
+              >
+                {errors[field.name]}
+              </motion.p>
+            )}
+            {field.hint && !errors[field.name] && (
+              <p className="mt-1 text-xs text-slate-500">{field.hint}</p>
+            )}
           </div>
-          {errors[field.name] && (
-            <motion.p
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-red-400 text-sm font-medium mt-1"
-            >
-              {errors[field.name]}
-            </motion.p>
-          )}
-          {field.hint && !errors[field.name] && (
-            <p className="text-slate-500 text-xs mt-1">{field.hint}</p>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
 
       <motion.button
         whileHover={{ scale: 1.02 }}
