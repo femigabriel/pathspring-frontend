@@ -31,6 +31,7 @@ import {
 import { useAuth } from "@/src/contexts/AuthContext";
 import { getDefaultRouteForRole } from "@/src/lib/auth";
 import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
+import { useTheme } from "@/src/contexts/ThemeContext";
 
 // ============ API CONFIGURATION ============
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -681,6 +682,7 @@ const SuccessModal = ({
 export default function RegisterPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { theme } = useTheme();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -830,23 +832,49 @@ export default function RegisterPage() {
     },
   ];
 
+  const isDark = theme === "dark";
+  const shellClassName = isDark
+    ? "relative min-h-screen overflow-hidden bg-slate-950 text-white"
+    : "relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#fffaf2_0%,#fffdf8_34%,#f3f7ff_100%)] text-slate-900";
+  const orbClassNames = isDark
+    ? [
+        "absolute -top-40 -right-40 h-96 w-96 rounded-full bg-purple-600/20 blur-3xl animate-pulse",
+        "absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-pink-600/20 blur-3xl animate-pulse animation-delay-2000",
+        "absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/20 blur-3xl animate-pulse animation-delay-4000",
+      ]
+    : [
+        "absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-orange-300/40 blur-3xl",
+        "absolute -bottom-40 -left-40 h-[26rem] w-[26rem] rounded-full bg-violet-200/40 blur-3xl",
+        "absolute top-1/2 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-200/45 blur-3xl",
+      ];
+  const gridOverlayStyle = isDark
+    ? {
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
+                           linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+        backgroundSize: "60px 60px",
+      }
+    : {
+        backgroundImage: `linear-gradient(rgba(148,163,184,0.12) 1px, transparent 1px), 
+                           linear-gradient(90deg, rgba(148,163,184,0.12) 1px, transparent 1px)`,
+        backgroundSize: "60px 60px",
+      };
+  const primaryCardClassName = isDark
+    ? "relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 shadow-xl backdrop-blur-xl"
+    : "relative overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.94),rgba(255,244,231,0.95)_38%,rgba(243,232,255,0.94)_100%)] shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl";
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(236,72,153,0.1),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] text-slate-900 dark:bg-slate-950 dark:text-white">
+    <main className={shellClassName}>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl animate-pulse animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse animation-delay-4000" />
+        {orbClassNames.map((className) => (
+          <div key={className} className={className} />
+        ))}
       </div>
 
       {/* Grid Overlay */}
       <div
         className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
-                           linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-        }}
+        style={gridOverlayStyle}
       />
 
       {/* Floating Elements */}
@@ -915,16 +943,23 @@ export default function RegisterPage() {
             className="relative group"
           >
             {/* Animated Gradient Border */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient" />
+            <div className={`absolute -inset-0.5 rounded-2xl blur transition duration-1000 group-hover:duration-200 animate-gradient ${isDark ? "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 opacity-75 group-hover:opacity-100" : "bg-gradient-to-r from-orange-300 via-amber-300 to-sky-300 opacity-90 group-hover:opacity-100"}`} />
 
             {/* Card Content */}
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/88 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
+            <div className={primaryCardClassName}>
+              {!isDark ? (
+                <>
+                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-r from-orange-300/35 via-amber-200/40 to-fuchsia-200/35" />
+                  <div className="absolute -right-12 top-12 h-44 w-44 rounded-full bg-fuchsia-200/25 blur-3xl" />
+                  <div className="absolute -left-10 bottom-10 h-36 w-36 rounded-full bg-orange-300/20 blur-3xl" />
+                </>
+              ) : null}
               <div className="p-8">
                 {/* Decorative Header */}
                 <div className="text-center mb-6">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-gradient-to-r from-purple-500/15 to-pink-500/15 px-4 py-2 dark:from-purple-500/20 dark:to-pink-500/20">
+                  <div className={`mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 ${isDark ? "border-purple-500/30 bg-gradient-to-r from-purple-500/15 to-pink-500/15 dark:from-purple-500/20 dark:to-pink-500/20" : "border-orange-200 bg-gradient-to-r from-orange-100 to-amber-100"}`}>
                     <Sparkles className="text-purple-400" size={16} />
-                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                    <span className={`text-sm font-semibold ${isDark ? "text-purple-300" : "text-orange-700"}`}>
                       Create Your Account
                     </span>
                   </div>
@@ -998,7 +1033,7 @@ export default function RegisterPage() {
             transition={{ delay: 0.7 }}
             className="text-center mt-8"
           >
-            <p className="text-slate-500 dark:text-slate-400">
+            <p className={isDark ? "text-slate-400" : "text-slate-600"}>
               Already have an account?{" "}
               <Link
                 href="/login"

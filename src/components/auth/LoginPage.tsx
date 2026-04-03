@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/src/contexts/AuthContext";
 import { getDefaultRouteForRole } from "@/src/lib/auth";
 import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
+import { useTheme } from "@/src/contexts/ThemeContext";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -397,6 +398,7 @@ const LoginForm = ({
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+  const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [notification, setNotification] = useState<{
@@ -556,21 +558,59 @@ export default function LoginPage() {
     },
   ];
 
+  const isDark = theme === "dark";
+  const shellClassName = isDark
+    ? "relative min-h-screen overflow-hidden bg-slate-950 text-white"
+    : "relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#fff8ef_0%,#fffdf8_38%,#eef4ff_100%)] text-slate-900";
+  const orbClassNames = isDark
+    ? [
+        "absolute -top-40 -right-40 h-96 w-96 rounded-full bg-purple-600/20 blur-3xl animate-pulse",
+        "absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-pink-600/20 blur-3xl animate-pulse animation-delay-2000",
+        "absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/20 blur-3xl animate-pulse animation-delay-4000",
+      ]
+    : [
+        "absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-amber-300/40 blur-3xl",
+        "absolute -bottom-40 -left-40 h-[26rem] w-[26rem] rounded-full bg-sky-300/35 blur-3xl",
+        "absolute top-1/2 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-rose-200/45 blur-3xl",
+      ];
+  const gridOverlayStyle = isDark
+    ? {
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
+                           linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+        backgroundSize: "60px 60px",
+      }
+    : {
+        backgroundImage: `linear-gradient(rgba(148,163,184,0.12) 1px, transparent 1px), 
+                           linear-gradient(90deg, rgba(148,163,184,0.12) 1px, transparent 1px)`,
+        backgroundSize: "60px 60px",
+      };
+  const heroBadgeClassName = isDark
+    ? "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 text-white shadow-lg mb-8"
+    : "mb-8 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/85 px-6 py-3 text-amber-700 shadow-lg shadow-amber-100";
+  const brandTileClassName = isDark
+    ? "p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl transform group-hover:scale-110 transition-all duration-300 shadow-lg"
+    : "rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-3 shadow-lg shadow-orange-200 transition-all duration-300 transform group-hover:scale-110";
+  const primaryCardClassName = isDark
+    ? "relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 shadow-xl backdrop-blur-xl"
+    : "relative overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.94),rgba(255,247,237,0.94)_42%,rgba(238,242,255,0.96))] shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl";
+  const featureCardClassName = isDark
+    ? "relative rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-center shadow-sm transition-all hover:shadow-lg"
+    : "relative rounded-2xl border border-white/80 bg-white/90 p-4 text-center shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl";
+  const statCardClassName = isDark
+    ? "rounded-xl border border-slate-700 bg-slate-800/50 p-3 text-center backdrop-blur-sm"
+    : "rounded-2xl border border-white/80 bg-white/90 p-3 text-center shadow-sm backdrop-blur-sm";
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(236,72,153,0.1),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] text-slate-900 dark:bg-slate-950 dark:text-white">
+    <main className={shellClassName}>
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-pink-600/20 rounded-full blur-3xl animate-pulse animation-delay-2000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl animate-pulse animation-delay-4000" />
+        {orbClassNames.map((className) => (
+          <div key={className} className={className} />
+        ))}
       </div>
 
       <div
         className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
-                           linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-        }}
+        style={gridOverlayStyle}
       />
 
       {floatingElements.map((element, index) => {
@@ -617,9 +657,101 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <LoginHero />
-          <FeatureCards />
-          <StatsSection />
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className={heroBadgeClassName}
+            >
+              <Sparkles className={isDark ? "text-white" : "text-amber-600"} size={20} />
+              <span className="font-bold">Join 50,000+ happy readers</span>
+              <Star className="text-yellow-300" size={18} fill="currentColor" />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Link href="/" className="group mb-6 inline-block">
+                <div className="flex items-center justify-center gap-3">
+                  <div className={brandTileClassName}>
+                    <BookOpen className="h-8 w-8 text-white" />
+                  </div>
+                  <h1 className={`text-5xl font-black transition-transform group-hover:scale-105 md:text-6xl ${isDark ? "bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent" : "bg-gradient-to-r from-amber-700 via-orange-600 to-sky-600 bg-clip-text text-transparent"}`}>
+                    PathSpring
+                  </h1>
+                </div>
+              </Link>
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className={`mb-4 text-4xl font-black md:text-5xl ${isDark ? "text-white" : "text-slate-900"}`}
+            >
+              Welcome Back!
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className={`mx-auto max-w-2xl text-xl ${isDark ? "text-slate-300" : "text-slate-600"}`}
+            >
+              Sign in to continue your reading adventure and discover amazing stories.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4"
+          >
+            {[
+              { icon: BookOpen, title: "1000+ Stories", description: "Explore our library", color: "from-blue-500 to-cyan-500" },
+              { icon: Sparkles, title: "Fun Games", description: "Learn while playing", color: "from-purple-500 to-pink-500" },
+              { icon: TrendingUp, title: "Track Progress", description: "See your growth", color: "from-green-500 to-emerald-500" },
+              { icon: Award, title: "Earn Badges", description: "Celebrate achievements", color: "from-orange-500 to-red-500" },
+            ].map((feature, index) => (
+              <motion.div key={index} whileHover={{ y: -5 }} className="relative group">
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${feature.color} opacity-0 blur-xl transition-opacity group-hover:opacity-100`} />
+                <div className={featureCardClassName}>
+                  <div className={`mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r ${feature.color}`}>
+                    <feature.icon className="text-white" size={24} />
+                  </div>
+                  <p className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-900"}`}>{feature.title}</p>
+                  <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{feature.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="mb-8 grid grid-cols-3 gap-4"
+          >
+            {[
+              { value: "50K+", label: "Active Readers", icon: Users },
+              { value: "1000+", label: "Stories", icon: BookOpen },
+              { value: "98%", label: "Parent Satisfaction", icon: Star },
+            ].map((stat, index) => (
+              <div key={index} className={statCardClassName}>
+                <stat.icon className="mx-auto mb-2 h-5 w-5 text-purple-400" />
+                <p className={`text-xl font-black ${isDark ? "text-white" : "text-slate-900"}`}>{stat.value}</p>
+                <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{stat.label}</p>
+              </div>
+            ))}
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -627,19 +759,26 @@ export default function LoginPage() {
             transition={{ delay: 0.6 }}
             className="relative group"
           >
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient" />
+            <div className={`absolute -inset-0.5 rounded-2xl blur transition duration-1000 group-hover:duration-200 animate-gradient ${isDark ? "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 opacity-75 group-hover:opacity-100" : "bg-gradient-to-r from-amber-300 via-orange-300 to-sky-300 opacity-90 group-hover:opacity-100"}`} />
 
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/88 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/80">
+            <div className={primaryCardClassName}>
+              {!isDark ? (
+                <>
+                  <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-amber-300/40 via-orange-200/40 to-sky-200/45" />
+                  <div className="absolute -right-14 top-10 h-40 w-40 rounded-full bg-orange-300/20 blur-3xl" />
+                  <div className="absolute -left-10 bottom-12 h-32 w-32 rounded-full bg-sky-300/20 blur-3xl" />
+                </>
+              ) : null}
               <div className="p-8">
                 <div className="text-center mb-6">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-gradient-to-r from-purple-500/15 to-pink-500/15 px-4 py-2 dark:from-purple-500/20 dark:to-pink-500/20">
+                  <div className={`mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 ${isDark ? "border-purple-500/30 bg-gradient-to-r from-purple-500/20 to-pink-500/20" : "border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100"}`}>
                     <Sparkles className="text-purple-400" size={16} />
-                    <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">
+                    <span className={`text-sm font-semibold ${isDark ? "text-purple-300" : "text-amber-700"}`}>
                       Secure Login
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Access Your Account</h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  <h3 className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>Access Your Account</h3>
+                  <p className={`mt-1 text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     Enter your credentials to continue
                   </p>
                 </div>
@@ -676,7 +815,7 @@ export default function LoginPage() {
             transition={{ delay: 0.7 }}
             className="text-center mt-8"
           >
-            <p className="text-slate-500 dark:text-slate-400">
+            <p className={isDark ? "text-slate-400" : "text-slate-600"}>
               New to PathSpring?{" "}
               <Link
                 href="/register"
@@ -685,11 +824,11 @@ export default function LoginPage() {
                 Create your school account
               </Link>
             </p>
-            <p className="mt-3 text-slate-500 dark:text-slate-400">
+            <p className={`mt-3 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
               Student reader?{" "}
               <Link
                 href="/student/login"
-                className="text-emerald-400 font-semibold hover:text-emerald-300 transition-colors"
+                className={isDark ? "font-semibold text-emerald-400 transition-colors hover:text-emerald-300" : "font-semibold text-emerald-700 transition-colors hover:text-emerald-800"}
               >
                 Sign in with username and PIN
               </Link>
