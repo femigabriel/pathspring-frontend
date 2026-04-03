@@ -194,6 +194,28 @@ const normalizeCatalogProduct = (value: unknown): SchoolCatalogProduct | null =>
   };
 };
 
+const getRelatedContentIds = (content: SchoolCatalogProduct) => {
+  const value = content.relatedContentIds;
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+};
+
+const dedupeCatalogProducts = (products: SchoolCatalogProduct[]) => {
+  const contentPacks = products.filter((item) => item.type === "CONTENT_PACK");
+  if (contentPacks.length === 0) return products;
+
+  const relatedIds = new Set(
+    contentPacks.flatMap((item) => getRelatedContentIds(item)),
+  );
+
+  return products.filter((item) => {
+    if (item.type === "CONTENT_PACK") return true;
+    if (item.type === "STORY" && relatedIds.has(item._id)) return false;
+    return item.type === "STORY";
+  });
+};
+
 const normalizeBundleNode = (value: unknown) => {
   if (!isRecord(value) || !isRecord(value.content)) return null;
 
@@ -363,9 +385,11 @@ export const getFamilyCatalogProducts = async (): Promise<FamilyCatalogResponse>
         : [];
 
   return {
-    products: products
-      .map((product) => normalizeCatalogProduct(product))
-      .filter((product): product is SchoolCatalogProduct => product !== null),
+    products: dedupeCatalogProducts(
+      products
+        .map((product) => normalizeCatalogProduct(product))
+        .filter((product): product is SchoolCatalogProduct => product !== null),
+    ),
     plan: normalizeProductPlan(record.plan),
   };
 };
@@ -382,9 +406,11 @@ export const getFamilySelectedProducts = async (): Promise<FamilyCatalogResponse
         : [];
 
   return {
-    products: products
-      .map((product) => normalizeCatalogProduct(product))
-      .filter((product): product is SchoolCatalogProduct => product !== null),
+    products: dedupeCatalogProducts(
+      products
+        .map((product) => normalizeCatalogProduct(product))
+        .filter((product): product is SchoolCatalogProduct => product !== null),
+    ),
     plan: normalizeProductPlan(record.plan),
   };
 };

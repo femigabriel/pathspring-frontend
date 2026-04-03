@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BookmarkCheck,
   BookOpen,
@@ -16,12 +16,17 @@ import {
   Sparkles,
   Tags,
   XCircle,
+  CheckCircle,
+  ArrowRight,
+  TrendingUp,
+  Award,
+  Users,
+  Star,
 } from "lucide-react";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
 import AppActionButton from "@/src/components/shared/ui/AppActionButton";
 import AppBadge from "@/src/components/shared/ui/AppBadge";
 import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
-import AppStatCard from "@/src/components/shared/ui/AppStatCard";
 import { getAdminSchoolDetails, type AdminSchoolDetails } from "@/src/lib/admin-api";
 import { getSchoolPlanSnapshot } from "@/src/lib/school-plan";
 import {
@@ -32,6 +37,7 @@ import {
   selectSchoolProduct,
   type SchoolCatalogProduct,
 } from "@/src/lib/school-content-api";
+import { useTheme } from "@/src/contexts/ThemeContext";
 
 const prettyDate = (value?: string) =>
   value ? new Date(value).toLocaleDateString() : "Recently updated";
@@ -39,7 +45,41 @@ const prettyDate = (value?: string) =>
 const getProductSummary = (product: SchoolCatalogProduct) =>
   product.summary ?? product.description ?? "A premium reading product available for your school.";
 
+// Feature Card Component
+const FeatureCard = ({ icon: Icon, title, description, color, isDark }: any) => (
+  <motion.div whileHover={{ y: -3 }} className="relative group">
+    <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${color} opacity-0 blur-md transition-opacity group-hover:opacity-60`} />
+    <div className={`relative rounded-xl p-3.5 text-center transition-all group-hover:shadow-md ${isDark ? "bg-slate-800/60 border border-slate-700" : "bg-white/80 border border-white/60 shadow-sm"}`}>
+      <div className={`w-10 h-10 mx-auto mb-2 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center`}>
+        <Icon className="text-white" size={18} />
+      </div>
+      <p className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{title}</p>
+      <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{description}</p>
+    </div>
+  </motion.div>
+);
+
+const StatCard = ({ value, label, icon: Icon, isDark, color = "purple" }: any) => {
+  const colorMap: Record<string, string> = {
+    cyan: "from-cyan-500 to-blue-500",
+    emerald: "from-emerald-500 to-teal-500",
+    amber: "from-amber-500 to-orange-500",
+    purple: "from-purple-500 to-pink-500",
+  };
+  return (
+    <div className={`rounded-xl p-4 text-center transition-all hover:shadow-md ${isDark ? "bg-slate-800/60 border border-slate-700" : "bg-white/80 border border-white/60"}`}>
+      <div className={`w-12 h-12 mx-auto mb-2 rounded-lg bg-gradient-to-r ${colorMap[color]} flex items-center justify-center`}>
+        <Icon className="text-white" size={20} />
+      </div>
+      <p className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{value}</p>
+      <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{label}</p>
+    </div>
+  );
+};
+
 export default function SchoolCatalogPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [schoolDetails, setSchoolDetails] = useState<AdminSchoolDetails | null>(null);
   const [catalogProducts, setCatalogProducts] = useState<SchoolCatalogProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<SchoolCatalogProduct[]>([]);
@@ -153,334 +193,328 @@ export default function SchoolCatalogPage() {
       ? `${catalogPlan.remainingBooks} slots left`
       : "Plan details unavailable";
 
+  const bgClass = isDark
+    ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+    : "bg-gradient-to-br from-sky-50 via-white to-emerald-50";
+
+  const features = [
+    { icon: ShoppingBag, title: "Browse Catalog", description: "Explore premium products", color: "from-cyan-500 to-blue-500" },
+    { icon: PackageCheck, title: "Select Products", description: "Approve for school", color: "from-emerald-500 to-teal-500" },
+    { icon: BookOpen, title: "Manage Library", description: "Keep it tidy", color: "from-purple-500 to-pink-500" },
+    { icon: TrendingUp, title: "Track Usage", description: "Monitor adoption", color: "from-orange-500 to-red-500" },
+  ];
+
+  const stats = [
+    { value: catalogProducts.length.toString(), label: "Available Products", icon: ShoppingBag, color: "cyan" },
+    { value: selectedCount.toString(), label: "Selected for School", icon: PackageCheck, color: "emerald" },
+    { value: availableCount.toString(), label: "Ready to Add", icon: Sparkles, color: "amber" },
+  ];
+
   return (
     <ProtectedRoute allowedRoles={["SCHOOL_ADMIN"]}>
-      <div className="space-y-6">
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-[2rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-emerald-50 p-6 shadow-sm dark:border-cyan-500/20 dark:from-cyan-500/10 dark:via-slate-900 dark:to-emerald-500/10"
-        >
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:border-cyan-400/20 dark:bg-white/5 dark:text-cyan-300">
-                <ShoppingBag size={14} />
-                <span>School Catalog</span>
-              </div>
-              <h1 className="mt-4 text-3xl font-black text-slate-900 dark:text-white md:text-4xl">
-                Browse, approve, and manage the stories your school can use.
-              </h1>
-              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300 md:text-base">
-                This is the school shop for premium reading products. Browse the platform catalog,
-                select the stories your school wants, and keep your active school library tidy in one place.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <AppBadge label={`Current plan: ${currentPlan.label}`} tone={currentPlan.tone} icon={ShieldCheck} />
-                <AppBadge label={currentPlan.statusLabel} tone={currentPlan.statusTone} />
-                <AppBadge label={planUsageLabel} tone="amber" />
-              </div>
-            </div>
-
-            <div className="w-full rounded-[1.8rem] border border-white/80 bg-white/80 p-4 shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/[0.06] lg:w-[27rem]">
-              <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-white/10">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Catalog Snapshot
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                    Quick view of your school library flow
-                  </p>
+      <div className={`min-h-screen ${bgClass} px-4 py-6 sm:px-6 lg:px-8`}>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Hero Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-2xl p-6 ${isDark ? "bg-slate-900/80 backdrop-blur-xl border border-white/10" : "bg-white/90 backdrop-blur-xl border border-white/60 shadow-xl"}`}
+          >
+            <div className="flex flex-col lg:flex-row gap-6 lg:items-center lg:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-1.5 rounded-full shadow-lg mb-4">
+                  <ShoppingBag size={14} />
+                  <span className="text-xs font-semibold">School Catalog Manager</span>
                 </div>
-                <AppBadge label={planRemainingLabel} tone="slate" />
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-[1.4rem] border border-cyan-200 bg-cyan-50/90 p-4 dark:border-cyan-400/20 dark:bg-cyan-500/10">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="rounded-2xl bg-white/90 p-2 text-cyan-700 shadow-sm dark:bg-white/10 dark:text-cyan-300">
-                      <ShoppingBag size={18} />
-                    </div>
-                    <p className="text-3xl font-black leading-none text-slate-900 dark:text-white">
-                      {catalogProducts.length}
-                    </p>
-                  </div>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">
-                    Catalog
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                    Products available for review
-                  </p>
-                </div>
-
-                <div className="rounded-[1.4rem] border border-emerald-200 bg-emerald-50/90 p-4 dark:border-emerald-400/20 dark:bg-emerald-500/10">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="rounded-2xl bg-white/90 p-2 text-emerald-700 shadow-sm dark:bg-white/10 dark:text-emerald-300">
-                      <PackageCheck size={18} />
-                    </div>
-                    <p className="text-3xl font-black leading-none text-slate-900 dark:text-white">
-                      {selectedCount}
-                    </p>
-                  </div>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
-                    Selected
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                    Already in your school library
-                  </p>
-                </div>
-
-                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50/90 p-4 dark:border-amber-400/20 dark:bg-amber-500/10">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="rounded-2xl bg-white/90 p-2 text-amber-700 shadow-sm dark:bg-white/10 dark:text-amber-300">
-                      <Sparkles size={18} />
-                    </div>
-                    <p className="text-3xl font-black leading-none text-slate-900 dark:text-white">
-                      {availableCount}
-                    </p>
-                  </div>
-                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
-                    Ready To Add
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                    Still waiting for school approval
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.section>
-
-        <section className="rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex flex-wrap gap-2">
-                <AppBadge label={currentPlan.label} tone={currentPlan.tone} icon={ShieldCheck} />
-                <AppBadge label={currentPlan.statusLabel} tone={currentPlan.statusTone} />
-              </div>
-              <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">
-                Plan-aware school library access
-              </h2>
-              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                {currentPlan.summary} {currentPlan.accessMessage} The products your school uses here should match your current plan and the selections your school has approved.
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                {planRemainingLabel}
-              </p>
-              {currentPlan.renewalLabel ? (
-                <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                  {currentPlan.renewalLabel}
+                <h1 className={`text-3xl md:text-4xl font-black mb-3 ${isDark ? "text-white" : "text-slate-800"}`}>
+                  School Library Manager
+                </h1>
+                <p className={`text-sm md:text-base max-w-2xl ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                  Browse, approve, and manage the stories your school can use. Select premium products
+                  from the platform catalog and keep your active school library organized.
                 </p>
-              ) : null}
-            </div>
+              </div>
 
-            <AppActionButton
-              tone="secondary"
-              size="lg"
-              onClick={() => {
-                window.location.href = "/admin/billing";
-              }}
-            >
-              <CreditCard size={16} />
-              <span>{currentPlan.isFree ? "View plans" : "Manage current plan"}</span>
-            </AppActionButton>
-          </div>
-        </section>
-
-        {notice ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-            {notice}
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <span>{error}</span>
-              {showUpgradeCta ? (
-                <AppActionButton
-                  tone="secondary"
-                  size="sm"
-                  onClick={() => {
-                    window.location.href = "/admin/billing";
-                  }}
+              {/* Plan Card */}
+              <div className={`rounded-xl p-4 min-w-[200px] ${isDark ? "bg-slate-800/60 border border-slate-700" : "bg-white/80 border border-white/60"}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldCheck size={16} className="text-purple-500" />
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Current Plan</span>
+                </div>
+                <p className={`text-lg font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{currentPlan.label}</p>
+                <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{planUsageLabel}</p>
+                <p className={`text-xs mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{planRemainingLabel}</p>
+                <button
+                  onClick={() => { window.location.href = "/admin/billing"; }}
+                  className="mt-3 text-xs font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 transition-colors flex items-center gap-1"
                 >
-                  <CreditCard size={14} />
-                  <span>Upgrade plan</span>
-                </AppActionButton>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        <section className="rounded-[2rem] border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => setActiveTab("catalog")}
-                className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                  activeTab === "catalog"
-                    ? "border-cyan-300 bg-cyan-50 text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-500/10 dark:text-cyan-300"
-                    : "border-gray-200 bg-white text-slate-600 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                }`}
-              >
-                <BookmarkCheck size={16} />
-                <span>Platform Catalog</span>
-              </button>
-              <button
-                onClick={() => setActiveTab("selected")}
-                className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                  activeTab === "selected"
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-                    : "border-gray-200 bg-white text-slate-600 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                }`}
-              >
-                <PackageCheck size={16} />
-                <span>Selected Products</span>
-              </button>
+                  <CreditCard size={12} />
+                  Manage Plan <ArrowRight size={10} />
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                <Search size={18} className="text-slate-400" />
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              {stats.map((stat, idx) => (
+                <StatCard key={idx} {...stat} isDark={isDark} />
+              ))}
+            </div>
+
+            {/* Features */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+              {features.map((feature, idx) => (
+                <FeatureCard key={idx} {...feature} isDark={isDark} />
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Notifications */}
+          <AnimatePresence>
+            {notice && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`rounded-xl p-4 flex items-center gap-3 ${isDark ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-emerald-50 border border-emerald-200"}`}
+              >
+                <CheckCircle size={18} className="text-emerald-500" />
+                <p className={`text-sm flex-1 ${isDark ? "text-emerald-300" : "text-emerald-700"}`}>{notice}</p>
+                <button onClick={() => setNotice("")} className="text-emerald-500 hover:text-emerald-600">×</button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`rounded-xl p-4 ${isDark ? "bg-red-500/10 border border-red-500/20" : "bg-red-50 border border-red-200"}`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-red-500 text-sm flex-1">{error}</span>
+                  </div>
+                  {showUpgradeCta && (
+                    <button
+                      onClick={() => { window.location.href = "/admin/billing"; }}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isDark ? "bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30" : "bg-cyan-500 text-white hover:bg-cyan-600"}`}
+                    >
+                      <CreditCard size={14} className="inline mr-2" />
+                      Upgrade Plan
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main Content Card */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className={`rounded-2xl ${isDark ? "bg-slate-900/80 backdrop-blur-xl border border-white/10" : "bg-white/90 backdrop-blur-xl border border-white/60 shadow-xl"} overflow-hidden`}
+          >
+            {/* Tabs Header */}
+            <div className="border-b border-slate-200 dark:border-slate-700 px-6 pt-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab("catalog")}
+                  className={`px-5 py-2.5 rounded-t-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                    activeTab === "catalog"
+                      ? isDark ? "bg-slate-800 text-cyan-400 border-t border-x border-slate-700" : "bg-white text-cyan-600 border-t border-x border-slate-200"
+                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                  }`}
+                >
+                  <BookmarkCheck size={16} />
+                  Platform Catalog
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${isDark ? "bg-slate-700" : "bg-slate-100"}`}>
+                    {catalogProducts.length}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("selected")}
+                  className={`px-5 py-2.5 rounded-t-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                    activeTab === "selected"
+                      ? isDark ? "bg-slate-800 text-emerald-400 border-t border-x border-slate-700" : "bg-white text-emerald-600 border-t border-x border-slate-200"
+                      : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                  }`}
+                >
+                  <PackageCheck size={16} />
+                  Selected Products
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${isDark ? "bg-slate-700" : "bg-slate-100"}`}>
+                    {selectedCount}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="relative max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={
                     activeTab === "catalog"
-                      ? "Search catalog by title, theme, grade, SEL..."
-                      : "Search selected products by title, theme, grade..."
+                      ? "Search by title, theme, grade level..."
+                      : "Search selected products..."
                   }
-                  className="w-full min-w-[16rem] bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-white"
+                  className={`w-full rounded-xl border-2 pl-11 pr-4 py-3 text-sm outline-none transition-all focus:ring-2 ${
+                    isDark
+                      ? "bg-slate-800/60 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                      : "bg-white/80 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20"
+                  }`}
                 />
               </div>
-
-              <Link
-                href="/admin/story-book"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-              >
-                <BookOpen size={16} />
-                <span>Open Story Book</span>
-              </Link>
             </div>
-          </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {loading ? (
-              <div className="col-span-full flex items-center justify-center py-20">
-                <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <AppEmptyState
-                icon={LibraryBig}
-                title={activeTab === "catalog" ? "No catalog products found" : "No selected products yet"}
-                body={
-                  activeTab === "catalog"
-                    ? "Try another search or check back when more premium products are published."
-                    : "Select products from the platform catalog to make them available to your teachers and students."
-                }
-                className="col-span-full py-16"
-              />
-            ) : (
-              filteredProducts.map((product) => {
-                const isSelected = product.isSelectedForSchool ?? selectedProducts.some((item) => item._id === product._id);
-                const isWorking = workingProductId === product._id;
+            {/* Products Grid */}
+            <div className="p-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 size={32} className="animate-spin text-cyan-500" />
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <AppEmptyState
+                  icon={LibraryBig}
+                  title={activeTab === "catalog" ? "No catalog products found" : "No selected products yet"}
+                  body={
+                    activeTab === "catalog"
+                      ? "Try another search or check back when more premium products are published."
+                      : "Select products from the platform catalog to make them available to your teachers and students."
+                  }
+                  className="py-16"
+                />
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredProducts.map((product) => {
+                    const isSelected = product.isSelectedForSchool ?? selectedProducts.some((item) => item._id === product._id);
+                    const isWorking = workingProductId === product._id;
 
-                return (
-                  <motion.article
-                    key={product._id}
-                    whileHover={{ y: -4 }}
-                    className="flex h-full flex-col rounded-[1.75rem] border border-gray-200 bg-gray-50 p-5 shadow-sm transition-colors dark:border-white/10 dark:bg-white/5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <AppBadge
-                          label={product.type === "CONTENT_PACK" ? "Bundle" : "Story"}
-                          icon={product.type === "CONTENT_PACK" ? PackageCheck : BookOpen}
-                          tone="slate"
-                        />
-                        <h2 className="mt-3 text-xl font-bold text-slate-900 dark:text-white">{product.title}</h2>
-                      </div>
+                    return (
+                      <motion.article
+                        key={product._id}
+                        whileHover={{ y: -4 }}
+                        className={`rounded-xl p-5 transition-all ${
+                          isDark
+                            ? "bg-slate-800/60 border border-slate-700 hover:border-cyan-500/30"
+                            : "bg-white/80 border border-white/60 shadow-sm hover:shadow-md"
+                        }`}
+                      >
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div>
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              isDark ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {product.type === "CONTENT_PACK" ? <PackageCheck size={12} /> : <BookOpen size={12} />}
+                              {product.type === "CONTENT_PACK" ? "Bundle" : "Story"}
+                            </span>
+                            <h3 className={`text-lg font-bold mt-2 ${isDark ? "text-white" : "text-slate-800"}`}>
+                              {product.title}
+                            </h3>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            isSelected
+                              ? isDark ? "bg-emerald-500/20 text-emerald-300" : "bg-emerald-100 text-emerald-700"
+                              : isDark ? "bg-cyan-500/20 text-cyan-300" : "bg-cyan-100 text-cyan-700"
+                          }`}>
+                            {isSelected ? "Selected" : "Available"}
+                          </span>
+                        </div>
 
-                      <AppBadge label={isSelected ? "Selected" : "Available"} tone={isSelected ? "emerald" : "cyan"} />
-                    </div>
-
-                    <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      {getProductSummary(product)}
-                    </p>
-
-                    <div className="mt-4 flex min-h-[3.25rem] flex-wrap content-start gap-2">
-                      {product.gradeLevels?.slice(0, 3).map((grade) => (
-                        <span
-                          key={grade}
-                          className="rounded-full bg-white px-3 py-1 text-xs text-slate-600 dark:bg-white/10 dark:text-slate-300"
-                        >
-                          {grade}
-                        </span>
-                      ))}
-                      {product.selFocus?.slice(0, 2).map((focus) => (
-                        <AppBadge key={focus} label={focus} icon={Tags} tone="cyan" className="normal-case tracking-normal" />
-                      ))}
-                    </div>
-
-                    <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                      <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-slate-950/40">
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Subject</p>
-                        <p className="mt-2 line-clamp-2 min-h-[2.75rem] font-semibold text-slate-900 dark:text-white">
-                          {product.subject ?? product.theme ?? "Reading"}
+                        {/* Description */}
+                        <p className={`text-sm leading-relaxed line-clamp-3 mb-4 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                          {getProductSummary(product)}
                         </p>
-                      </div>
-                      <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-slate-950/40">
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Updated</p>
-                        <p className="mt-2 min-h-[2.75rem] font-semibold text-slate-900 dark:text-white">
-                          {prettyDate(product.updatedAt ?? product.publishedAt)}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="mt-auto grid gap-3 pt-5 sm:grid-cols-2">
-                      {isSelected ? (
-                        <>
-                          <AppActionButton
-                            onClick={() => void handleRemoveProduct(product._id)}
-                            disabled={isWorking}
-                            tone="danger"
-                            size="lg"
-                            fullWidth
-                          >
-                            {isWorking ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
-                            <span>{isWorking ? "Removing..." : "Remove From School"}</span>
-                          </AppActionButton>
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {product.gradeLevels?.slice(0, 3).map((grade) => (
+                            <span key={grade} className={`text-xs px-2 py-1 rounded-full ${
+                              isDark ? "bg-slate-700 text-slate-300" : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {grade}
+                            </span>
+                          ))}
+                          {product.selFocus?.slice(0, 2).map((focus) => (
+                            <span key={focus} className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
+                              isDark ? "bg-cyan-500/20 text-cyan-300" : "bg-cyan-100 text-cyan-700"
+                            }`}>
+                              <Tags size={10} />
+                              {focus}
+                            </span>
+                          ))}
+                        </div>
 
-                          <Link
-                            href="/admin/story-book"
-                            className="inline-flex"
-                          >
-                            <AppActionButton tone="secondary" size="lg" fullWidth className="pointer-events-none w-full">
-                              <BookOpen size={16} />
-                              <span>Open In Story Book</span>
-                            </AppActionButton>
-                          </Link>
-                        </>
-                      ) : (
-                        <AppActionButton
-                          onClick={() => void handleSelectProduct(product._id)}
-                          disabled={isWorking}
-                          tone="primary"
-                          size="lg"
-                          fullWidth
-                          className="sm:col-span-2"
-                        >
-                          {isWorking ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                          <span>{isWorking ? "Selecting..." : "Select For School"}</span>
-                        </AppActionButton>
-                      )}
-                    </div>
-                  </motion.article>
-                );
-              })
-            )}
-          </div>
-        </section>
+                        {/* Meta Info */}
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className={`rounded-lg p-2 ${isDark ? "bg-slate-700/50" : "bg-slate-50"}`}>
+                            <p className="text-[10px] uppercase tracking-wider text-slate-500">Subject</p>
+                            <p className={`text-sm font-medium mt-1 ${isDark ? "text-white" : "text-slate-700"}`}>
+                              {product.subject ?? product.theme ?? "Reading"}
+                            </p>
+                          </div>
+                          <div className={`rounded-lg p-2 ${isDark ? "bg-slate-700/50" : "bg-slate-50"}`}>
+                            <p className="text-[10px] uppercase tracking-wider text-slate-500">Updated</p>
+                            <p className={`text-sm font-medium mt-1 ${isDark ? "text-white" : "text-slate-700"}`}>
+                              {prettyDate(product.updatedAt ?? product.publishedAt)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                          {isSelected ? (
+                            <>
+                              <button
+                                onClick={() => void handleRemoveProduct(product._id)}
+                                disabled={isWorking}
+                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                                  isDark
+                                    ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                                    : "bg-red-50 text-red-600 hover:bg-red-100"
+                                } disabled:opacity-50`}
+                              >
+                                {isWorking ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
+                                {isWorking ? "Removing..." : "Remove"}
+                              </button>
+                              <Link
+                                href="/admin/story-book"
+                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                                  isDark
+                                    ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                }`}
+                              >
+                                <BookOpen size={14} />
+                                View
+                              </Link>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => void handleSelectProduct(product._id)}
+                              disabled={isWorking}
+                              className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50"
+                            >
+                              {isWorking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                              {isWorking ? "Selecting..." : "Select for School"}
+                            </button>
+                          )}
+                        </div>
+                      </motion.article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </motion.section>
+        </div>
       </div>
     </ProtectedRoute>
   );

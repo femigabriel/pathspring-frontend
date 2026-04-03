@@ -273,6 +273,28 @@ const dedupePublishedContents = (contents: SchoolStoryContent[]) => {
   return [...contentMap.values()];
 };
 
+const getRelatedContentIds = (content: SchoolStoryContent) => {
+  const value = content.relatedContentIds;
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+};
+
+const dedupeCatalogProducts = (products: SchoolCatalogProduct[]) => {
+  const contentPacks = products.filter((item) => item.type === "CONTENT_PACK");
+  if (contentPacks.length === 0) return products;
+
+  const relatedIds = new Set(
+    contentPacks.flatMap((item) => getRelatedContentIds(item)),
+  );
+
+  return products.filter((item) => {
+    if (item.type === "CONTENT_PACK") return true;
+    if (item.type === "STORY" && relatedIds.has(item._id)) return false;
+    return item.type === "STORY";
+  });
+};
+
 const normalizeContent = (value: unknown): SchoolStoryContent | null => {
   if (!isRecord(value)) return null;
 
@@ -515,10 +537,12 @@ export const getSchoolCatalogProducts = async (): Promise<SchoolCatalogResponse>
         : [];
 
   return {
-    products: products
-      .map((item) => normalizeCatalogProduct(item))
-      .filter((item): item is SchoolCatalogProduct => item !== null)
-      .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
+    products: dedupeCatalogProducts(
+      products
+        .map((item) => normalizeCatalogProduct(item))
+        .filter((item): item is SchoolCatalogProduct => item !== null)
+        .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
+    ),
     plan: normalizeProductPlan(record.plan),
   };
 };
@@ -535,10 +559,12 @@ export const getSchoolSelectedProducts = async (): Promise<SchoolCatalogResponse
         : [];
 
   return {
-    products: products
-      .map((item) => normalizeCatalogProduct(item))
-      .filter((item): item is SchoolCatalogProduct => item !== null)
-      .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
+    products: dedupeCatalogProducts(
+      products
+        .map((item) => normalizeCatalogProduct(item))
+        .filter((item): item is SchoolCatalogProduct => item !== null)
+        .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
+    ),
     plan: normalizeProductPlan(record.plan),
   };
 };
