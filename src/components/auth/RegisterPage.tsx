@@ -1,4 +1,4 @@
-// app/register/page.tsx
+// app/register/page.tsx - REDESIGNED WITH SAME LAYOUT AS LOGIN
 "use client";
 
 import { useState } from "react";
@@ -23,24 +23,19 @@ import {
   BookOpen,
   Users,
   TrendingUp,
-  Cloud,
-  Rocket,
-  Flower2,
-  Rainbow,
+  Award,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { getDefaultRouteForRole } from "@/src/lib/auth";
 import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
 import { useTheme } from "@/src/contexts/ThemeContext";
 
-// ============ API CONFIGURATION ============
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// ============ DESIGN SYSTEM ============
 const INPUT_STYLE =
-  "w-full rounded-xl border-2 border-slate-200 bg-white/85 p-5 text-lg text-slate-900 transition-all placeholder:text-slate-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:placeholder:text-slate-500";
+  "w-full rounded-xl border-2 bg-white/90 p-4 text-lg text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:outline-none focus:ring-4 dark:bg-slate-800/90 dark:text-white dark:placeholder:text-slate-500";
 
-// ============ NOTIFICATION COMPONENT ============
 const Notification = ({
   message,
   type,
@@ -52,304 +47,126 @@ const Notification = ({
 }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 100 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 100 }}
-      className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-lg border-2 ${
+      initial={{ opacity: 0, x: 100, scale: 0.9 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 100, scale: 0.9 }}
+      className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl border-2 backdrop-blur-md ${
         type === "success"
-          ? "bg-green-500 border-green-600 text-white"
-          : "bg-red-500 border-red-600 text-white"
+          ? "bg-green-500/95 border-green-400 text-white"
+          : "bg-red-500/95 border-red-400 text-white"
       }`}
     >
-      <span className="text-2xl">{type === "success" ? "✅" : "⚠️"}</span>
-      <p className="font-bold text-lg">{message}</p>
-      <button
-        onClick={onClose}
-        className="ml-4 hover:scale-110 transition-transform"
-      >
-        <X size={20} />
+      <span className="text-xl">{type === "success" ? "🎉" : "⚠️"}</span>
+      <p className="font-semibold text-sm md:text-base">{message}</p>
+      <button onClick={onClose} className="ml-3 hover:scale-110 transition-transform">
+        <X size={18} />
       </button>
     </motion.div>
   );
 };
 
-// ============ LOADING SPINNER ============
 const LoadingSpinner = () => {
   return (
-    <div className="flex items-center justify-center gap-3">
+    <div className="flex items-center justify-center gap-2">
       <motion.div
         animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        className="w-6 h-6 border-3 border-white border-t-transparent rounded-full"
+        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
       />
-      <span>Registering...</span>
+      <span>Creating account...</span>
     </div>
   );
 };
 
-// ============ HERO SECTION ============
-const RegisterHero = () => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="text-center mb-12"
-    >
-      {/* Stats Badge */}
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1 }}
-        className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full shadow-lg mb-8"
-      >
-        <Sparkles className="text-white" size={20} />
-        <span className="font-bold">Join 50,000+ happy readers</span>
-        <Star className="text-yellow-300" size={18} fill="currentColor" />
-      </motion.div>
-
-      {/* PathSpring Logo with Dark Theme */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <Link href="/" className="inline-block mb-6 group">
-          <div className="flex items-center justify-center gap-3">
-            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl transform group-hover:scale-110 transition-all duration-300 shadow-lg">
-              <BookOpen className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent group-hover:scale-105 transition-transform">
-              PathSpring
-            </h1>
-          </div>
-        </Link>
-      </motion.div>
-
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mb-4 text-4xl font-black text-slate-900 md:text-5xl dark:text-white"
-      >
-        Start Your Journey! 🚀
-      </motion.h2>
-
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="mx-auto max-w-2xl text-xl text-slate-600 dark:text-slate-300"
-      >
-        Create your school account and unlock a world of amazing stories!
-      </motion.p>
-    </motion.div>
-  );
-};
-
-// ============ FEATURE CARDS ============
-const FeatureCards = () => {
-  const features = [
-    {
-      icon: BookOpen,
-      title: "1000+ Stories",
-      description: "Explore our library",
-      color: "from-blue-500 to-cyan-500",
-    },
-    {
-      icon: Sparkles,
-      title: "Fun Games",
-      description: "Learn while playing",
-      color: "from-purple-500 to-pink-500",
-    },
-    {
-      icon: TrendingUp,
-      title: "Track Progress",
-      description: "See your growth",
-      color: "from-green-500 to-emerald-500",
-    },
-    {
-      icon: Shield,
-      title: "Safe & Secure",
-      description: "COPPA compliant",
-      color: "from-orange-500 to-red-500",
-    },
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
-    >
-      {features.map((feature, index) => (
-        <motion.div
-          key={index}
-          whileHover={{ y: -5 }}
-          className="relative group"
-        >
-          <div
-            className={`absolute inset-0 bg-gradient-to-r ${feature.color} rounded-xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl`}
-          />
-          <div className="relative rounded-xl border border-slate-200 bg-white/80 p-4 text-center shadow-sm transition-all hover:shadow-lg dark:border-slate-700 dark:bg-slate-800/50">
-            <div
-              className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mx-auto mb-2`}
-            >
-              <feature.icon className="text-white" size={24} />
-            </div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">{feature.title}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{feature.description}</p>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-};
-
-// ============ STATS SECTION ============
-const StatsSection = () => {
-  const stats = [
-    { value: "50K+", label: "Active Readers", icon: Users },
-    { value: "1000+", label: "Stories", icon: BookOpen },
-    { value: "98%", label: "Parent Satisfaction", icon: Star },
-  ];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.55 }}
-      className="grid grid-cols-3 gap-4 mb-8"
-    >
-      {stats.map((stat, index) => (
-        <div
-          key={index}
-          className="rounded-xl border border-slate-200 bg-white/80 p-3 text-center backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/50"
-        >
-          <stat.icon className="w-5 h-5 text-purple-400 mx-auto mb-2" />
-          <p className="text-xl font-black text-slate-900 dark:text-white">{stat.value}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-        </div>
-      ))}
-    </motion.div>
-  );
-};
-
-// ============ CHARACTER GUIDE ============
-const RegisterGuide = ({ step, error }: { step: number; error?: string }) => {
-  const messages = {
-    1: "🎉 Welcome! Let's get your school set up. I'll help you every step!",
-    2: "📝 Great! Now tell us about your school.",
-    3: "🔐 Almost there! Create a secure password.",
-    4: error || "✨ You're doing amazing! Let's finish up.",
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm rounded-2xl p-5 border border-purple-500/30 mb-6"
-    >
-      <div className="flex gap-3 items-center">
-        <motion.div
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="text-5xl"
-        >
-          {step === 1 ? "🌟" : step === 2 ? "🏫" : step === 3 ? "🔐" : "✨"}
-        </motion.div>
-        <div className="flex-1">
-          <p
-            className={`text-base font-bold ${
-              error ? "text-red-400" : "text-white"
-            }`}
-          >
-            {messages[step as keyof typeof messages] || messages[4]}
-          </p>
-          {!error && (
-            <div className="flex gap-1.5 mt-2">
-              {[1, 2, 3, 4].map((s) => (
-                <motion.div
-                  key={s}
-                  initial={false}
-                  animate={{
-                    width: s <= step ? "40px" : "8px",
-                    backgroundColor: s <= step ? "#8B5CF6" : "#334155",
-                  }}
-                  transition={{ duration: 0.3 }}
-                  className="h-1.5 rounded-full"
-                />
-              ))}
-            </div>
-          )}
-        </div>
+// Feature Card Component
+const FeatureCard = ({ icon: Icon, title, description, color, isDark }: any) => (
+  <motion.div whileHover={{ y: -3 }} className="relative group">
+    <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${color} opacity-0 blur-md transition-opacity group-hover:opacity-60`} />
+    <div className={`relative rounded-xl p-3.5 text-center transition-all group-hover:shadow-md ${isDark ? "bg-slate-800/60 border border-slate-700" : "bg-white/80 border border-white/60 shadow-sm"}`}>
+      <div className={`w-10 h-10 mx-auto mb-2 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center`}>
+        <Icon className="text-white" size={18} />
       </div>
-    </motion.div>
-  );
-};
+      <p className={`text-sm font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{title}</p>
+      <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{description}</p>
+    </div>
+  </motion.div>
+);
 
-// ============ FORM STEP 1: SCHOOL INFORMATION ============
+const StatCard = ({ value, label, icon: Icon, isDark }: any) => (
+  <div className={`rounded-xl p-3 text-center transition-all hover:shadow-md ${isDark ? "bg-slate-800/60 border border-slate-700" : "bg-white/80 border border-white/60"}`}>
+    <Icon className="w-5 h-5 mx-auto mb-1.5 text-purple-500" />
+    <p className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}>{value}</p>
+    <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>{label}</p>
+  </div>
+);
+
+// School Info Step
 const SchoolInfoStep = ({
   formData,
   onChange,
   onNext,
+  isDark,
 }: {
   formData: any;
   onChange: (field: string, value: string) => void;
   onNext: () => void;
+  isDark: boolean;
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [focused, setFocused] = useState<string>("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const validate = () => {
+  const validateField = (field: string, value: string) => {
+    switch (field) {
+      case "schoolName":
+        if (!value.trim()) return "School name is required";
+        return "";
+      case "email":
+        if (!value.trim()) return "Email is required";
+        if (!value.includes("@") || !value.includes(".")) return "Enter a valid email";
+        return "";
+      case "phone":
+        if (!value.trim()) return "Phone number is required";
+        return "";
+      case "location":
+        if (!value.trim()) return "Location is required";
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleFieldChange = (field: string, value: string) => {
+    onChange(field, value);
+    if (touched[field]) {
+      setErrors({ ...errors, [field]: validateField(field, value) });
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true });
+    setErrors({ ...errors, [field]: validateField(field, formData[field]) });
+  };
+
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.schoolName.trim())
-      newErrors.schoolName = "School name is required";
-    if (!formData.email.trim()) newErrors.email = "Email address is required";
-    if (!formData.email.includes("@"))
-      newErrors.email = "Please enter a valid email address";
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
-    if (!formData.location.trim())
-      newErrors.location = "School location is required";
-
+    const fields = ["schoolName", "email", "phone", "location"];
+    fields.forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) newErrors[field] = error;
+    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
-    if (validate()) onNext();
+    if (validateForm()) onNext();
   };
 
   const inputFields = [
-    {
-      icon: Building2,
-      name: "schoolName",
-      label: "School Name",
-      placeholder: "e.g., Green Hills Academy",
-      type: "text",
-    },
-    {
-      icon: Mail,
-      name: "email",
-      label: "School Email",
-      placeholder: "admin@yourschool.com",
-      type: "email",
-      hint: "This will be your admin login email",
-    },
-    {
-      icon: Phone,
-      name: "phone",
-      label: "Phone Number",
-      placeholder: "+234 801 234 5678",
-      type: "tel",
-    },
-    {
-      icon: MapPin,
-      name: "location",
-      label: "Location",
-      placeholder: "City, Country (e.g., Lagos, Nigeria)",
-      type: "text",
-    },
+    { icon: Building2, name: "schoolName", label: "School Name", placeholder: "e.g., Green Hills Academy", type: "text", colSpan: "full" },
+    { icon: Mail, name: "email", label: "School Email", placeholder: "admin@yourschool.com", type: "email", hint: "This will be your admin login email", colSpan: "full" },
+    { icon: Phone, name: "phone", label: "Phone Number", placeholder: "+234 801 234 5678", type: "tel", colSpan: "half" },
+    { icon: MapPin, name: "location", label: "Location", placeholder: "City, Country", type: "text", colSpan: "half" },
   ];
 
   return (
@@ -357,90 +174,75 @@ const SchoolInfoStep = ({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleNext();
-      }}
-      className="space-y-6"
+      onSubmit={(e) => { e.preventDefault(); handleNext(); }}
+      className="space-y-5"
     >
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {inputFields.map((field) => (
-          <div
-            key={field.name}
-            className={field.name === "schoolName" || field.name === "email" ? "md:col-span-2" : ""}
-          >
-            <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+          <div key={field.name} className={field.colSpan === "full" ? "md:col-span-2" : ""}>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
               {field.label}
             </label>
-            <div className="relative group">
-              <field.icon
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-400 transition-colors"
-                size={20}
-              />
+            <div className="relative">
+              <field.icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type={field.type}
                 value={formData[field.name]}
-                onChange={(e) => onChange(field.name, e.target.value)}
-                onFocus={() => setFocused(field.name)}
-                onBlur={() => setFocused("")}
+                onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                onBlur={() => handleBlur(field.name)}
                 placeholder={field.placeholder}
                 className={`
-                  ${INPUT_STYLE} pl-12
-                  ${errors[field.name] ? "border-red-500 bg-red-500/10" : ""}
-                  ${
-                    focused === field.name
-                      ? "border-purple-500 shadow-lg bg-white dark:bg-slate-700/50"
-                      : ""
-                  }
+                  ${INPUT_STYLE} pl-11 pr-4
+                  ${errors[field.name] && touched[field.name] ? "border-red-400 bg-red-50/50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-700"}
+                  focus:border-purple-500 focus:ring-purple-500/20
                 `}
               />
             </div>
-            {errors[field.name] && (
-              <motion.p
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-1 text-sm font-medium text-red-400"
-              >
-                {errors[field.name]}
-              </motion.p>
-            )}
+            <AnimatePresence>
+              {errors[field.name] && touched[field.name] && (
+                <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="text-red-500 text-xs font-medium mt-1 ml-1">
+                  {errors[field.name]}
+                </motion.p>
+              )}
+            </AnimatePresence>
             {field.hint && !errors[field.name] && (
-              <p className="mt-1 text-xs text-slate-500">{field.hint}</p>
+              <p className="text-xs text-slate-500 mt-1 ml-1">{field.hint}</p>
             )}
           </div>
         ))}
       </div>
 
       <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleNext}
-        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        type="submit"
+        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3.5 rounded-xl font-semibold text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
       >
-        Continue
-        <ArrowRight size={18} />
+        Continue <ArrowRight size={18} />
       </motion.button>
     </motion.form>
   );
 };
 
-// ============ FORM STEP 2: PASSWORD & SECURITY ============
+// Password Step
 const PasswordStep = ({
   password,
   onChange,
   onBack,
   onSubmit,
   isLoading,
+  isDark,
 }: {
   password: string;
   onChange: (value: string) => void;
   onBack: () => void;
   onSubmit: () => void;
   isLoading: boolean;
+  isDark: boolean;
 }) => {
-  const [errors, setErrors] = useState<string>("");
+  const [errors, setErrors] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [focused, setFocused] = useState(false);
+  const [touched, setTouched] = useState(false);
 
   const validatePassword = (pwd: string) => {
     if (pwd.length < 8) return "Password needs at least 8 characters";
@@ -451,6 +253,7 @@ const PasswordStep = ({
   };
 
   const handleSubmit = () => {
+    setTouched(true);
     const error = validatePassword(password);
     if (error) {
       setErrors(error);
@@ -460,26 +263,18 @@ const PasswordStep = ({
     onSubmit();
   };
 
-  const passwordStrength = () => {
+  const getPasswordStrength = () => {
     let strength = 0;
     if (password.length >= 8) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/[0-9]/.test(password)) strength++;
     if (/[!@#$%^&*]/.test(password)) strength++;
-
-    const colors = [
-      "bg-red-500",
-      "bg-orange-500",
-      "bg-yellow-500",
-      "bg-green-500",
-      "bg-emerald-500",
-    ];
+    const colors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500", "bg-emerald-500"];
     const texts = ["Weak", "Fair", "Good", "Strong", "Very Strong"];
-
     return { color: colors[strength], text: texts[strength], strength };
   };
 
-  const strength = passwordStrength();
+  const strength = getPasswordStrength();
 
   return (
     <motion.div
@@ -489,14 +284,11 @@ const PasswordStep = ({
       className="space-y-5"
     >
       <div>
-        <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
           Create a Strong Password
         </label>
-        <div className="relative group">
-          <Lock
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-purple-400 transition-colors"
-            size={20}
-          />
+        <div className="relative">
+          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type={showPassword ? "text" : "password"}
             value={password}
@@ -504,102 +296,81 @@ const PasswordStep = ({
               onChange(e.target.value);
               if (errors) setErrors("");
             }}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
+            onBlur={() => setTouched(true)}
             placeholder="Create a secure password"
             className={`
-              ${INPUT_STYLE} pl-12 pr-12
-              ${errors ? "border-red-500 bg-red-500/10" : ""}
-              ${focused ? "border-purple-500 shadow-lg bg-white dark:bg-slate-700/50" : ""}
+              ${INPUT_STYLE} pl-11 pr-11
+              ${errors && touched ? "border-red-400 bg-red-50/50 dark:bg-red-900/20" : "border-slate-200 dark:border-slate-700"}
+              focus:border-purple-500 focus:ring-purple-500/20
             `}
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-white"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
 
         {password && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3"
-          >
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
             <div className="flex gap-1 mb-1">
               {[0, 1, 2, 3].map((i) => (
                 <motion.div
                   key={i}
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: i < strength.strength ? 1 : 0 }}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  transition={{ duration: 0.3, delay: i * 0.1 }}
                   className={`h-1 flex-1 rounded-full origin-left ${strength.color}`}
                 />
               ))}
             </div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className={`text-xs font-medium ${
-                strength.strength >= 3 ? "text-green-400" : "text-slate-400"
-              }`}
-            >
+            <p className={`text-xs font-medium ${strength.strength >= 3 ? "text-green-500" : "text-slate-500"}`}>
               Password strength: {strength.text}
-            </motion.p>
+            </p>
           </motion.div>
         )}
 
-        {errors && (
-          <motion.p
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-red-400 text-sm font-medium mt-2 flex items-center gap-1"
-          >
-            <span>⚠️</span> {errors}
-          </motion.p>
-        )}
+        <AnimatePresence>
+          {errors && touched && (
+            <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="text-red-500 text-xs font-medium mt-2 flex items-center gap-1">
+              <span>⚠️</span> {errors}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-xl p-4 mt-4 border border-purple-500/20"
-        >
+        <div className={`mt-4 rounded-xl p-4 ${isDark ? "bg-purple-500/10 border border-purple-500/20" : "bg-purple-50 border border-purple-100"}`}>
           <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-purple-700 dark:text-purple-300">
             <Shield size={16} />
             Password Requirements
           </p>
-          <ul className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
+          <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
             <li className="flex items-center gap-2">✓ At least 8 characters</li>
-            <li className="flex items-center gap-2">
-              ✓ One uppercase letter (A-Z)
-            </li>
+            <li className="flex items-center gap-2">✓ One uppercase letter (A-Z)</li>
             <li className="flex items-center gap-2">✓ One number (0-9)</li>
-            <li className="flex items-center gap-2">
-              ✓ One special character (!@#$%^&*)
-            </li>
+            <li className="flex items-center gap-2">✓ One special character (!@#$%^&*)</li>
           </ul>
-        </motion.div>
+        </div>
       </div>
 
       <div className="flex gap-3">
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          type="button"
           onClick={onBack}
-          className="flex-1 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="flex-1 rounded-xl border-2 border-slate-200 bg-white/80 py-3.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-700/50"
         >
           ← Back
         </motion.button>
-
         <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          type="button"
           onClick={handleSubmit}
           disabled={isLoading}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3.5 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isLoading ? <LoadingSpinner /> : "Create Account"}
         </motion.button>
@@ -608,28 +379,22 @@ const PasswordStep = ({
   );
 };
 
-// ============ SUCCESS MODAL ============
-const SuccessModal = ({
-  school,
-  user,
-  onClose,
-}: {
-  school: any;
-  user: any;
-  onClose: () => void;
-}) => {
+// Success Modal
+const SuccessModal = ({ school, user, onClose, isDark }: any) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.9, y: 50, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.9, y: 50, opacity: 0 }}
         transition={{ type: "spring", damping: 25 }}
-        className="bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-purple-500/30"
+        className={`rounded-2xl max-w-md w-full shadow-2xl overflow-hidden ${isDark ? "bg-slate-900 border border-purple-500/30" : "bg-white"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-center">
@@ -641,39 +406,26 @@ const SuccessModal = ({
           >
             <Check className="w-10 h-10 text-purple-600" />
           </motion.div>
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Registration Successful!
-          </h2>
+          <h2 className="text-2xl font-bold text-white mb-2">Registration Successful!</h2>
           <p className="text-white/90">Welcome to PathSpring, {school.name}</p>
         </div>
-
         <div className="p-6 space-y-4">
-          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-4 text-center border border-purple-500/20">
-            <p className="text-sm font-semibold text-purple-300 mb-1">
-              Your School Code
+          <div className={`rounded-xl p-4 text-center ${isDark ? "bg-purple-500/10 border border-purple-500/20" : "bg-purple-50 border border-purple-100"}`}>
+            <p className="text-sm font-semibold text-purple-600 dark:text-purple-300 mb-1">Your School Code</p>
+            <p className="text-2xl font-mono font-bold text-purple-600 dark:text-purple-400 tracking-wider">{school.schoolCode}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Share this code with teachers to join your school</p>
+          </div>
+          <div className="space-y-2 text-sm text-center">
+            <p className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300">
+              <Mail size={16} /> <span className="font-medium">{user.email}</span>
             </p>
-            <p className="text-2xl font-mono font-bold text-purple-400 tracking-wider">
-              {school.schoolCode}
-            </p>
-            <p className="text-xs text-slate-400 mt-2">
-              Share this code with teachers to join your school
+            <p className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300">
+              <Building2 size={16} /> <span className="font-medium">School Administrator</span>
             </p>
           </div>
-
-          <div className="space-y-2 text-sm">
-            <p className="flex items-center justify-center gap-2 text-slate-300">
-              <Mail size={16} />
-              <span className="font-medium">{user.email}</span>
-            </p>
-            <p className="flex items-center justify-center gap-2 text-slate-300">
-              <Building2 size={16} />
-              <span className="font-medium">School Administrator</span>
-            </p>
-          </div>
-
           <button
             onClick={onClose}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold text-sm hover:from-purple-700 hover:to-pink-700 transition-all"
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-xl font-semibold text-sm transition-all"
           >
             Go to Dashboard
           </button>
@@ -683,7 +435,6 @@ const SuccessModal = ({
   );
 };
 
-// ============ MAIN REGISTER PAGE ============
 export default function RegisterPage() {
   const router = useRouter();
   const { login } = useAuth();
@@ -692,19 +443,11 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [registeredData, setRegisteredData] = useState<any>(null);
-  const [error, setError] = useState<string>("");
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [error, setError] = useState("");
+  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [formData, setFormData] = useState({ schoolName: "", email: "", password: "", phone: "", location: "" });
 
-  const [formData, setFormData] = useState({
-    schoolName: "",
-    email: "",
-    password: "",
-    phone: "",
-    location: "",
-  });
+  const isDark = theme === "dark";
 
   const updateFormData = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -719,60 +462,23 @@ export default function RegisterPage() {
   const handleRegister = async () => {
     setIsLoading(true);
     setError("");
-
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/school/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            schoolName: formData.schoolName,
-            email: formData.email,
-            password: formData.password,
-            phone: formData.phone,
-            location: formData.location,
-          }),
-        },
-      );
-
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/school/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Registration failed. Please try again!",
-        );
-      }
-
+      if (!response.ok) throw new Error(data.message || "Registration failed");
       login(data.accessToken, data.refreshToken, data.user, data.school);
-
       setRegisteredData(data);
       setShowSuccess(true);
       showNotification("School registered successfully! 🎉", "success");
-
       setTimeout(() => {
         router.push(getDefaultRouteForRole(data.user?.role));
       }, 3000);
     } catch (err: any) {
-      console.error("Registration error:", err);
-
-      let errorMsg = "";
-
-      if (
-        err.message?.includes("ERR_CONNECTION_REFUSED") ||
-        err.message?.includes("Failed to fetch")
-      ) {
-        errorMsg =
-          "Unable to connect to the server. Please check your internet connection and try again.";
-      } else if (err.message) {
-        errorMsg = err.message;
-      } else {
-        errorMsg =
-          "Registration failed! Please check your details and try again.";
-      }
-
+      const errorMsg = err.message?.includes("Failed to fetch") ? "Unable to connect to server." : err.message || "Registration failed";
       setError(errorMsg);
       showNotification(errorMsg, "error");
     } finally {
@@ -780,325 +486,188 @@ export default function RegisterPage() {
     }
   };
 
-  const handleRetry = () => {
-    setError("");
-    handleRegister();
-  };
-
-  // Floating elements for hero section
-  const floatingElements = [
-    {
-      icon: BookOpen,
-      color: "text-purple-400",
-      delay: 0,
-      top: "5%",
-      left: "2%",
-      size: 28,
-    },
-    {
-      icon: Star,
-      color: "text-yellow-400",
-      delay: 1,
-      top: "8%",
-      right: "3%",
-      size: 24,
-    },
-    {
-      icon: Cloud,
-      color: "text-blue-400",
-      delay: 2,
-      top: "70%",
-      left: "1%",
-      size: 40,
-    },
-    {
-      icon: Rocket,
-      color: "text-pink-400",
-      delay: 1.5,
-      bottom: "15%",
-      right: "2%",
-      size: 32,
-    },
-    {
-      icon: Flower2,
-      color: "text-green-400",
-      delay: 2.5,
-      top: "80%",
-      right: "8%",
-      size: 26,
-    },
-    {
-      icon: Rainbow,
-      color: "text-purple-400",
-      delay: 1.8,
-      bottom: "25%",
-      left: "5%",
-      size: 35,
-    },
+  const features = [
+    { icon: BookOpen, title: "1000+ Stories", description: "Explore our library", color: "from-blue-500 to-cyan-500" },
+    { icon: Sparkles, title: "Fun Games", description: "Learn while playing", color: "from-purple-500 to-pink-500" },
+    { icon: TrendingUp, title: "Track Progress", description: "See your growth", color: "from-green-500 to-emerald-500" },
+    { icon: Award, title: "Earn Badges", description: "Celebrate achievements", color: "from-orange-500 to-red-500" },
   ];
 
-  const isDark = theme === "dark";
-  const shellClassName = isDark
-    ? "relative min-h-screen overflow-hidden bg-slate-950 text-white"
-    : "relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#fffaf2_0%,#fffdf8_34%,#f3f7ff_100%)] text-slate-900";
-  const orbClassNames = isDark
-    ? [
-        "absolute -top-40 -right-40 h-96 w-96 rounded-full bg-purple-600/20 blur-3xl animate-pulse",
-        "absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-pink-600/20 blur-3xl animate-pulse animation-delay-2000",
-        "absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/20 blur-3xl animate-pulse animation-delay-4000",
-      ]
-    : [
-        "absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-orange-300/40 blur-3xl",
-        "absolute -bottom-40 -left-40 h-[26rem] w-[26rem] rounded-full bg-violet-200/40 blur-3xl",
-        "absolute top-1/2 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-200/45 blur-3xl",
-      ];
-  const gridOverlayStyle = isDark
-    ? {
-        backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
-                           linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
-        backgroundSize: "60px 60px",
-      }
-    : {
-        backgroundImage: `linear-gradient(rgba(148,163,184,0.12) 1px, transparent 1px), 
-                           linear-gradient(90deg, rgba(148,163,184,0.12) 1px, transparent 1px)`,
-        backgroundSize: "60px 60px",
-      };
-  const primaryCardClassName = isDark
-    ? "relative overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 shadow-xl backdrop-blur-xl"
-    : "relative overflow-hidden rounded-[2rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.94),rgba(255,244,231,0.95)_38%,rgba(243,232,255,0.94)_100%)] shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl";
+  const stats = [
+    { value: "50K+", label: "Active Readers", icon: Users },
+    { value: "1000+", label: "Stories", icon: BookOpen },
+    { value: "98%", label: "Satisfaction", icon: Star },
+  ];
+
+  const bgClass = isDark
+    ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950"
+    : "bg-gradient-to-br from-amber-50 via-white to-purple-50";
 
   return (
-    <main className={shellClassName}>
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        {orbClassNames.map((className) => (
-          <div key={className} className={className} />
-        ))}
-      </div>
+    <main className={`relative min-h-screen ${bgClass} overflow-hidden`}>
+      {/* Animated background orbs */}
+      <div className="absolute top-0 -right-32 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-0 -left-32 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-2000" />
 
-      {/* Grid Overlay */}
-      <div
-        className="absolute inset-0 opacity-20"
-        style={gridOverlayStyle}
-      />
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-8 md:mb-12">
+          <Link href="/" className="group flex-shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2.5 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <h1 className={`text-2xl md:text-3xl font-black tracking-tight transition-all group-hover:scale-105 origin-left ${isDark ? "bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent" : "bg-gradient-to-r from-purple-700 via-pink-600 to-orange-600 bg-clip-text text-transparent"}`}>
+                PathSpring
+              </h1>
+            </div>
+          </Link>
+          <div className="flex-shrink-0">
+            <div className="rounded-xl bg-white/20 backdrop-blur-md p-1.5 border border-white/20 shadow-lg">
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
 
-      {/* Floating Elements */}
-      {floatingElements.map((element, index) => {
-        const Icon = element.icon;
-        return (
-          <motion.div
-            key={index}
-            className="absolute hidden lg:block"
-            style={{
-              top: element.top,
-              left: element.left,
-              right: element.right,
-              bottom: element.bottom,
-            }}
-            animate={{
-              y: [0, -20, 0],
-              rotate: [0, 10, -10, 0],
-            }}
-            transition={{
-              duration: 4,
-              delay: element.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
-            <Icon
-              className={`${element.color} opacity-30`}
-              size={element.size}
-            />
-          </motion.div>
-        );
-      })}
+        {/* Main Content */}
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 xl:gap-16">
+          {/* LEFT COLUMN */}
+          <div className="flex-1 flex items-center">
+            <div className="w-full">
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-6">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-full shadow-lg">
+                  <Sparkles size={16} />
+                  <span className="text-sm font-semibold">Join 50,000+ happy readers</span>
+                  <Star size={14} fill="currentColor" />
+                </div>
+              </motion.div>
 
-      <div className="fixed right-4 top-4 z-40 rounded-xl border border-slate-200 bg-white/85 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
-        <ThemeToggle />
-      </div>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                <h2 className={`text-4xl md:text-5xl lg:text-6xl font-black mb-4 ${isDark ? "text-white" : "text-slate-800"}`}>
+                  Start Your Journey! <span className="inline-block animate-wave">🚀</span>
+                </h2>
+                <p className={`text-lg md:text-xl ${isDark ? "text-slate-300" : "text-slate-600"} max-w-lg`}>
+                  Create your school account and unlock a world of amazing stories!
+                </p>
+              </motion.div>
 
-      <div className="container relative z-10 mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
-          {/* Notification */}
-          <AnimatePresence>
-            {notification && (
-              <Notification
-                message={notification.message}
-                type={notification.type}
-                onClose={() => setNotification(null)}
-              />
-            )}
-          </AnimatePresence>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8 md:mt-10">
+                {features.map((feature, idx) => (
+                  <FeatureCard key={idx} {...feature} isDark={isDark} />
+                ))}
+              </motion.div>
 
-          {/* Hero Section */}
-          <RegisterHero />
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-3 gap-3 mt-4">
+                {stats.map((stat, idx) => (
+                  <StatCard key={idx} {...stat} isDark={isDark} />
+                ))}
+              </motion.div>
 
-          {/* Feature Cards */}
-          <FeatureCards />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex items-center gap-4 mt-6 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5"><Shield size={14} /><span>Secure Registration</span></div>
+                <div className="w-1 h-1 rounded-full bg-slate-400" />
+                <div className="flex items-center gap-1.5"><CheckCircle size={14} /><span>SSL Encrypted</span></div>
+                <div className="w-1 h-1 rounded-full bg-slate-400" />
+                <div className="flex items-center gap-1.5"><Users size={14} /><span>24/7 Support</span></div>
+              </motion.div>
+            </div>
+          </div>
 
-          {/* Stats Section */}
-          <StatsSection />
-
-          {/* Main Card with Gradient Border */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="relative group"
-          >
-            {/* Animated Gradient Border */}
-            <div className={`absolute -inset-0.5 rounded-2xl blur transition duration-1000 group-hover:duration-200 animate-gradient ${isDark ? "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 opacity-75 group-hover:opacity-100" : "bg-gradient-to-r from-orange-300 via-amber-300 to-sky-300 opacity-90 group-hover:opacity-100"}`} />
-
-            {/* Card Content */}
-            <div className={primaryCardClassName}>
-              {!isDark ? (
-                <>
-                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-r from-orange-300/35 via-amber-200/40 to-fuchsia-200/35" />
-                  <div className="absolute -right-12 top-12 h-44 w-44 rounded-full bg-fuchsia-200/25 blur-3xl" />
-                  <div className="absolute -left-10 bottom-10 h-36 w-36 rounded-full bg-orange-300/20 blur-3xl" />
-                </>
-              ) : null}
-              <div className="p-8">
-                {/* Decorative Header */}
+          {/* RIGHT COLUMN - Registration Form */}
+          <div className="w-full lg:w-[480px] xl:w-[520px]">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className={`rounded-2xl shadow-2xl ${isDark ? "bg-slate-900/80 backdrop-blur-xl border border-white/10" : "bg-white/90 backdrop-blur-xl border border-white/60"}`}
+            >
+              <div className="p-6 md:p-8">
                 <div className="text-center mb-6">
-                  <div className={`mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-2 ${isDark ? "border-purple-500/30 bg-gradient-to-r from-purple-500/15 to-pink-500/15 dark:from-purple-500/20 dark:to-pink-500/20" : "border-orange-200 bg-gradient-to-r from-orange-100 to-amber-100"}`}>
-                    <Sparkles className="text-purple-400" size={16} />
-                    <span className={`text-sm font-semibold ${isDark ? "text-purple-300" : "text-orange-700"}`}>
-                      Create Your Account
-                    </span>
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-3 ${isDark ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "bg-purple-100 text-purple-700 border border-purple-200"}`}>
+                    <Shield size={12} />
+                    <span>Create Account</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}>
                     Get Started Today
                   </h3>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  <p className={`text-sm mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                     Fill in your school details to begin
                   </p>
                 </div>
 
-                {/* Character Guide */}
-                <RegisterGuide step={step} error={error} />
+                {/* Progress Indicator */}
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  {[1, 2].map((s) => (
+                    <div key={s} className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${step >= s ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md" : isDark ? "bg-slate-800 text-slate-500" : "bg-slate-100 text-slate-400"}`}>
+                        {s}
+                      </div>
+                      {s === 1 && <div className={`w-12 h-0.5 rounded-full transition-all ${step > 1 ? "bg-purple-500" : isDark ? "bg-slate-700" : "bg-slate-200"}`} />}
+                    </div>
+                  ))}
+                </div>
 
-                {/* Error Message */}
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6"
-                  >
-                    <p className="text-red-400 font-medium flex items-center gap-2">
-                      <span>⚠️</span> {error}
-                    </p>
-                    {error.includes("Unable to connect") && (
-                      <button
-                        onClick={handleRetry}
-                        disabled={isLoading}
-                        className="mt-3 flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition-all disabled:opacity-50"
-                      >
-                        <RefreshCw
-                          size={14}
-                          className={isLoading ? "animate-spin" : ""}
-                        />
-                        Try Again
-                      </button>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Form Steps */}
                 <AnimatePresence mode="wait">
-                  {step === 1 && (
-                    <SchoolInfoStep
-                      key="step1"
-                      formData={formData}
-                      onChange={updateFormData}
-                      onNext={() => setStep(2)}
-                    />
-                  )}
-
-                  {step === 2 && (
-                    <PasswordStep
-                      key="step2"
-                      password={formData.password}
-                      onChange={(value) => updateFormData("password", value)}
-                      onBack={() => setStep(1)}
-                      onSubmit={handleRegister}
-                      isLoading={isLoading}
-                    />
+                  {error && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-5 overflow-hidden">
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                        <div className="flex items-start gap-2">
+                          <span className="text-red-500 text-sm flex-1">{error}</span>
+                        </div>
+                        {error.includes("connect") && (
+                          <button onClick={() => window.location.reload()} className="mt-2 flex items-center gap-1 text-red-500 text-xs font-medium">
+                            <RefreshCw size={12} /> Retry Connection
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
-            </div>
-          </motion.div>
 
-          {/* Login Link */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="text-center mt-8"
-          >
-            <p className={isDark ? "text-slate-400" : "text-slate-600"}>
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-semibold text-purple-600 transition-colors hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
-              >
-                Sign in here
-              </Link>
-            </p>
-          </motion.div>
+                <AnimatePresence mode="wait">
+                  {step === 1 && (
+                    <SchoolInfoStep key="step1" formData={formData} onChange={updateFormData} onNext={() => setStep(2)} isDark={isDark} />
+                  )}
+                  {step === 2 && (
+                    <PasswordStep key="step2" password={formData.password} onChange={(value) => updateFormData("password", value)} onBack={() => setStep(1)} onSubmit={handleRegister} isLoading={isLoading} isDark={isDark} />
+                  )}
+                </AnimatePresence>
+
+                <div className="mt-6 text-center">
+                  <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    Already have an account?{" "}
+                    <Link href="/login" className="font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 transition-colors">
+                      Sign in here
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 0.3;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.4;
-            transform: scale(1.05);
-          }
-        }
-        .animate-pulse {
-          animation: pulse 4s ease-in-out infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 1s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 2s;
-        }
-        @keyframes gradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
-      `}</style>
-
-      {/* Success Modal */}
       <AnimatePresence>
-        {showSuccess && registeredData && (
-          <SuccessModal
-            school={registeredData.school}
-            user={registeredData.user}
-            onClose={() => router.push(getDefaultRouteForRole(registeredData.user?.role))}
-          />
+        {notification && (
+          <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showSuccess && registeredData && (
+          <SuccessModal school={registeredData.school} user={registeredData.user} onClose={() => router.push(getDefaultRouteForRole(registeredData.user?.role))} isDark={isDark} />
+        )}
+      </AnimatePresence>
+
+      <style jsx>{`
+        @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.05); } }
+        .animate-pulse { animation: pulse 6s ease-in-out infinite; }
+        .delay-1000 { animation-delay: 1s; }
+        .delay-2000 { animation-delay: 2s; }
+        @keyframes wave { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(20deg); } 75% { transform: rotate(-10deg); } }
+        .animate-wave { display: inline-block; animation: wave 1s ease-in-out infinite; }
+      `}</style>
     </main>
   );
 }

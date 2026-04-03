@@ -164,6 +164,53 @@ const workflowSteps = [
   },
 ];
 
+const plans = [
+  {
+    title: "School Starter",
+    audience: "For smaller schools",
+    badge: "School Plan",
+    badgeColor: "cyan",
+    gradient: "from-cyan-500 to-blue-500",
+    description: "A clean starting plan for schools that want reading, assignments, and teacher tools in one place.",
+    features: ["School catalog access", "Teacher dashboard", "Assignments and notifications"],
+    cta: "Register Your School",
+    href: "/register?role=school",
+  },
+  {
+    title: "School Growth",
+    audience: "For growing school programs",
+    badge: "Most Popular",
+    badgeColor: "violet",
+    gradient: "from-violet-500 to-fuchsia-500",
+    description: "Built for schools expanding classroom reading, tracking, and stronger learning routines.",
+    features: ["Everything in Starter", "Better scaling for active classes", "Stronger reading operations"],
+    cta: "Start School Setup",
+    href: "/register?role=school",
+  },
+  {
+    title: "School Premium",
+    audience: "For full school rollout",
+    badge: "Top Tier",
+    badgeColor: "emerald",
+    gradient: "from-emerald-500 to-teal-500",
+    description: "The fullest school plan for teams that want the strongest PathSpring experience across the school.",
+    features: ["Everything in Growth", "Best fit for large rollout", "Premium school experience"],
+    cta: "Launch Premium School",
+    href: "/register?role=school",
+  },
+  {
+    title: "Family Starter",
+    audience: "For independent families",
+    badge: "Family Plan",
+    badgeColor: "amber",
+    gradient: "from-amber-500 to-orange-500",
+    description: "Create child profiles, build a home library, and track reading progress together as a family.",
+    features: ["Family library", "Child profiles", "At-home reading progress"],
+    cta: "Register as Family",
+    href: "/family/register",
+  },
+];
+
 const stats = [
   { value: "10K+", label: "Active Stories", icon: BookOpen },
   { value: "500+", label: "Partner Schools", icon: School },
@@ -190,6 +237,7 @@ export default function LandingPage() {
   const navLinks = useMemo(
     () => [
       { href: "#features", label: "Features" },
+      { href: "#plans", label: "Plans" },
       { href: "#for-families", label: "For Families" },
       { href: "#workflow", label: "How It Works" },
       { href: "#roles", label: "Get Started" },
@@ -500,6 +548,79 @@ export default function LandingPage() {
                 </motion.div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section id="plans" className="bg-gradient-to-b from-white to-slate-50 px-4 py-24 dark:from-slate-950 dark:to-slate-900/50 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="text-center"
+          >
+            <p className="text-sm font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+              Plans
+            </p>
+            <h2 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
+              Flexible plans for schools
+              <span className="block bg-gradient-to-r from-violet-600 to-amber-500 bg-clip-text text-transparent">
+                and independent families
+              </span>
+            </h2>
+            <p className="mx-auto mt-4 max-w-3xl text-lg text-slate-600 dark:text-slate-300">
+              Start with the plan that matches your reading journey. Schools can scale from starter to premium, and families can begin with a focused home-reading plan.
+            </p>
+          </motion.div>
+
+          <div className="mt-16 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {plans.map((plan, idx) => (
+              <motion.div
+                key={plan.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: idx * 0.08 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -8 }}
+                className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-2xl dark:border-white/10 dark:bg-white/5"
+              >
+                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${plan.gradient}`} />
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      {plan.audience}
+                    </p>
+                    <h3 className="mt-3 text-2xl font-bold">{plan.title}</h3>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${badgeColorMap[plan.badgeColor as keyof typeof badgeColorMap]}`}>
+                    {plan.badge}
+                  </span>
+                </div>
+
+                <p className="mt-4 min-h-[4.5rem] text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {plan.description}
+                </p>
+
+                <div className="mt-6 space-y-3">
+                  {plan.features.map((feature) => (
+                    <div key={feature} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-500" />
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link
+                  href={plan.href}
+                  className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${plan.gradient} px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all group-hover:scale-[1.01]`}
+                >
+                  {plan.cta}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>

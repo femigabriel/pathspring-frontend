@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BookHeart, BookOpen, Clock3, Sparkles, Users } from "lucide-react";
+import { ArrowRight, BookHeart, BookOpen, Clock3, CreditCard, Sparkles, Users } from "lucide-react";
 import FamilyShell from "@/src/components/family/layout/FamilyShell";
 import AppBadge from "@/src/components/shared/ui/AppBadge";
 import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
@@ -10,14 +10,17 @@ import {
   getFamilyChildren,
   getFamilyProfile,
   getFamilySelectedProducts,
+  type FamilyCatalogResponse,
   type FamilyChild,
   type FamilyProfile,
 } from "@/src/lib/family-api";
+import { getSchoolPlanSnapshot } from "@/src/lib/school-plan";
 
 export default function FamilyDashboardPage() {
   const [profile, setProfile] = useState<FamilyProfile | null>(null);
   const [children, setChildren] = useState<FamilyChild[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<{ _id: string; title: string }[]>([]);
+  const [plan, setPlan] = useState<FamilyCatalogResponse["plan"]>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -35,7 +38,8 @@ export default function FamilyDashboardPage() {
 
         setProfile(profileData);
         setChildren(childrenData);
-        setSelectedProducts(productData.map((item) => ({ _id: item._id, title: item.title })));
+        setSelectedProducts(productData.products.map((item) => ({ _id: item._id, title: item.title })));
+        setPlan(productData.plan);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load family dashboard.");
       } finally {
@@ -45,6 +49,8 @@ export default function FamilyDashboardPage() {
 
     void load();
   }, []);
+
+  const currentPlan = getSchoolPlanSnapshot({ tier: plan?.planKey });
 
   return (
     <FamilyShell>
@@ -64,6 +70,7 @@ export default function FamilyDashboardPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <AppBadge label="Family-led reading" tone="cyan" />
               <AppBadge label={`${children.length} child${children.length === 1 ? "" : "ren"}`} tone="emerald" />
+              <AppBadge label={currentPlan.label} tone={currentPlan.tone} />
             </div>
           </div>
 
@@ -161,6 +168,10 @@ export default function FamilyDashboardPage() {
               <Link href="/family/library" className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-emerald-500 px-5 py-3 font-semibold text-white">
                 Continue to family library
                 <ArrowRight size={16} />
+              </Link>
+              <Link href="/family/billing" className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 dark:border-white/10 dark:text-slate-200">
+                <CreditCard size={16} />
+                Manage family billing
               </Link>
             </section>
           </div>

@@ -6,10 +6,12 @@ import { motion } from "framer-motion";
 import {
   BookmarkCheck,
   BookOpen,
+  CreditCard,
   LibraryBig,
   Loader2,
   PackageCheck,
   Search,
+  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Tags,
@@ -20,9 +22,12 @@ import AppActionButton from "@/src/components/shared/ui/AppActionButton";
 import AppBadge from "@/src/components/shared/ui/AppBadge";
 import AppEmptyState from "@/src/components/shared/ui/AppEmptyState";
 import AppStatCard from "@/src/components/shared/ui/AppStatCard";
+import { getAdminSchoolDetails, type AdminSchoolDetails } from "@/src/lib/admin-api";
+import { getSchoolPlanSnapshot } from "@/src/lib/school-plan";
 import {
   getSchoolCatalogProducts,
   getSchoolSelectedProducts,
+  type ProductPlanSummary,
   removeSchoolProductSelection,
   selectSchoolProduct,
   type SchoolCatalogProduct,
@@ -35,18 +40,26 @@ const getProductSummary = (product: SchoolCatalogProduct) =>
   product.summary ?? product.description ?? "A premium reading product available for your school.";
 
 export default function SchoolCatalogPage() {
+  const [schoolDetails, setSchoolDetails] = useState<AdminSchoolDetails | null>(null);
   const [catalogProducts, setCatalogProducts] = useState<SchoolCatalogProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<SchoolCatalogProduct[]>([]);
+  const [catalogPlan, setCatalogPlan] = useState<ProductPlanSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"catalog" | "selected">("catalog");
   const [workingProductId, setWorkingProductId] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [showUpgradeCta, setShowUpgradeCta] = useState(false);
 
   useEffect(() => {
     void loadCatalog();
+    void getAdminSchoolDetails()
+      .then(setSchoolDetails)
+      .catch(() => setSchoolDetails(null));
   }, []);
+
+  const currentPlan = getSchoolPlanSnapshot(schoolDetails);
 
   const loadCatalog = async () => {
     setLoading(true);
@@ -58,8 +71,9 @@ export default function SchoolCatalogPage() {
         getSchoolSelectedProducts(),
       ]);
 
-      setCatalogProducts(catalog);
-      setSelectedProducts(selected);
+      setCatalogProducts(catalog.products);
+      setSelectedProducts(selected.products);
+      setCatalogPlan(selected.plan ?? catalog.plan);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load the school catalog.");
     } finally {
@@ -71,6 +85,7 @@ export default function SchoolCatalogPage() {
     setWorkingProductId(contentId);
     setError("");
     setNotice("");
+    setShowUpgradeCta(false);
 
     try {
       await selectSchoolProduct(contentId, {
@@ -82,7 +97,9 @@ export default function SchoolCatalogPage() {
       await loadCatalog();
       setActiveTab("selected");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to select product.");
+      const message = err instanceof Error ? err.message : "Failed to select product.";
+      setError(message);
+      setShowUpgradeCta(message.toLowerCase().includes("upgrade to add more books"));
     } finally {
       setWorkingProductId("");
     }
@@ -125,6 +142,16 @@ export default function SchoolCatalogPage() {
 
   const selectedCount = selectedProducts.length;
   const availableCount = catalogProducts.filter((product) => !product.isSelectedForSchool).length;
+  const planUsageLabel = catalogPlan?.isUnlimited
+    ? "Unlimited books"
+    : catalogPlan?.maxBooks !== null && catalogPlan?.maxBooks !== undefined
+      ? `${catalogPlan.usedBooks}/${catalogPlan.maxBooks} used`
+      : `${selectedCount} selected`;
+  const planRemainingLabel = catalogPlan?.isUnlimited
+    ? "No cap on your library"
+    : typeof catalogPlan?.remainingBooks === "number"
+      ? `${catalogPlan.remainingBooks} slots left`
+      : "Plan details unavailable";
 
   return (
     <ProtectedRoute allowedRoles={["SCHOOL_ADMIN"]}>
@@ -147,15 +174,117 @@ export default function SchoolCatalogPage() {
                 This is the school shop for premium reading products. Browse the platform catalog,
                 select the stories your school wants, and keep your active school library tidy in one place.
               </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <AppBadge label={`Current plan: ${currentPlan.label}`} tone={currentPlan.tone} icon={ShieldCheck} />
+                <AppBadge label={currentPlan.statusLabel} tone={currentPlan.statusTone} />
+                <AppBadge label={planUsageLabel} tone="amber" />
+              </div>
             </div>
 
-            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[25rem]">
-              <AppStatCard label="Catalog" value={catalogProducts.length} icon={ShoppingBag} tone="cyan" />
-              <AppStatCard label="Selected" value={selectedCount} icon={PackageCheck} tone="emerald" />
-              <AppStatCard label="Ready To Add" value={availableCount} icon={Sparkles} tone="amber" />
+            <div className="w-full rounded-[1.8rem] border border-white/80 bg-white/80 p-4 shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/[0.06] lg:w-[27rem]">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-white/10">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                    Catalog Snapshot
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Quick view of your school library flow
+                  </p>
+                </div>
+                <AppBadge label={planRemainingLabel} tone="slate" />
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-[1.4rem] border border-cyan-200 bg-cyan-50/90 p-4 dark:border-cyan-400/20 dark:bg-cyan-500/10">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="rounded-2xl bg-white/90 p-2 text-cyan-700 shadow-sm dark:bg-white/10 dark:text-cyan-300">
+                      <ShoppingBag size={18} />
+                    </div>
+                    <p className="text-3xl font-black leading-none text-slate-900 dark:text-white">
+                      {catalogProducts.length}
+                    </p>
+                  </div>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">
+                    Catalog
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                    Products available for review
+                  </p>
+                </div>
+
+                <div className="rounded-[1.4rem] border border-emerald-200 bg-emerald-50/90 p-4 dark:border-emerald-400/20 dark:bg-emerald-500/10">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="rounded-2xl bg-white/90 p-2 text-emerald-700 shadow-sm dark:bg-white/10 dark:text-emerald-300">
+                      <PackageCheck size={18} />
+                    </div>
+                    <p className="text-3xl font-black leading-none text-slate-900 dark:text-white">
+                      {selectedCount}
+                    </p>
+                  </div>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                    Selected
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                    Already in your school library
+                  </p>
+                </div>
+
+                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50/90 p-4 dark:border-amber-400/20 dark:bg-amber-500/10">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="rounded-2xl bg-white/90 p-2 text-amber-700 shadow-sm dark:bg-white/10 dark:text-amber-300">
+                      <Sparkles size={18} />
+                    </div>
+                    <p className="text-3xl font-black leading-none text-slate-900 dark:text-white">
+                      {availableCount}
+                    </p>
+                  </div>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
+                    Ready To Add
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                    Still waiting for school approval
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </motion.section>
+
+        <section className="rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex flex-wrap gap-2">
+                <AppBadge label={currentPlan.label} tone={currentPlan.tone} icon={ShieldCheck} />
+                <AppBadge label={currentPlan.statusLabel} tone={currentPlan.statusTone} />
+              </div>
+              <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">
+                Plan-aware school library access
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                {currentPlan.summary} {currentPlan.accessMessage} The products your school uses here should match your current plan and the selections your school has approved.
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                {planRemainingLabel}
+              </p>
+              {currentPlan.renewalLabel ? (
+                <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                  {currentPlan.renewalLabel}
+                </p>
+              ) : null}
+            </div>
+
+            <AppActionButton
+              tone="secondary"
+              size="lg"
+              onClick={() => {
+                window.location.href = "/admin/billing";
+              }}
+            >
+              <CreditCard size={16} />
+              <span>{currentPlan.isFree ? "View plans" : "Manage current plan"}</span>
+            </AppActionButton>
+          </div>
+        </section>
 
         {notice ? (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
@@ -165,7 +294,21 @@ export default function SchoolCatalogPage() {
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
-            {error}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <span>{error}</span>
+              {showUpgradeCta ? (
+                <AppActionButton
+                  tone="secondary"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = "/admin/billing";
+                  }}
+                >
+                  <CreditCard size={14} />
+                  <span>Upgrade plan</span>
+                </AppActionButton>
+              ) : null}
+            </div>
           </div>
         ) : null}
 

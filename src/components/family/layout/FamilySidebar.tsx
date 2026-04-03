@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookHeart, BookOpen, Home, LogOut, Users, X } from "lucide-react";
+import { BookHeart, BookOpen, CreditCard, Home, LogOut, Users, X } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 interface FamilySidebarProps {
@@ -15,6 +15,7 @@ const menuItems = [
   { name: "Dashboard", href: "/family/dashboard", icon: Home },
   { name: "Children", href: "/family/children", icon: Users },
   { name: "Family Library", href: "/family/library", icon: BookOpen },
+  { name: "Billing", href: "/family/billing", icon: CreditCard },
 ];
 
 export default function FamilySidebar({ sidebarOpen, setSidebarOpen }: FamilySidebarProps) {

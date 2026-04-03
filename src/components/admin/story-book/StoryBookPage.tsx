@@ -9,6 +9,7 @@ import {
   BookOpen,
   CheckCircle2,
   ClipboardCheck,
+  CreditCard,
   Clock3,
   Eye,
   GraduationCap,
@@ -27,12 +28,15 @@ import AppSkeletonCard from "@/src/components/shared/ui/AppSkeletonCard";
 import AppStatCard from "@/src/components/shared/ui/AppStatCard";
 import {
   filterClassesForTeacher,
+  getAdminSchoolDetails,
   filterStudentsForTeacher,
   getAdminClasses,
   getAdminStudents,
   type AdminClassroom,
+  type AdminSchoolDetails,
   type AdminStudent,
 } from "@/src/lib/admin-api";
+import { getSchoolPlanSnapshot } from "@/src/lib/school-plan";
 import {
   createContentAssignment,
   getContentAssignmentTracking,
@@ -47,6 +51,7 @@ import {
   type SchoolActivity,
   type SchoolAssignmentTracking,
   type SchoolCatalogProduct,
+  type ProductPlanSummary,
   type SchoolStoryBundle,
   type SchoolStoryContent,
 } from "@/src/lib/school-content-api";
@@ -59,8 +64,10 @@ const getBundleTitle = (bundle: SchoolStoryBundle | null) =>
 
 export default function StoryBookPage() {
   const { user } = useAuth();
+  const [schoolDetails, setSchoolDetails] = useState<AdminSchoolDetails | null>(null);
   const [stories, setStories] = useState<SchoolStoryContent[]>([]);
   const [catalogProducts, setCatalogProducts] = useState<SchoolCatalogProduct[]>([]);
+  const [catalogPlan, setCatalogPlan] = useState<ProductPlanSummary | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<SchoolStoryBundle | null>(null);
   const [classes, setClasses] = useState<AdminClassroom[]>([]);
   const [students, setStudents] = useState<AdminStudent[]>([]);
@@ -75,6 +82,7 @@ export default function StoryBookPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showUpgradeCta, setShowUpgradeCta] = useState(false);
   const [assignmentDraft, setAssignmentDraft] = useState({
     classroomId: "",
     dueAt: "",
@@ -87,6 +95,11 @@ export default function StoryBookPage() {
 
   useEffect(() => {
     void loadStories();
+    if (isSchoolAdmin) {
+      void getAdminSchoolDetails()
+        .then(setSchoolDetails)
+        .catch(() => setSchoolDetails(null));
+    }
   }, [isSchoolAdmin]);
 
   useEffect(() => {
@@ -106,11 +119,12 @@ export default function StoryBookPage() {
           getSchoolCatalogProducts(),
         ]);
 
-        setStories(selectedProducts);
-        setCatalogProducts(catalog);
+        setStories(selectedProducts.products);
+        setCatalogProducts(catalog.products);
+        setCatalogPlan(selectedProducts.plan ?? catalog.plan);
 
-        if (selectedProducts.length > 0) {
-          await openBundle(selectedProducts[0]._id);
+        if (selectedProducts.products.length > 0) {
+          await openBundle(selectedProducts.products[0]._id);
         } else {
           setSelectedBundle(null);
         }
@@ -239,6 +253,7 @@ export default function StoryBookPage() {
     setSelectingProductId(contentId);
     setError("");
     setNotice("");
+    setShowUpgradeCta(false);
 
     try {
       await selectSchoolProduct(contentId, {
@@ -250,7 +265,9 @@ export default function StoryBookPage() {
       setLibraryMode("selected");
       await openBundle(contentId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to select product.");
+      const message = err instanceof Error ? err.message : "Failed to select product.";
+      setError(message);
+      setShowUpgradeCta(message.toLowerCase().includes("upgrade to add more books"));
     } finally {
       setSelectingProductId("");
     }
@@ -293,6 +310,20 @@ export default function StoryBookPage() {
   const selectedStoryId = selectedBundle?.story?.content._id ?? selectedBundle?.requestedContent?._id ?? "";
   const storyAssignments = assignments.filter((assignment) => assignment.contentId === selectedStoryId);
   const assignmentCount = storyAssignments.length;
+  const selectedSchoolProductIds = new Set(
+    isSchoolAdmin ? stories.map((story) => story._id) : [],
+  );
+  const currentPlan = getSchoolPlanSnapshot(schoolDetails);
+  const planLibraryLabel = catalogPlan?.isUnlimited
+    ? "Unlimited library"
+    : catalogPlan?.maxBooks !== null && catalogPlan?.maxBooks !== undefined
+      ? `${catalogPlan.usedBooks}/${catalogPlan.maxBooks} selected`
+      : `${stories.length} selected`;
+  const planAccessLabel = catalogPlan?.isUnlimited
+    ? "Your current plan does not cap selected products."
+    : typeof catalogPlan?.remainingBooks === "number"
+      ? `${catalogPlan.remainingBooks} more books can still be added on this plan.`
+      : "Plan limits will appear here when available.";
 
   return (
     <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "TEACHER", "STUDENT"]}>
@@ -317,6 +348,13 @@ export default function StoryBookPage() {
                   ? "Browse the platform catalog, select approved products for your school, and manage the stories teachers and students can access."
                   : "Open live published bundles, read the chapters, review the questions, and use the attached activities in class."}
               </p>
+              {isSchoolAdmin ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <AppBadge label={`Current plan: ${currentPlan.label}`} tone={currentPlan.tone} icon={CreditCard} />
+                  <AppBadge label={currentPlan.statusLabel} tone={currentPlan.statusTone} />
+                  <AppBadge label={planLibraryLabel} tone="amber" />
+                </div>
+              ) : null}
             </div>
 
             <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-[22rem] xl:w-[24rem]">
@@ -335,45 +373,130 @@ export default function StoryBookPage() {
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
-            {error}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <span>{error}</span>
+              {showUpgradeCta ? (
+                <AppActionButton
+                  tone="secondary"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = "/admin/billing";
+                  }}
+                >
+                  <CreditCard size={14} />
+                  <span>Upgrade plan</span>
+                </AppActionButton>
+              ) : null}
+            </div>
           </div>
+        ) : null}
+
+        {isSchoolAdmin ? (
+          <section className="rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex flex-wrap gap-2">
+                  <AppBadge label={currentPlan.label} tone={currentPlan.tone} icon={CreditCard} />
+                  <AppBadge label={currentPlan.statusLabel} tone={currentPlan.statusTone} />
+                </div>
+                <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">
+                  Your school library follows the current school plan.
+                </h2>
+                <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {currentPlan.summary} {currentPlan.accessMessage} Select products into the school library first, then teachers and students can use them inside the school workspace.
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                  {planAccessLabel}
+                </p>
+                {currentPlan.renewalLabel ? (
+                  <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    {currentPlan.renewalLabel}
+                  </p>
+                ) : null}
+              </div>
+
+              <AppActionButton
+                tone="secondary"
+                size="lg"
+                onClick={() => {
+                  window.location.href = "/admin/billing";
+                }}
+              >
+                <CreditCard size={16} />
+                {currentPlan.isFree ? "See paid plans" : "Manage billing"}
+              </AppActionButton>
+            </div>
+          </section>
         ) : null}
 
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <section className="rounded-[2rem] border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/60">
-            {isSchoolAdmin ? (
-              <div className="mb-5 flex flex-wrap gap-3">
-                <AppActionButton
-                  onClick={() => setLibraryMode("selected")}
-                  tone={libraryMode === "selected" ? "success" : "secondary"}
-                  size="lg"
-                >
-                  <PackageCheck size={16} />
-                  <span>School Library</span>
-                </AppActionButton>
-                <AppActionButton
-                  onClick={() => setLibraryMode("catalog")}
-                  tone={libraryMode === "catalog" ? "primary" : "secondary"}
-                  size="lg"
-                >
-                  <BookmarkCheck size={16} />
-                  <span>Platform Catalog</span>
-                </AppActionButton>
-              </div>
-            ) : null}
+            <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+              {isSchoolAdmin ? (
+                <div className="flex flex-wrap gap-3">
+                  <AppActionButton
+                    onClick={() => setLibraryMode("selected")}
+                    tone={libraryMode === "selected" ? "success" : "secondary"}
+                    size="lg"
+                  >
+                    <PackageCheck size={16} />
+                    <span>School Library</span>
+                  </AppActionButton>
+                  <AppActionButton
+                    onClick={() => setLibraryMode("catalog")}
+                    tone={libraryMode === "catalog" ? "primary" : "secondary"}
+                    size="lg"
+                  >
+                    <BookmarkCheck size={16} />
+                    <span>Platform Catalog</span>
+                  </AppActionButton>
+                </div>
+              ) : null}
 
-            <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-              <Search size={18} className="text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={
-                  isSchoolAdmin && libraryMode === "catalog"
-                    ? "Search catalog products by title, subject, theme..."
-                    : "Search published stories by title, subject, theme..."
-                }
-                className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-white"
-              />
+              <div className="mt-4 flex flex-col gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-white">
+                      {isSchoolAdmin && libraryMode === "catalog" ? "Platform catalog" : "School library"}
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      {isSchoolAdmin && libraryMode === "catalog"
+                        ? "Review premium products, spot what is already selected, and add new titles to your school library."
+                        : "Open the books already approved for your school and keep the reading library tidy."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <AppBadge
+                      label={
+                        isSchoolAdmin && libraryMode === "catalog"
+                          ? `${catalogProducts.length} in catalog`
+                          : `${stories.length} in library`
+                      }
+                      tone={isSchoolAdmin && libraryMode === "catalog" ? "cyan" : "emerald"}
+                    />
+                    {isSchoolAdmin ? (
+                      <AppBadge
+                        label={`${selectedSchoolProductIds.size} selected`}
+                        tone="amber"
+                      />
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-slate-950/50">
+                  <Search size={18} className="text-slate-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={
+                      isSchoolAdmin && libraryMode === "catalog"
+                        ? "Search catalog products by title, subject, theme..."
+                        : "Search approved stories by title, subject, theme..."
+                    }
+                    className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-white"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="mt-5 space-y-3">
@@ -398,25 +521,44 @@ export default function StoryBookPage() {
                     selectedBundle?.story?.content._id;
                   const isActive = activeId === story._id;
                   const isCatalogMode = isSchoolAdmin && libraryMode === "catalog";
-                  const catalogStory = story as SchoolCatalogProduct;
-                  const isSelectedForSchool = catalogStory.isSelectedForSchool ?? false;
+                  const isSelectedForSchool = selectedSchoolProductIds.has(story._id);
+                  const cardTone = isActive
+                    ? "border-emerald-300 bg-gradient-to-br from-emerald-50 to-cyan-50 dark:border-emerald-400/30 dark:from-emerald-500/10 dark:to-cyan-500/10"
+                    : isSelectedForSchool
+                      ? "border-cyan-200 bg-cyan-50/60 dark:border-cyan-400/20 dark:bg-cyan-500/10"
+                      : "border-gray-200 bg-gray-50 hover:border-emerald-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10";
 
                   return (
                     <div
                       key={story._id}
-                      onClick={!isCatalogMode ? () => void openBundle(story._id) : undefined}
-                      className={`w-full rounded-[1.5rem] border p-4 text-left transition-all ${!isCatalogMode ? "cursor-pointer" : ""} ${isActive && !isCatalogMode ? "border-emerald-400 bg-emerald-50 dark:border-emerald-400/40 dark:bg-emerald-500/10" : "border-gray-200 bg-gray-50 hover:border-emerald-300 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"}`}
+                      onClick={() => void openBundle(story._id)}
+                      className={`w-full cursor-pointer rounded-[1.6rem] border p-4 text-left transition-all ${cardTone}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">{story.title}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <AppBadge
+                              label={story.type === "CONTENT_PACK" ? "Bundle" : "Story"}
+                              tone="slate"
+                            />
+                            {isSelectedForSchool ? (
+                              <AppBadge
+                                label={isCatalogMode ? "Selected for school" : "In school library"}
+                                tone="emerald"
+                                icon={CheckCircle2}
+                              />
+                            ) : isCatalogMode ? (
+                              <AppBadge label="Available" tone="cyan" />
+                            ) : null}
+                            {isActive ? <AppBadge label="Open now" tone="amber" /> : null}
+                          </div>
+                          <p className="mt-3 text-lg font-bold text-slate-900 dark:text-white">{story.title}</p>
                           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{story.subject ?? story.theme ?? "General"}</p>
                         </div>
-                        <div className="flex flex-wrap gap-2 justify-end">
-                          <AppBadge label={story.type === "CONTENT_PACK" ? "Bundle" : "Story"} tone="emerald" />
-                          {isCatalogMode ? (
-                            <AppBadge label={isSelectedForSchool ? "Selected" : "Available"} tone={isSelectedForSchool ? "emerald" : "slate"} />
-                          ) : null}
+                        <div className="text-right">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            {prettyDate(story.publishedAt ?? story.updatedAt ?? story.createdAt)}
+                          </p>
                         </div>
                       </div>
                       <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -428,38 +570,68 @@ export default function StoryBookPage() {
                             {grade}
                           </span>
                         ))}
+                        {story.selFocus?.slice(0, 1).map((focus) => (
+                          <span key={focus} className="rounded-full bg-white px-3 py-1 text-xs text-slate-600 dark:bg-slate-950/60 dark:text-slate-300">
+                            {focus}
+                          </span>
+                        ))}
                       </div>
-                      <div className="mt-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>{prettyDate(story.publishedAt ?? story.updatedAt ?? story.createdAt)}</span>
-                        {isCatalogMode ? (
-                          <div className="flex items-center gap-2">
-                            {isSelectedForSchool ? (
-                              <>
-                                <button
-                                  onClick={() => void openBundle(story._id)}
-                                  className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
-                                >
-                                  {openingId === story._id ? "Opening..." : "Open"}
-                                </button>
-                                <button
-                                  onClick={() => void handleRemoveProduct(story._id)}
-                                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 dark:border-red-400/20 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
-                                >
-                                  {selectingProductId === story._id ? "Removing..." : "Remove"}
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                onClick={() => void handleSelectProduct(story._id)}
-                                className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 transition-colors hover:bg-cyan-100 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-300 dark:hover:bg-cyan-500/20"
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {openingId === story._id ? "Opening..." : isActive ? "Reading details open" : "Open story details"}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <AppActionButton
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void openBundle(story._id);
+                            }}
+                            tone={isActive ? "success" : "secondary"}
+                            size="sm"
+                          >
+                            <Eye size={14} />
+                            <span>{openingId === story._id ? "Opening..." : "Open"}</span>
+                          </AppActionButton>
+                          {isCatalogMode ? (
+                            isSelectedForSchool ? (
+                              <AppActionButton
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void handleRemoveProduct(story._id);
+                                }}
+                                tone="danger"
+                                size="sm"
                               >
-                                {selectingProductId === story._id ? "Selecting..." : "Select"}
-                              </button>
-                            )}
-                          </div>
-                        ) : (
-                          <span>{openingId === story._id ? "Opening..." : "Open Story"}</span>
-                        )}
+                                <PackageCheck size={14} />
+                                <span>{selectingProductId === story._id ? "Removing..." : "Remove"}</span>
+                              </AppActionButton>
+                            ) : (
+                              <AppActionButton
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void handleSelectProduct(story._id);
+                                }}
+                                tone="primary"
+                                size="sm"
+                              >
+                                <BookmarkCheck size={14} />
+                                <span>{selectingProductId === story._id ? "Selecting..." : "Select for school"}</span>
+                              </AppActionButton>
+                            )
+                          ) : (
+                            <AppActionButton
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setLibraryMode("catalog");
+                              }}
+                              tone="ghost"
+                              size="sm"
+                            >
+                              <BookmarkCheck size={14} />
+                              <span>Catalog</span>
+                            </AppActionButton>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );

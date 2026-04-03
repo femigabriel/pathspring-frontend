@@ -32,6 +32,19 @@ export interface SchoolCatalogProduct extends SchoolStoryContent {
   catalogPublication?: Record<string, unknown> | null;
 }
 
+export interface ProductPlanSummary {
+  planKey: string;
+  maxBooks: number | null;
+  usedBooks: number;
+  remainingBooks: number | null;
+  isUnlimited: boolean;
+}
+
+export interface SchoolCatalogResponse {
+  products: SchoolCatalogProduct[];
+  plan: ProductPlanSummary | null;
+}
+
 export interface SchoolStoryChapter {
   _id?: string;
   title?: string;
@@ -133,8 +146,36 @@ const parseJsonSafely = (text: string) => {
 
 const extractMessage = (payload: unknown, fallback: string) => {
   if (!isRecord(payload)) return fallback;
+  if (isRecord(payload.details)) {
+    const details = payload.details;
+    if (
+      typeof (payload.error ?? payload.message) === "string" &&
+      String(payload.error ?? payload.message).toLowerCase().includes("plan limit") &&
+      typeof details.maxBooks === "number" &&
+      typeof details.usedBooks === "number"
+    ) {
+      const normalizedPlan =
+        typeof details.planKey === "string"
+          ? details.planKey.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+          : "current plan";
+      return `Plan limit reached. ${normalizedPlan} allows ${details.maxBooks} books and you have used ${details.usedBooks}. Upgrade to add more books.`;
+    }
+  }
   const message = payload.message ?? payload.error ?? payload.detail ?? payload.title;
   return typeof message === "string" && message.trim() ? message : fallback;
+};
+
+const formatRetryAfterMessage = (retryAfter: string | null) => {
+  if (!retryAfter) {
+    return "Too many requests right now. Please wait a little and try again.";
+  }
+
+  const retryAfterSeconds = Number(retryAfter);
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return `Too many requests right now. Please try again in ${retryAfterSeconds} seconds.`;
+  }
+
+  return `Too many requests right now. Please try again after ${retryAfter}.`;
 };
 
 const schoolRequest = async <T = unknown>(path: string, init?: RequestInit) => {
@@ -159,6 +200,16 @@ const schoolRequest = async <T = unknown>(path: string, init?: RequestInit) => {
   const payload = parseJsonSafely(text);
 
   if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error(formatRetryAfterMessage(response.headers.get("Retry-After")));
+    }
+
+    if (response.status === 400) {
+      throw new Error(
+        extractMessage(payload, "Please check the request details and try again."),
+      );
+    }
+
     throw new Error(
       extractMessage(payload, `Request failed with status ${response.status}`),
     );
@@ -266,6 +317,55 @@ const normalizeCatalogProduct = (value: unknown): SchoolCatalogProduct | null =>
       typeof value.isSelectedForSchool === "boolean" ? value.isSelectedForSchool : false,
     schoolSelection: isRecord(value.schoolSelection) ? value.schoolSelection : null,
     catalogPublication: isRecord(value.catalogPublication) ? value.catalogPublication : null,
+  };
+};
+
+const normalizeProductPlan = (value: unknown): ProductPlanSummary | null => {
+  if (!isRecord(value)) return null;
+
+  const maxBooks =
+    typeof value.maxBooks === "number"
+      ? value.maxBooks
+      : typeof value.bookLimit === "number"
+        ? value.bookLimit
+        : typeof value.limit === "number"
+          ? value.limit
+          : null;
+
+  const usedBooks =
+    typeof value.usedBooks === "number"
+      ? value.usedBooks
+      : typeof value.selectedBooks === "number"
+        ? value.selectedBooks
+        : typeof value.count === "number"
+          ? value.count
+          : 0;
+
+  const remainingBooks =
+    typeof value.remainingBooks === "number"
+      ? value.remainingBooks
+      : maxBooks === null
+        ? null
+        : Math.max(maxBooks - usedBooks, 0);
+
+  const rawPlanKey =
+    typeof value.planKey === "string"
+      ? value.planKey
+      : typeof value.tier === "string"
+        ? value.tier
+        : typeof value.key === "string"
+          ? value.key
+          : "free";
+
+  return {
+    planKey: rawPlanKey,
+    maxBooks,
+    usedBooks,
+    remainingBooks,
+    isUnlimited:
+      typeof value.isUnlimited === "boolean"
+        ? value.isUnlimited
+        : maxBooks === null || maxBooks === Number.POSITIVE_INFINITY,
   };
 };
 
@@ -403,7 +503,7 @@ export const getPublishedSchoolContents = async () => {
   }
 };
 
-export const getSchoolCatalogProducts = async () => {
+export const getSchoolCatalogProducts = async (): Promise<SchoolCatalogResponse> => {
   const payload = await schoolRequest<unknown>("/api/v1/school/catalog");
   const record = isRecord(payload) ? payload : {};
   const products = Array.isArray(record.products)
@@ -414,13 +514,16 @@ export const getSchoolCatalogProducts = async () => {
         ? payload
         : [];
 
-  return products
-    .map((item) => normalizeCatalogProduct(item))
-    .filter((item): item is SchoolCatalogProduct => item !== null)
-    .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK");
+  return {
+    products: products
+      .map((item) => normalizeCatalogProduct(item))
+      .filter((item): item is SchoolCatalogProduct => item !== null)
+      .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
+    plan: normalizeProductPlan(record.plan),
+  };
 };
 
-export const getSchoolSelectedProducts = async () => {
+export const getSchoolSelectedProducts = async (): Promise<SchoolCatalogResponse> => {
   const payload = await schoolRequest<unknown>("/api/v1/school/products");
   const record = isRecord(payload) ? payload : {};
   const products = Array.isArray(record.products)
@@ -431,10 +534,13 @@ export const getSchoolSelectedProducts = async () => {
         ? payload
         : [];
 
-  return products
-    .map((item) => normalizeCatalogProduct(item))
-    .filter((item): item is SchoolCatalogProduct => item !== null)
-    .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK");
+  return {
+    products: products
+      .map((item) => normalizeCatalogProduct(item))
+      .filter((item): item is SchoolCatalogProduct => item !== null)
+      .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
+    plan: normalizeProductPlan(record.plan),
+  };
 };
 
 export const selectSchoolProduct = async (

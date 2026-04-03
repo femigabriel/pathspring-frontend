@@ -57,6 +57,12 @@ export interface AdminSchoolDetails {
   schoolCode?: string;
   location?: string;
   createdAt?: string;
+  tier?: string;
+  billingPlanKey?: string;
+  billingStatus?: string;
+  stripeStatus?: string;
+  stripeCurrentPeriodEnd?: string;
+  stripeCancelAtPeriodEnd?: boolean;
   studentCount?: number;
   activeStudentCount?: number;
   teacherCount?: number;
@@ -178,6 +184,19 @@ const extractMessage = (payload: unknown, fallback: string) => {
   return typeof message === "string" && message.trim() ? message : fallback;
 };
 
+const formatRetryAfterMessage = (retryAfter: string | null) => {
+  if (!retryAfter) {
+    return "Too many requests right now. Please wait a little and try again.";
+  }
+
+  const retryAfterSeconds = Number(retryAfter);
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return `Too many requests right now. Please try again in ${retryAfterSeconds} seconds.`;
+  }
+
+  return `Too many requests right now. Please try again after ${retryAfter}.`;
+};
+
 const parseJsonSafely = (text: string) => {
   if (!text.trim()) return null;
 
@@ -211,6 +230,16 @@ const requestJson = async <T = unknown>(
   const payload = parseJsonSafely(text) as T;
 
   if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error(formatRetryAfterMessage(response.headers.get("Retry-After")));
+    }
+
+    if (response.status === 400) {
+      throw new Error(
+        extractMessage(payload, "Please check the request details and try again."),
+      );
+    }
+
     throw new Error(extractMessage(payload, `Request failed with status ${response.status}`));
   }
 
@@ -472,6 +501,39 @@ export const getAdminSchoolDetails = async () => {
 
   return {
     ...school,
+    tier:
+      typeof school.tier === "string"
+        ? school.tier
+        : typeof school.planKey === "string"
+          ? school.planKey
+          : undefined,
+    billingPlanKey:
+      typeof school.billingPlanKey === "string"
+        ? school.billingPlanKey
+        : typeof school.planKey === "string"
+          ? school.planKey
+          : undefined,
+    billingStatus:
+      typeof school.billingStatus === "string"
+        ? school.billingStatus
+        : typeof school.subscriptionStatus === "string"
+          ? school.subscriptionStatus
+          : typeof school.stripeStatus === "string"
+            ? school.stripeStatus
+            : undefined,
+    stripeStatus: typeof school.stripeStatus === "string" ? school.stripeStatus : undefined,
+    stripeCurrentPeriodEnd:
+      typeof school.stripeCurrentPeriodEnd === "string"
+        ? school.stripeCurrentPeriodEnd
+        : typeof school.currentPeriodEnd === "string"
+          ? school.currentPeriodEnd
+          : undefined,
+    stripeCancelAtPeriodEnd:
+      typeof school.stripeCancelAtPeriodEnd === "boolean"
+        ? school.stripeCancelAtPeriodEnd
+        : typeof school.cancelAtPeriodEnd === "boolean"
+          ? school.cancelAtPeriodEnd
+          : undefined,
     studentCount: typeof stats?.studentCount === "number" ? stats.studentCount : undefined,
     activeStudentCount:
       typeof stats?.activeStudentCount === "number" ? stats.activeStudentCount : undefined,

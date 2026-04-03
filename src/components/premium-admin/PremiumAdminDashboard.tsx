@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -100,6 +100,7 @@ export default function PremiumAdminDashboard() {
   const searchParams = useSearchParams();
   const [authorized, setAuthorized] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [contentItems, setContentItems] = useState<PlatformContentItem[]>([]);
   const [selectedBundle, setSelectedBundle] = useState<PlatformBundle | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -176,7 +177,9 @@ export default function PremiumAdminDashboard() {
   const activeTab = isPremiumTab(searchParams.get("tab")) ? searchParams.get("tab") : "overview";
   const currentUser = getStoredUser();
   const premiumEmail = currentUser?.email ?? "premium@pathspring.ai";
+  const premiumName = currentUser?.fullName ?? "Platform Admin";
   const premiumInitial = premiumEmail.charAt(0).toUpperCase();
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
   const libraryItems = useMemo(() => {
     const stories = contentItems.filter((item) => item.type === "STORY");
@@ -250,6 +253,18 @@ export default function PremiumAdminDashboard() {
     if (!authorized) return;
     void refreshData();
   }, [authorized, selFocusFilter]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!accountMenuRef.current) return;
+      if (!accountMenuRef.current.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const story = selectedBundle?.story?.content;
@@ -548,22 +563,6 @@ export default function PremiumAdminDashboard() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
-          {/* User Card */}
-          <div className="mb-6 rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-fuchsia-500 to-cyan-500">
-                <span className="text-sm font-bold">{premiumInitial}</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-white">{premiumEmail}</p>
-                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-fuchsia-500/10 px-2 py-0.5">
-                  <Crown className="h-3 w-3 text-fuchsia-400" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-fuchsia-400">Premium</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Navigation */}
           <nav className="space-y-1">
             {tabs.map((tab) => {
@@ -620,6 +619,9 @@ export default function PremiumAdminDashboard() {
                 <Menu className="h-5 w-5" />
               </button>
               <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-fuchsia-400">
+                  Premium Workspace
+                </p>
                 <h1 className="text-xl font-bold tracking-tight">
                   {tabs.find((tab) => tab.id === activeTab)?.label ?? "Overview"}
                 </h1>
@@ -636,6 +638,52 @@ export default function PremiumAdminDashboard() {
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
+              <div className="relative" ref={accountMenuRef}>
+                <button
+                  onClick={() => setAccountMenuOpen((current) => !current)}
+                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 transition-colors hover:bg-white/10"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-cyan-500 text-sm font-bold text-white">
+                    {premiumInitial}
+                  </div>
+                  <div className="hidden text-left sm:block">
+                    <p className="max-w-[11rem] truncate text-sm font-semibold text-white">{premiumName}</p>
+                    <p className="max-w-[11rem] truncate text-xs text-slate-400">{premiumEmail}</p>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${accountMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {accountMenuOpen ? (
+                  <div className="absolute right-0 top-[calc(100%+0.75rem)] z-40 w-72 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-cyan-500 text-base font-bold text-white">
+                        {premiumInitial}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">{premiumName}</p>
+                        <p className="truncate text-xs text-slate-400">{premiumEmail}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-fuchsia-500/10 px-2.5 py-1">
+                      <Crown className="h-3 w-3 text-fuchsia-400" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-fuchsia-400">Platform Admin</span>
+                    </div>
+                    <div className="mt-4 border-t border-white/10 pt-4">
+                      <button
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          clearAuthSession();
+                          router.replace("/login");
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </header>

@@ -12,6 +12,7 @@ import {
   BookOpen,
   LibraryBig,
   ShoppingBag,
+  CreditCard,
   LogOut,
   Medal,
   ChevronLeft,
@@ -25,6 +26,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { getSchoolWorkspaceBaseRoute } from "@/src/lib/auth";
+import { getAdminSchoolDetails } from "@/src/lib/admin-api";
+import { getSchoolPlanSnapshot } from "@/src/lib/school-plan";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -35,6 +38,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [planLabel, setPlanLabel] = useState<string | null>(null);
   const workspaceBase = getSchoolWorkspaceBaseRoute(user?.role);
 
   useEffect(() => {
@@ -47,6 +51,17 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== "SCHOOL_ADMIN") {
+      setPlanLabel(null);
+      return;
+    }
+
+    void getAdminSchoolDetails()
+      .then((details) => setPlanLabel(getSchoolPlanSnapshot(details).label))
+      .catch(() => setPlanLabel(null));
+  }, [user?.role]);
 
   const menuItems = [
     {
@@ -77,6 +92,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       name: "Catalog",
       icon: ShoppingBag,
       href: "/admin/catalog",
+      roles: ["SCHOOL_ADMIN"],
+    },
+    {
+      name: "Billing",
+      icon: CreditCard,
+      href: "/admin/billing",
       roles: ["SCHOOL_ADMIN"],
     },
     {
@@ -198,6 +219,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                     <RoleIcon size={12} />
                     <span>{roleLabel}</span>
                   </div>
+                  {planLabel ? (
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:border-cyan-400/30 dark:bg-cyan-500/10 dark:text-cyan-300">
+                      <CreditCard size={12} />
+                      <span>{planLabel}</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

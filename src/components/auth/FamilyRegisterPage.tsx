@@ -76,13 +76,15 @@ export default function FamilyRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_55%,#f0fdf4_100%)] px-4 py-10 text-slate-900 dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_22%),linear-gradient(180deg,#020617_0%,#111827_100%)] dark:text-white sm:px-6 lg:px-8">
+    <div className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_22%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_55%,#f0fdf4_100%)] px-4 py-6 text-slate-900 dark:bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_22%),linear-gradient(180deg,#020617_0%,#111827_100%)] dark:text-white sm:px-6 lg:px-8">
       <div className="fixed right-4 top-4 z-40 rounded-xl border border-slate-200 bg-white/85 p-1 shadow-sm backdrop-blur dark:border-white/10 dark:bg-slate-900/70">
         <ThemeToggle />
       </div>
-      <div className="mx-auto max-w-6xl">
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="rounded-[2.2rem] border border-slate-200 bg-white/80 p-8 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
+      <div className="mx-auto h-screen max-w-7xl">
+        <div className="grid h-full gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(24rem,34rem)]">
+          <section className="hidden h-full lg:block">
+            <div className="sticky top-0 flex h-full items-center">
+              <div className="w-full rounded-[2.2rem] border border-slate-200 bg-white/80 p-8 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-700 dark:text-sky-200">
               <Sparkles size={16} />
               Independent Family Mode
@@ -116,9 +118,26 @@ export default function FamilyRegisterPage() {
                 <ArrowRight size={16} />
               </Link>
             </div>
+              </div>
+            </div>
           </section>
 
-          <section className="rounded-[2.2rem] border border-slate-200 bg-white/88 p-8 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
+          <section className="flex h-full min-h-0 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              <div className="mx-auto flex min-h-full w-full max-w-xl items-center py-20 lg:py-10">
+                <div className="w-full rounded-[2.2rem] border border-slate-200 bg-white/88 p-8 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/60">
+            <div className="mb-10 lg:hidden">
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-700 dark:text-sky-200">
+                <Sparkles size={16} />
+                Independent Family Mode
+              </div>
+              <h1 className="mt-6 text-4xl font-black leading-tight">
+                Register your family and start home reading the easy way.
+              </h1>
+              <p className="mt-4 text-base leading-8 text-slate-600 dark:text-slate-300">
+                Family accounts let parents create child profiles, choose books for home reading, and track progress without needing a school setup first.
+              </p>
+            </div>
             <h2 className="text-3xl font-black">Create Family Account</h2>
             <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
               This creates an independent family account, not a school-linked parent account.
@@ -175,6 +194,9 @@ export default function FamilyRegisterPage() {
                 Sign in
               </Link>
             </p>
+                </div>
+              </div>
+            </div>
           </section>
         </div>
       </div>

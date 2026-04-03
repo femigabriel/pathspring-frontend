@@ -2,6 +2,7 @@
 
 import { getAccessToken } from "@/src/lib/auth";
 import type {
+  ProductPlanSummary,
   SchoolActivity,
   SchoolCatalogProduct,
   SchoolStoryBundle,
@@ -55,6 +56,11 @@ export interface CreateFamilyChildPayload {
   age?: number;
 }
 
+export interface FamilyCatalogResponse {
+  products: SchoolCatalogProduct[];
+  plan: ProductPlanSummary | null;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -70,8 +76,36 @@ const parseJsonSafely = (text: string) => {
 
 const extractMessage = (payload: unknown, fallback: string) => {
   if (!isRecord(payload)) return fallback;
+  if (isRecord(payload.details)) {
+    const details = payload.details;
+    if (
+      typeof (payload.error ?? payload.message) === "string" &&
+      String(payload.error ?? payload.message).toLowerCase().includes("plan limit") &&
+      typeof details.maxBooks === "number" &&
+      typeof details.usedBooks === "number"
+    ) {
+      const normalizedPlan =
+        typeof details.planKey === "string"
+          ? details.planKey.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
+          : "current plan";
+      return `Plan limit reached. ${normalizedPlan} allows ${details.maxBooks} books and you have used ${details.usedBooks}. Upgrade to add more books.`;
+    }
+  }
   const message = payload.message ?? payload.error ?? payload.detail ?? payload.title;
   return typeof message === "string" && message.trim() ? message : fallback;
+};
+
+const formatRetryAfterMessage = (retryAfter: string | null) => {
+  if (!retryAfter) {
+    return "Too many requests right now. Please wait a little and try again.";
+  }
+
+  const retryAfterSeconds = Number(retryAfter);
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return `Too many requests right now. Please try again in ${retryAfterSeconds} seconds.`;
+  }
+
+  return `Too many requests right now. Please try again after ${retryAfter}.`;
 };
 
 const familyRequest = async <T = unknown>(path: string, init?: RequestInit) => {
@@ -94,6 +128,14 @@ const familyRequest = async <T = unknown>(path: string, init?: RequestInit) => {
   const payload = parseJsonSafely(text);
 
   if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error(formatRetryAfterMessage(response.headers.get("Retry-After")));
+    }
+
+    if (response.status === 400) {
+      throw new Error(extractMessage(payload, "Please check the request details and try again."));
+    }
+
     throw new Error(extractMessage(payload, `Request failed with status ${response.status}`));
   }
 
@@ -213,6 +255,55 @@ const normalizeChild = (value: unknown): FamilyChild | null => {
   };
 };
 
+const normalizeProductPlan = (value: unknown): ProductPlanSummary | null => {
+  if (!isRecord(value)) return null;
+
+  const maxBooks =
+    typeof value.maxBooks === "number"
+      ? value.maxBooks
+      : typeof value.bookLimit === "number"
+        ? value.bookLimit
+        : typeof value.limit === "number"
+          ? value.limit
+          : null;
+
+  const usedBooks =
+    typeof value.usedBooks === "number"
+      ? value.usedBooks
+      : typeof value.selectedBooks === "number"
+        ? value.selectedBooks
+        : typeof value.count === "number"
+          ? value.count
+          : 0;
+
+  const remainingBooks =
+    typeof value.remainingBooks === "number"
+      ? value.remainingBooks
+      : maxBooks === null
+        ? null
+        : Math.max(maxBooks - usedBooks, 0);
+
+  const rawPlanKey =
+    typeof value.planKey === "string"
+      ? value.planKey
+      : typeof value.tier === "string"
+        ? value.tier
+        : typeof value.key === "string"
+          ? value.key
+          : "free";
+
+  return {
+    planKey: rawPlanKey,
+    maxBooks,
+    usedBooks,
+    remainingBooks,
+    isUnlimited:
+      typeof value.isUnlimited === "boolean"
+        ? value.isUnlimited
+        : maxBooks === null || maxBooks === Number.POSITIVE_INFINITY,
+  };
+};
+
 export const getFamilyProfile = async () => {
   const payload = await familyRequest<unknown>("/api/v1/family/me");
   const record = isRecord(payload) ? payload : {};
@@ -260,7 +351,7 @@ export const createFamilyChild = async (input: CreateFamilyChildPayload) => {
   return normalizeChild(record.child ?? record.data ?? record);
 };
 
-export const getFamilyCatalogProducts = async () => {
+export const getFamilyCatalogProducts = async (): Promise<FamilyCatalogResponse> => {
   const payload = await familyRequest<unknown>("/api/v1/family/catalog");
   const record = isRecord(payload) ? payload : {};
   const products = Array.isArray(record.products)
@@ -271,12 +362,15 @@ export const getFamilyCatalogProducts = async () => {
         ? record.data
         : [];
 
-  return products
-    .map((product) => normalizeCatalogProduct(product))
-    .filter((product): product is SchoolCatalogProduct => product !== null);
+  return {
+    products: products
+      .map((product) => normalizeCatalogProduct(product))
+      .filter((product): product is SchoolCatalogProduct => product !== null),
+    plan: normalizeProductPlan(record.plan),
+  };
 };
 
-export const getFamilySelectedProducts = async () => {
+export const getFamilySelectedProducts = async (): Promise<FamilyCatalogResponse> => {
   const payload = await familyRequest<unknown>("/api/v1/family/products");
   const record = isRecord(payload) ? payload : {};
   const products = Array.isArray(record.products)
@@ -287,9 +381,12 @@ export const getFamilySelectedProducts = async () => {
         ? record.data
         : [];
 
-  return products
-    .map((product) => normalizeCatalogProduct(product))
-    .filter((product): product is SchoolCatalogProduct => product !== null);
+  return {
+    products: products
+      .map((product) => normalizeCatalogProduct(product))
+      .filter((product): product is SchoolCatalogProduct => product !== null),
+    plan: normalizeProductPlan(record.plan),
+  };
 };
 
 export const selectFamilyProduct = async (contentId: string, notes?: string) =>

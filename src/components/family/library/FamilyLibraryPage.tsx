@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, CheckCircle2, Sparkles } from "lucide-react";
+import { BookOpen, CheckCircle2, CreditCard, Sparkles } from "lucide-react";
 import FamilyShell from "@/src/components/family/layout/FamilyShell";
 import AppActionButton from "@/src/components/shared/ui/AppActionButton";
 import AppBadge from "@/src/components/shared/ui/AppBadge";
@@ -11,17 +11,21 @@ import {
   getFamilyProductBundle,
   getFamilySelectedProducts,
   selectFamilyProduct,
+  type FamilyCatalogResponse,
 } from "@/src/lib/family-api";
+import { getSchoolPlanSnapshot } from "@/src/lib/school-plan";
 
 export default function FamilyLibraryPage() {
   const [catalog, setCatalog] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [selectedBundle, setSelectedBundle] = useState<any>(null);
+  const [plan, setPlan] = useState<FamilyCatalogResponse["plan"]>(null);
   const [loading, setLoading] = useState(true);
   const [openingId, setOpeningId] = useState("");
   const [selectingId, setSelectingId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showUpgradeCta, setShowUpgradeCta] = useState(false);
 
   const loadLibrary = async () => {
     setLoading(true);
@@ -33,11 +37,12 @@ export default function FamilyLibraryPage() {
         getFamilySelectedProducts(),
       ]);
 
-      setCatalog(catalogData);
-      setSelectedProducts(selectedData);
+      setCatalog(catalogData.products);
+      setSelectedProducts(selectedData.products);
+      setPlan(selectedData.plan ?? catalogData.plan);
 
-      if (selectedData[0]?._id) {
-        setSelectedBundle(await getFamilyProductBundle(selectedData[0]._id));
+      if (selectedData.products[0]?._id) {
+        setSelectedBundle(await getFamilyProductBundle(selectedData.products[0]._id));
       } else {
         setSelectedBundle(null);
       }
@@ -69,13 +74,16 @@ export default function FamilyLibraryPage() {
     setSelectingId(contentId);
     setError("");
     setNotice("");
+    setShowUpgradeCta(false);
 
     try {
       await selectFamilyProduct(contentId, "Selected for family reading");
       setNotice("Book added to your family library.");
       await loadLibrary();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add this book.");
+      const message = err instanceof Error ? err.message : "Failed to add this book.";
+      setError(message);
+      setShowUpgradeCta(message.toLowerCase().includes("upgrade to add more books"));
     } finally {
       setSelectingId("");
     }
@@ -83,6 +91,17 @@ export default function FamilyLibraryPage() {
 
   const selectedIds = useMemo(() => new Set(selectedProducts.map((item) => item._id)), [selectedProducts]);
   const bundleTitle = selectedBundle?.story?.content?.title ?? selectedBundle?.contentPack?.title ?? "Family bundle";
+  const currentPlan = getSchoolPlanSnapshot({ tier: plan?.planKey });
+  const planUsageLabel = plan?.isUnlimited
+    ? "Unlimited books"
+    : plan?.maxBooks !== null && plan?.maxBooks !== undefined
+      ? `${plan.usedBooks}/${plan.maxBooks} used`
+      : `${selectedProducts.length} selected`;
+  const planRemainingLabel = plan?.isUnlimited
+    ? "No cap on your family library"
+    : typeof plan?.remainingBooks === "number"
+      ? `${plan.remainingBooks} book slots left`
+      : "Plan details unavailable";
 
   return (
     <FamilyShell>
@@ -101,6 +120,28 @@ export default function FamilyLibraryPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <AppBadge label={`${selectedProducts.length} selected`} tone="emerald" />
             <AppBadge label={`${catalog.length} in catalog`} tone="cyan" />
+            <AppBadge label={`Plan: ${currentPlan.label}`} tone={currentPlan.tone} icon={CreditCard} />
+            <AppBadge label={planUsageLabel} tone="amber" />
+          </div>
+        </section>
+
+        <section className="rounded-[1.8rem] border border-white/70 bg-white/85 p-5 shadow-xl dark:border-white/10 dark:bg-white/5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex flex-wrap gap-2">
+                <AppBadge label={currentPlan.label} tone={currentPlan.tone} icon={CreditCard} />
+                <AppBadge label={plan?.isUnlimited ? "Unlimited" : "Book limit"} tone="slate" />
+              </div>
+              <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">
+                Family plan access
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                {currentPlan.summary} Family libraries grow based on the active family plan, and the plan limit controls how many books can be added.
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                {planRemainingLabel}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -112,7 +153,21 @@ export default function FamilyLibraryPage() {
 
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
-            {error}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <span>{error}</span>
+              {showUpgradeCta ? (
+                <AppActionButton
+                  tone="secondary"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = "/family/billing";
+                  }}
+                >
+                  <CreditCard size={14} />
+                  <span>Upgrade plan</span>
+                </AppActionButton>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
