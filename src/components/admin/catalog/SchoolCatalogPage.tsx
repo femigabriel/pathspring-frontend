@@ -85,6 +85,7 @@ export default function SchoolCatalogPage() {
   const [selectedProducts, setSelectedProducts] = useState<SchoolCatalogProduct[]>([]);
   const [catalogPlan, setCatalogPlan] = useState<ProductPlanSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"catalog" | "selected">("catalog");
   const [workingProductId, setWorkingProductId] = useState("");
@@ -93,7 +94,7 @@ export default function SchoolCatalogPage() {
   const [showUpgradeCta, setShowUpgradeCta] = useState(false);
 
   useEffect(() => {
-    void loadCatalog();
+    void loadCatalog({ showLoading: true });
     void getAdminSchoolDetails()
       .then(setSchoolDetails)
       .catch(() => setSchoolDetails(null));
@@ -101,8 +102,30 @@ export default function SchoolCatalogPage() {
 
   const currentPlan = getSchoolPlanSnapshot(schoolDetails);
 
-  const loadCatalog = async () => {
-    setLoading(true);
+  const updatePlanUsage = (delta: number) => {
+    setCatalogPlan((current) => {
+      if (!current) return current;
+
+      const usedBooks = Math.max(current.usedBooks + delta, 0);
+      const remainingBooks =
+        current.remainingBooks === null
+          ? null
+          : Math.max(current.remainingBooks - delta, 0);
+
+      return {
+        ...current,
+        usedBooks,
+        remainingBooks,
+      };
+    });
+  };
+
+  const loadCatalog = async ({ showLoading = false }: { showLoading?: boolean } = {}) => {
+    if (showLoading) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
     setError("");
 
     try {
@@ -117,7 +140,11 @@ export default function SchoolCatalogPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load the school catalog.");
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   };
 
@@ -133,9 +160,26 @@ export default function SchoolCatalogPage() {
         notes: "Approved for this school library.",
       });
 
+      const selectedItem = catalogProducts.find((product) => product._id === contentId);
+      if (selectedItem) {
+        setCatalogProducts((current) =>
+          current.map((product) =>
+            product._id === contentId
+              ? { ...product, isSelectedForSchool: true }
+              : product,
+          ),
+        );
+        setSelectedProducts((current) =>
+          current.some((product) => product._id === contentId)
+            ? current
+            : [{ ...selectedItem, isSelectedForSchool: true }, ...current],
+        );
+        updatePlanUsage(1);
+      }
+
       setNotice("Product selected for your school successfully.");
-      await loadCatalog();
       setActiveTab("selected");
+      void loadCatalog();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to select product.";
       setError(message);
@@ -152,8 +196,19 @@ export default function SchoolCatalogPage() {
 
     try {
       await removeSchoolProductSelection(contentId);
+      setCatalogProducts((current) =>
+        current.map((product) =>
+          product._id === contentId
+            ? { ...product, isSelectedForSchool: false }
+            : product,
+        ),
+      );
+      setSelectedProducts((current) =>
+        current.filter((product) => product._id !== contentId),
+      );
+      updatePlanUsage(-1);
       setNotice("Product removed from your school library.");
-      await loadCatalog();
+      void loadCatalog();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove product.");
     } finally {
@@ -375,6 +430,12 @@ export default function SchoolCatalogPage() {
 
             {/* Products Grid */}
             <div className="p-6">
+              {refreshing ? (
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700 dark:border-cyan-400/20 dark:bg-cyan-500/10 dark:text-cyan-300">
+                  <Loader2 size={12} className="animate-spin" />
+                  Syncing school library...
+                </div>
+              ) : null}
               {loading ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 size={32} className="animate-spin text-cyan-500" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/src/contexts/AuthContext";
 import {
@@ -23,6 +23,13 @@ import {
   ChevronRight,
   Plus,
   Trash2,
+  User,
+  Users,
+  FileText,
+  MessageSquare,
+  Heart,
+  Lightbulb,
+  Target,
 } from "lucide-react";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
 import AppActionButton from "@/src/components/shared/ui/AppActionButton";
@@ -77,32 +84,59 @@ interface AssignmentDraft {
 
 type TabType = "details" | "assignments" | "activities";
 
+// Helper component for circular progress
+const CircularProgress = ({ value, size = 80, strokeWidth = 6, color = "#6366f1" }: { value: number; size?: number; strokeWidth?: number; color?: string }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90" width={size} height={size}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#e2e8f0"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-500 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xl font-bold" style={{ color }}>{Math.round(value)}%</span>
+      </div>
+    </div>
+  );
+};
+
 export default function StoryBookPage() {
   const { user } = useAuth();
-  const [schoolDetails, setSchoolDetails] = useState<AdminSchoolDetails | null>(
-    null,
-  );
+  const [schoolDetails, setSchoolDetails] = useState<AdminSchoolDetails | null>(null);
   const [stories, setStories] = useState<SchoolStoryContent[]>([]);
-  const [catalogProducts, setCatalogProducts] = useState<
-    SchoolCatalogProduct[]
-  >([]);
-  const [catalogPlan, setCatalogPlan] = useState<ProductPlanSummary | null>(
-    null,
-  );
-  const [selectedBundle, setSelectedBundle] =
-    useState<SchoolStoryBundle | null>(null);
+  const [catalogProducts, setCatalogProducts] = useState<SchoolCatalogProduct[]>([]);
+  const [catalogPlan, setCatalogPlan] = useState<ProductPlanSummary | null>(null);
+  const [selectedBundle, setSelectedBundle] = useState<SchoolStoryBundle | null>(null);
   const [classes, setClasses] = useState<AdminClassroom[]>([]);
   const [students, setStudents] = useState<AdminStudent[]>([]);
   const [assignments, setAssignments] = useState<SchoolContentAssignment[]>([]);
-  const [assignmentTracking, setAssignmentTracking] =
-    useState<SchoolAssignmentTracking | null>(null);
+  const [assignmentTracking, setAssignmentTracking] = useState<SchoolAssignmentTracking | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [openingId, setOpeningId] = useState<string>("");
   const [assigning, setAssigning] = useState<boolean>(false);
   const [selectingProductId, setSelectingProductId] = useState<string>("");
-  const [libraryMode, setLibraryMode] = useState<"selected" | "catalog">(
-    "selected",
-  );
+  const [libraryMode, setLibraryMode] = useState<"selected" | "catalog">("selected");
   const [trackingId, setTrackingId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -116,8 +150,11 @@ export default function StoryBookPage() {
   });
   const [activeTab, setActiveTab] = useState<TabType>("details");
 
-  const canAssign: boolean =
-    user?.role === "SCHOOL_ADMIN" || user?.role === "TEACHER";
+  // Refs for independent scrolling
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+
+  const canAssign: boolean = user?.role === "SCHOOL_ADMIN" || user?.role === "TEACHER";
   const isTeacher: boolean = user?.role === "TEACHER";
   const isSchoolAdmin: boolean = user?.role === "SCHOOL_ADMIN";
 
@@ -168,9 +205,7 @@ export default function StoryBookPage() {
         }
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load the story book.",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load the story book.");
     } finally {
       setLoading(false);
     }
@@ -184,22 +219,14 @@ export default function StoryBookPage() {
         getContentAssignments().catch(() => []),
       ]);
 
-      const scopedClasses = isTeacher
-        ? filterClassesForTeacher(classList, user)
-        : classList;
-      const scopedStudents = isTeacher
-        ? filterStudentsForTeacher(studentList, classList, user)
-        : studentList;
+      const scopedClasses = isTeacher ? filterClassesForTeacher(classList, user) : classList;
+      const scopedStudents = isTeacher ? filterStudentsForTeacher(studentList, classList, user) : studentList;
 
       setClasses(scopedClasses);
       setStudents(scopedStudents);
       setAssignments(assignmentList);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load assignment options.",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load assignment options.");
     }
   };
 
@@ -210,12 +237,12 @@ export default function StoryBookPage() {
       const bundle = await getPublishedSchoolStoryBundle(contentId);
       setSelectedBundle(bundle);
       setActiveTab("details");
+      // Scroll right panel to top when new bundle opens
+      if (rightPanelRef.current) {
+        rightPanelRef.current.scrollTop = 0;
+      }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to open the selected story.",
-      );
+      setError(err instanceof Error ? err.message : "Failed to open the selected story.");
     } finally {
       setOpeningId("");
     }
@@ -233,22 +260,15 @@ export default function StoryBookPage() {
 
   const handleAssignStory = async (): Promise<void> => {
     const selectedStoryId: string =
-      selectedBundle?.story?.content._id ??
-      selectedBundle?.requestedContent?._id ??
-      "";
+      selectedBundle?.story?.content._id ?? selectedBundle?.requestedContent?._id ?? "";
 
     if (!selectedStoryId) {
       setError("Select a story before creating an assignment.");
       return;
     }
 
-    if (
-      !assignmentDraft.classroomId &&
-      assignmentDraft.studentUserIds.length === 0
-    ) {
-      setError(
-        "Choose a class or select at least one student for the assignment.",
-      );
+    if (!assignmentDraft.classroomId && assignmentDraft.studentUserIds.length === 0) {
+      setError("Choose a class or select at least one student for the assignment.");
       return;
     }
 
@@ -260,19 +280,12 @@ export default function StoryBookPage() {
       await createContentAssignment({
         contentId: selectedStoryId,
         classroomId: assignmentDraft.classroomId || undefined,
-        studentUserIds:
-          assignmentDraft.classroomId.length > 0
-            ? undefined
-            : assignmentDraft.studentUserIds,
-        dueAt: assignmentDraft.dueAt
-          ? new Date(assignmentDraft.dueAt).toISOString()
-          : undefined,
+        studentUserIds: assignmentDraft.classroomId.length > 0 ? undefined : assignmentDraft.studentUserIds,
+        dueAt: assignmentDraft.dueAt ? new Date(assignmentDraft.dueAt).toISOString() : undefined,
         notes: assignmentDraft.notes.trim() || undefined,
       });
 
-      setNotice(
-        "Assignment created successfully. Notifications have been triggered.",
-      );
+      setNotice("Assignment created successfully. Notifications have been triggered.");
       setAssignmentDraft({
         classroomId: "",
         dueAt: "",
@@ -288,9 +301,7 @@ export default function StoryBookPage() {
     }
   };
 
-  const handleOpenAssignmentTracking = async (
-    assignmentId: string,
-  ): Promise<void> => {
+  const handleOpenAssignmentTracking = async (assignmentId: string): Promise<void> => {
     setTrackingId(assignmentId);
     setError("");
 
@@ -298,11 +309,7 @@ export default function StoryBookPage() {
       const tracking = await getContentAssignmentTracking(assignmentId);
       setAssignmentTracking(tracking);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load assignment tracking.",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load assignment tracking.");
     } finally {
       setTrackingId("");
     }
@@ -324,12 +331,9 @@ export default function StoryBookPage() {
       setLibraryMode("selected");
       await openBundle(contentId);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to select product.";
+      const message = err instanceof Error ? err.message : "Failed to select product.";
       setError(message);
-      setShowUpgradeCta(
-        message.toLowerCase().includes("upgrade to add more books"),
-      );
+      setShowUpgradeCta(message.toLowerCase().includes("upgrade to add more books"));
     } finally {
       setSelectingProductId("");
     }
@@ -344,17 +348,12 @@ export default function StoryBookPage() {
       await removeSchoolProductSelection(contentId);
       setNotice("Product removed from this school.");
       await loadStories();
-      const selectedStoryId =
-        selectedBundle?.story?.content._id ??
-        selectedBundle?.requestedContent?._id ??
-        "";
+      const selectedStoryId = selectedBundle?.story?.content._id ?? selectedBundle?.requestedContent?._id ?? "";
       if (selectedStoryId === contentId) {
         setSelectedBundle(null);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to remove product.",
-      );
+      setError(err instanceof Error ? err.message : "Failed to remove product.");
     } finally {
       setSelectingProductId("");
     }
@@ -362,8 +361,7 @@ export default function StoryBookPage() {
 
   const filteredStories = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const source =
-      isSchoolAdmin && libraryMode === "catalog" ? catalogProducts : stories;
+    const source = isSchoolAdmin && libraryMode === "catalog" ? catalogProducts : stories;
     if (!query) return source;
 
     return source.filter((story) =>
@@ -376,17 +374,11 @@ export default function StoryBookPage() {
   const storyChapters = selectedBundle?.story?.chapters ?? [];
   const storyQuestions = selectedBundle?.story?.questions ?? [];
   const activities = selectedBundle?.activities ?? [];
-  const selectedStoryId =
-    selectedBundle?.story?.content._id ??
-    selectedBundle?.requestedContent?._id ??
-    "";
-  const storyAssignments = assignments.filter(
-    (assignment) => assignment.contentId === selectedStoryId,
-  );
+  const selectedStoryId = selectedBundle?.story?.content._id ?? selectedBundle?.requestedContent?._id ?? "";
+  const storyAssignments = assignments.filter((assignment) => assignment.contentId === selectedStoryId);
   const assignmentCount = storyAssignments.length;
-  const selectedSchoolProductIds = new Set(
-    isSchoolAdmin ? stories.map((story) => story._id) : [],
-  );
+  const hasOpenPreview = Boolean(selectedStoryId);
+  const selectedSchoolProductIds = new Set(isSchoolAdmin ? stories.map((story) => story._id) : []);
   const currentPlan = getSchoolPlanSnapshot(schoolDetails);
   const planLibraryLabel = catalogPlan?.isUnlimited
     ? "Unlimited library"
@@ -398,6 +390,14 @@ export default function StoryBookPage() {
     : typeof catalogPlan?.remainingBooks === "number"
       ? `${catalogPlan.remainingBooks} more books can still be added on this plan.`
       : "Plan limits will appear here when available.";
+
+  // SEL Reflection prompts
+  const selPrompts = [
+    { icon: Heart, prompt: "How did this story make you feel?", color: "text-rose-500" },
+    { icon: Lightbulb, prompt: "What did you learn from the characters?", color: "text-amber-500" },
+    { icon: Target, prompt: "How can you apply this lesson to your own life?", color: "text-emerald-500" },
+    { icon: MessageSquare, prompt: "What would you ask the author?", color: "text-sky-500" },
+  ];
 
   return (
     <ProtectedRoute allowedRoles={["SCHOOL_ADMIN", "TEACHER", "STUDENT"]}>
@@ -431,9 +431,7 @@ export default function StoryBookPage() {
                   </span>
                 </div>
                 <h1 className="text-4xl font-bold tracking-tight text-white lg:text-5xl">
-                  {isSchoolAdmin
-                    ? "Curate Your School's Literary Universe"
-                    : "Discover Magical Stories"}
+                  {isSchoolAdmin ? "Curate Your School's Literary Universe" : "Discover Magical Stories"}
                 </h1>
                 <p className="mt-4 text-lg text-white/80 lg:text-xl">
                   {isSchoolAdmin
@@ -445,23 +443,17 @@ export default function StoryBookPage() {
               {isSchoolAdmin && (
                 <div className="flex flex-wrap gap-3 rounded-2xl bg-white/10 p-4 backdrop-blur-md">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-white">
-                      {stories.length}
-                    </p>
+                    <p className="text-2xl font-bold text-white">{stories.length}</p>
                     <p className="text-xs text-white/70">Selected</p>
                   </div>
                   <div className="w-px bg-white/20" />
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-white">
-                      {catalogProducts.length}
-                    </p>
+                    <p className="text-2xl font-bold text-white">{catalogProducts.length}</p>
                     <p className="text-xs text-white/70">Available</p>
                   </div>
                   <div className="w-px bg-white/20" />
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-white">
-                      {currentPlan.label}
-                    </p>
+                    <p className="text-2xl font-bold text-white">{currentPlan.label}</p>
                     <p className="text-xs text-white/70">Current Plan</p>
                   </div>
                 </div>
@@ -484,27 +476,16 @@ export default function StoryBookPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {notice ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <AlertTriangle className="h-5 w-5" />
-                    )}
+                    {notice ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
                     <span>{notice || error}</span>
                   </div>
                   {showUpgradeCta && (
-                    <AppActionButton
-                      tone="secondary"
-                      size="sm"
-                      onClick={() => (window.location.href = "/admin/billing")}
-                    >
+                    <AppActionButton tone="secondary" size="sm" onClick={() => (window.location.href = "/admin/billing")}>
                       <CreditCard size={14} />
                       <span>Upgrade Plan</span>
                     </AppActionButton>
                   )}
-                  <button
-                    onClick={() => (setNotice(""), setError(""))}
-                    className="rounded-full p-1 hover:bg-white/20"
-                  >
+                  <button onClick={() => (setNotice(""), setError(""))} className="rounded-full p-1 hover:bg-white/20">
                     <X size={16} />
                   </button>
                 </div>
@@ -512,10 +493,10 @@ export default function StoryBookPage() {
             )}
           </AnimatePresence>
 
-          {/* Main Content Grid */}
+          {/* Main Content Grid - Independent Scrolling Sections */}
           <div className="grid gap-8 xl:grid-cols-[380px_1fr]">
-            {/* Left Sidebar - Story List */}
-            <div className="space-y-6">
+            {/* Left Sidebar - Story List (Independent Scroll) */}
+            <div ref={leftPanelRef} className="space-y-6 overflow-y-auto pr-2" style={{ maxHeight: "calc(100vh - 200px)" }}>
               {/* Library Mode Toggle (Admin) */}
               {isSchoolAdmin && (
                 <div className="flex gap-2 rounded-2xl bg-white p-1 shadow-sm dark:bg-slate-800/50">
@@ -567,9 +548,7 @@ export default function StoryBookPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {isSchoolAdmin && libraryMode === "catalog"
-                      ? "Available Titles"
-                      : "Your Library"}
+                    {isSchoolAdmin && libraryMode === "catalog" ? "Available Titles" : "Your Library"}
                   </h2>
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                     {filteredStories.length}
@@ -585,20 +564,22 @@ export default function StoryBookPage() {
                 ) : filteredStories.length === 0 ? (
                   <AppEmptyState
                     icon={LibraryBig}
-                    title="No stories available"
-                    body="Check back later for new content."
+                    title={hasOpenPreview ? "No items match this view" : searchQuery.trim() ? "No matching stories found" : "No stories available"}
+                    body={
+                      hasOpenPreview
+                        ? "A story is still open on the right. Clear your search or switch tabs to see more titles."
+                        : searchQuery.trim()
+                          ? "Try a different title, subject, or theme in your search."
+                          : "Check back later for new content."
+                    }
                     className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-12 dark:border-slate-700 dark:bg-slate-800/30"
                   />
                 ) : (
                   <div className="space-y-2">
                     {filteredStories.map((story) => {
-                      const isActive =
-                        selectedBundle?.story?.content._id === story._id;
-                      const isCatalogMode =
-                        isSchoolAdmin && libraryMode === "catalog";
-                      const isSelected = selectedSchoolProductIds.has(
-                        story._id,
-                      );
+                      const isActive = selectedBundle?.story?.content._id === story._id;
+                      const isCatalogMode = isSchoolAdmin && libraryMode === "catalog";
+                      const isSelected = selectedSchoolProductIds.has(story._id);
 
                       return (
                         <motion.div
@@ -615,40 +596,15 @@ export default function StoryBookPage() {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="mb-2 flex flex-wrap gap-1.5">
-                                <AppBadge
-                                  label={
-                                    story.type === "CONTENT_PACK"
-                                      ? "Bundle"
-                                      : "Story"
-                                  }
-                                  tone="slate"
-                                  // size="sm"
-                                />
+                                <AppBadge label={story.type === "CONTENT_PACK" ? "Bundle" : "Story"} tone="slate" />
                                 {isSelected && isCatalogMode && (
-                                  <AppBadge
-                                    label="In Library"
-                                    tone="emerald"
-                                    className="text-sm"
-                                    icon={CheckCircle2}
-                                  />
+                                  <AppBadge label="In Library" tone="emerald" icon={CheckCircle2} />
                                 )}
-                                {isActive && (
-                                  <AppBadge
-                                    label="Viewing"
-                                    className="text-sm text-indigo-[indigo]"
-                                    // tone="indigo"
-                                    // size="sm"
-                                  />
-                                )}
+                                {isActive && <AppBadge label="Viewing" className="text-[indigo]" />}
                               </div>
-                              <h3 className="font-bold text-slate-800 dark:text-white line-clamp-1">
-                                {story.title}
-                              </h3>
+                              <h3 className="font-bold text-slate-800 dark:text-white line-clamp-1">{story.title}</h3>
                               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                {story.subject ?? story.theme ?? "General"} •{" "}
-                                {prettyDate(
-                                  story.publishedAt ?? story.updatedAt,
-                                )}
+                                {story.subject ?? story.theme ?? "General"} • {prettyDate(story.publishedAt ?? story.updatedAt)}
                               </p>
                             </div>
                             <ChevronRight
@@ -660,24 +616,17 @@ export default function StoryBookPage() {
 
                           {/* Quick Action for Admin Catalog Mode */}
                           {isCatalogMode && (
-                            <div
-                              className="absolute bottom-3 right-3"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <div className="absolute bottom-3 right-3" onClick={(e) => e.stopPropagation()}>
                               {isSelected ? (
                                 <button
-                                  onClick={() =>
-                                    void handleRemoveProduct(story._id)
-                                  }
+                                  onClick={() => void handleRemoveProduct(story._id)}
                                   className="rounded-full bg-red-100 p-1.5 text-red-600 transition-colors hover:bg-red-200 dark:bg-red-500/20 dark:text-red-400"
                                 >
                                   <Trash2 size={14} />
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() =>
-                                    void handleSelectProduct(story._id)
-                                  }
+                                  onClick={() => void handleSelectProduct(story._id)}
                                   className="rounded-full bg-indigo-100 p-1.5 text-indigo-600 transition-colors hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-400"
                                 >
                                   <Plus size={14} />
@@ -693,34 +642,26 @@ export default function StoryBookPage() {
               </div>
             </div>
 
-            {/* Right Sidebar - Story Viewer */}
-            <div className="rounded-3xl bg-white shadow-xl dark:bg-slate-800/50">
+            {/* Right Panel - Story Viewer (Independent Scroll) */}
+            <div ref={rightPanelRef} className="overflow-y-auto rounded-3xl" style={{ maxHeight: "calc(100vh - 200px)" }}>
               {selectedBundle && !loading ? (
-                <div className="flex h-full flex-col">
-                  {/* Story Header */}
-                  <div className="relative overflow-hidden rounded-t-3xl bg-linear-to-br from-indigo-500 to-purple-600 p-6 text-white">
+                <div className="flex h-full flex-col bg-white shadow-xl dark:bg-slate-800/50 rounded-3xl">
+                  {/* Story Header - Sticky */}
+                  <div className="sticky top-0 z-10 relative overflow-hidden rounded-t-3xl bg-linear-to-br from-indigo-500 to-purple-600 p-6 text-white">
                     <div className="absolute right-0 top-0 -mr-16 -mt-16 h-32 w-32 rounded-full bg-white/10" />
                     <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-24 w-24 rounded-full bg-white/10" />
                     <div className="relative z-10">
                       <div className="mb-3 flex flex-wrap gap-2">
                         <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
-                          {selectedBundle.story?.content.theme ??
-                            "Interactive Story"}
+                          {selectedBundle.story?.content.theme ?? "Interactive Story"}
                         </span>
-                        {selectedBundle.story?.content
-                          .estimatedDurationMinutes && (
+                        {selectedBundle.story?.content.estimatedDurationMinutes && (
                           <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
-                            {
-                              selectedBundle.story.content
-                                .estimatedDurationMinutes
-                            }{" "}
-                            min read
+                            {selectedBundle.story.content.estimatedDurationMinutes} min read
                           </span>
                         )}
                       </div>
-                      <h2 className="text-3xl font-bold">
-                        {getBundleTitle(selectedBundle)}
-                      </h2>
+                      <h2 className="text-3xl font-bold">{getBundleTitle(selectedBundle)}</h2>
                       <p className="mt-3 text-white/80 line-clamp-2">
                         {selectedBundle.story?.content.summary ??
                           selectedBundle.story?.content.description ??
@@ -729,8 +670,8 @@ export default function StoryBookPage() {
                     </div>
                   </div>
 
-                  {/* Tabs Navigation */}
-                  <div className="border-b border-slate-200 px-6 dark:border-slate-700">
+                  {/* Tabs Navigation - Sticky */}
+                  <div className="sticky top-[152px] z-10 border-b border-slate-200 bg-white px-6 dark:border-slate-700 dark:bg-slate-800/50">
                     <div className="flex gap-6">
                       <button
                         onClick={() => setActiveTab("details")}
@@ -762,13 +703,13 @@ export default function StoryBookPage() {
                             : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400"
                         }`}
                       >
-                        Activities
+                        Creative & SEL
                       </button>
                     </div>
                   </div>
 
-                  {/* Tab Content */}
-                  <div className="flex-1 overflow-y-auto p-6">
+                  {/* Tab Content - Scrollable */}
+                  <div className="flex-1 p-6">
                     <AnimatePresence mode="wait">
                       {activeTab === "details" && (
                         <motion.div
@@ -781,18 +722,14 @@ export default function StoryBookPage() {
                           {/* Chapters */}
                           <div>
                             <div className="mb-4 flex items-center justify-between">
-                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                                Chapters
-                              </h3>
+                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Chapters</h3>
                               <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
                                 {storyChapters.length}
                               </span>
                             </div>
                             <div className="space-y-4">
                               {storyChapters.length === 0 ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                  No chapters available.
-                                </p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">No chapters available.</p>
                               ) : (
                                 storyChapters.map((chapter, idx) => (
                                   <details
@@ -801,8 +738,7 @@ export default function StoryBookPage() {
                                   >
                                     <summary className="flex cursor-pointer items-center justify-between p-4 font-semibold text-slate-800 dark:text-white">
                                       <span>
-                                        Chapter {chapter.order ?? idx + 1}:{" "}
-                                        {chapter.title}
+                                        Chapter {chapter.order ?? idx + 1}: {chapter.title}
                                       </span>
                                       <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
                                     </summary>
@@ -815,21 +751,17 @@ export default function StoryBookPage() {
                             </div>
                           </div>
 
-                          {/* Questions */}
+                          {/* Discussion Questions */}
                           <div>
                             <div className="mb-4 flex items-center justify-between">
-                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                                Discussion Questions
-                              </h3>
+                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Discussion Questions</h3>
                               <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
                                 {storyQuestions.length}
                               </span>
                             </div>
                             <div className="space-y-3">
                               {storyQuestions.length === 0 ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                  No questions yet.
-                                </p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">No questions yet.</p>
                               ) : (
                                 storyQuestions.map((q, idx) => (
                                   <div
@@ -840,9 +772,7 @@ export default function StoryBookPage() {
                                       {q.prompt ?? `Question ${idx + 1}`}
                                     </p>
                                     {q.explanation && (
-                                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                                        {q.explanation}
-                                      </p>
+                                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{q.explanation}</p>
                                     )}
                                   </div>
                                 ))
@@ -862,12 +792,9 @@ export default function StoryBookPage() {
                         >
                           {/* Assignment Form */}
                           <div className="rounded-2xl border border-slate-200 bg-linear-to-br from-indigo-50/50 to-white p-5 dark:border-slate-700 dark:from-indigo-500/5 dark:to-slate-800/50">
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                              Create New Assignment
-                            </h3>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Create New Assignment</h3>
                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                              Assign this story to a class or individual
-                              students.
+                              Assign this story to a class or individual students.
                             </p>
 
                             <div className="mt-5 space-y-4">
@@ -889,8 +816,7 @@ export default function StoryBookPage() {
                                   <option value="">Select a class</option>
                                   {classes.map((c) => (
                                     <option key={c.id} value={c.id}>
-                                      {c.name}{" "}
-                                      {c.gradeLevel ? `(${c.gradeLevel})` : ""}
+                                      {c.name} {c.gradeLevel ? `(${c.gradeLevel})` : ""}
                                     </option>
                                   ))}
                                 </select>
@@ -902,9 +828,7 @@ export default function StoryBookPage() {
                                 </label>
                                 <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800">
                                   {students.length === 0 ? (
-                                    <p className="p-3 text-center text-sm text-slate-500">
-                                      No students available.
-                                    </p>
+                                    <p className="p-3 text-center text-sm text-slate-500">No students available.</p>
                                   ) : (
                                     students.map((s) => (
                                       <label
@@ -913,20 +837,12 @@ export default function StoryBookPage() {
                                       >
                                         <input
                                           type="checkbox"
-                                          checked={assignmentDraft.studentUserIds.includes(
-                                            s.id,
-                                          )}
-                                          onChange={() =>
-                                            toggleStudentSelection(s.id)
-                                          }
-                                          disabled={
-                                            !!assignmentDraft.classroomId
-                                          }
+                                          checked={assignmentDraft.studentUserIds.includes(s.id)}
+                                          onChange={() => toggleStudentSelection(s.id)}
+                                          disabled={!!assignmentDraft.classroomId}
                                           className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         />
-                                        <span className="text-sm text-slate-700 dark:text-slate-300">
-                                          {s.fullName}
-                                        </span>
+                                        <span className="text-sm text-slate-700 dark:text-slate-300">{s.fullName}</span>
                                       </label>
                                     ))
                                   )}
@@ -968,21 +884,9 @@ export default function StoryBookPage() {
                                 />
                               </div>
 
-                              <AppActionButton
-                                onClick={handleAssignStory}
-                                disabled={assigning}
-                                tone="primary"
-                                size="lg"
-                                className="w-full"
-                              >
-                                {assigning ? (
-                                  <Loader2 size={18} className="animate-spin" />
-                                ) : (
-                                  <Send size={18} />
-                                )}
-                                {assigning
-                                  ? "Creating..."
-                                  : "Create Assignment"}
+                              <AppActionButton onClick={handleAssignStory} disabled={assigning} tone="primary" size="lg" className="w-full">
+                                {assigning ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                                {assigning ? "Creating..." : "Create Assignment"}
                               </AppActionButton>
                             </div>
                           </div>
@@ -990,18 +894,14 @@ export default function StoryBookPage() {
                           {/* Existing Assignments */}
                           <div>
                             <div className="mb-4 flex items-center justify-between">
-                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                                Existing Assignments
-                              </h3>
+                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Existing Assignments</h3>
                               <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
                                 {assignmentCount}
                               </span>
                             </div>
                             <div className="space-y-3">
                               {storyAssignments.length === 0 ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                  No assignments yet.
-                                </p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">No assignments yet.</p>
                               ) : (
                                 storyAssignments.map((a) => (
                                   <div
@@ -1009,19 +909,13 @@ export default function StoryBookPage() {
                                     className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/50"
                                   >
                                     <div>
-                                      <p className="font-medium text-slate-800 dark:text-white">
-                                        {a.title ?? "Assignment"}
-                                      </p>
+                                      <p className="font-medium text-slate-800 dark:text-white">{a.title ?? "Assignment"}</p>
                                       <p className="mt-1 text-xs text-slate-500">
-                                        {a.classroomName ??
-                                          "Individual Students"}{" "}
-                                        • Due {prettyDate(a.dueAt)}
+                                        {a.classroomName ?? "Individual Students"} • Due {prettyDate(a.dueAt)}
                                       </p>
                                     </div>
                                     <button
-                                      onClick={() =>
-                                        handleOpenAssignmentTracking(a.id)
-                                      }
+                                      onClick={() => handleOpenAssignmentTracking(a.id)}
                                       className="rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-400"
                                     >
                                       View Progress
@@ -1036,45 +930,30 @@ export default function StoryBookPage() {
                           {assignmentTracking && (
                             <div className="rounded-2xl border border-indigo-200 bg-indigo-50/30 p-5 dark:border-indigo-500/30 dark:bg-indigo-500/5">
                               <div className="mb-4 flex items-center justify-between">
-                                <h4 className="font-bold text-indigo-800 dark:text-indigo-300">
-                                  Progress Tracking
-                                </h4>
-                                <button
-                                  onClick={() => setAssignmentTracking(null)}
-                                  className="rounded-full p-1 hover:bg-white/50"
-                                >
+                                <h4 className="font-bold text-indigo-800 dark:text-indigo-300">Progress Tracking</h4>
+                                <button onClick={() => setAssignmentTracking(null)} className="rounded-full p-1 hover:bg-white/50">
                                   <X size={14} />
                                 </button>
                               </div>
                               <div className="grid grid-cols-5 gap-2 text-center text-xs">
                                 <div className="rounded-lg bg-white p-2 dark:bg-slate-800">
-                                  <p className="font-bold text-slate-800 dark:text-white">
-                                    {assignmentTracking.summary.assigned}
-                                  </p>
+                                  <p className="font-bold text-slate-800 dark:text-white">{assignmentTracking.summary.assigned}</p>
                                   <p className="text-slate-500">Assigned</p>
                                 </div>
                                 <div className="rounded-lg bg-white p-2 dark:bg-slate-800">
-                                  <p className="font-bold text-green-600">
-                                    {assignmentTracking.summary.completed}
-                                  </p>
+                                  <p className="font-bold text-green-600">{assignmentTracking.summary.completed}</p>
                                   <p className="text-slate-500">Completed</p>
                                 </div>
                                 <div className="rounded-lg bg-white p-2 dark:bg-slate-800">
-                                  <p className="font-bold text-blue-600">
-                                    {assignmentTracking.summary.inProgress}
-                                  </p>
+                                  <p className="font-bold text-blue-600">{assignmentTracking.summary.inProgress}</p>
                                   <p className="text-slate-500">In Progress</p>
                                 </div>
                                 <div className="rounded-lg bg-white p-2 dark:bg-slate-800">
-                                  <p className="font-bold text-slate-600">
-                                    {assignmentTracking.summary.notStarted}
-                                  </p>
+                                  <p className="font-bold text-slate-600">{assignmentTracking.summary.notStarted}</p>
                                   <p className="text-slate-500">Not Started</p>
                                 </div>
                                 <div className="rounded-lg bg-white p-2 dark:bg-slate-800">
-                                  <p className="font-bold text-red-600">
-                                    {assignmentTracking.summary.overdue}
-                                  </p>
+                                  <p className="font-bold text-red-600">{assignmentTracking.summary.overdue}</p>
                                   <p className="text-slate-500">Overdue</p>
                                 </div>
                               </div>
@@ -1089,22 +968,19 @@ export default function StoryBookPage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="space-y-6"
+                          className="space-y-8"
                         >
+                          {/* Classroom Activities Section */}
                           <div>
                             <div className="mb-4 flex items-center justify-between">
-                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                                Classroom Activities
-                              </h3>
+                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Classroom Activities</h3>
                               <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
                                 {activities.length}
                               </span>
                             </div>
                             <div className="space-y-4">
                               {activities.length === 0 ? (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                  No activities available.
-                                </p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">No activities available.</p>
                               ) : (
                                 activities.map((activity, idx) => (
                                   <div
@@ -1112,40 +988,82 @@ export default function StoryBookPage() {
                                     className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/50"
                                   >
                                     <div className="mb-3 flex items-start justify-between">
-                                      <h4 className="font-bold text-slate-800 dark:text-white">
-                                        {activity.title}
-                                      </h4>
-                                      <AppBadge
-                                        label={
-                                          activity.configuration
-                                            ?.activityType ?? "Activity"
-                                        }
-                                        className="text-sm text-[indigo]"
-                                      
-                                      />
+                                      <h4 className="font-bold text-slate-800 dark:text-white">{activity.title}</h4>
+                                      <AppBadge label={activity.configuration?.activityType ?? "Activity"} className="text-[indigo]" />
                                     </div>
                                     <p className="text-sm text-slate-600 dark:text-slate-300">
                                       {activity.summary ?? activity.description}
                                     </p>
-                                    {activity.configuration?.materialsNeeded &&
-                                      activity.configuration.materialsNeeded
-                                        .length > 0 && (
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                          {activity.configuration.materialsNeeded.map(
-                                            (material) => (
-                                              <span
-                                                key={material}
-                                                className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-                                              >
-                                                {material}
-                                              </span>
-                                            ),
-                                          )}
-                                        </div>
-                                      )}
+                                    {activity.configuration?.materialsNeeded && activity.configuration.materialsNeeded.length > 0 && (
+                                      <div className="mt-3 flex flex-wrap gap-2">
+                                        {activity.configuration.materialsNeeded.map((material) => (
+                                          <span
+                                            key={material}
+                                            className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                                          >
+                                            {material}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 ))
                               )}
+                            </div>
+                          </div>
+
+                          {/* SEL Reflection Section */}
+                          <div className="rounded-2xl bg-linear-to-br from-emerald-50/50 to-teal-50/50 p-6 dark:from-emerald-500/5 dark:to-teal-500/5">
+                            <div className="mb-4 flex items-center gap-2">
+                              <Heart className="h-5 w-5 text-rose-500" />
+                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">SEL Reflection</h3>
+                            </div>
+                            <p className="mb-5 text-sm text-slate-600 dark:text-slate-300">
+                              Help students connect emotionally and socially with the story through these reflection prompts.
+                            </p>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {selPrompts.map((prompt, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-start gap-3 rounded-xl bg-white p-4 shadow-sm transition-all hover:shadow-md dark:bg-slate-800/50"
+                                >
+                                  <div className="rounded-full bg-slate-100 p-2 dark:bg-slate-700">
+                                    <prompt.icon className={`h-4 w-4 ${prompt.color}`} />
+                                  </div>
+                                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{prompt.prompt}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Creative Comprehension Section */}
+                          <div className="rounded-2xl bg-linear-to-br from-amber-50/50 to-orange-50/50 p-6 dark:from-amber-500/5 dark:to-orange-500/5">
+                            <div className="mb-4 flex items-center gap-2">
+                              <Sparkles className="h-5 w-5 text-amber-500" />
+                              <h3 className="text-lg font-bold text-slate-800 dark:text-white">Creative Comprehension</h3>
+                            </div>
+                            <p className="mb-5 text-sm text-slate-600 dark:text-slate-300">
+                              Encourage deeper understanding through creative expression.
+                            </p>
+                            <div className="grid gap-4 md:grid-cols-3">
+                              <div className="rounded-xl bg-white p-4 text-center shadow-sm transition-all hover:shadow-md dark:bg-slate-800/50">
+                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-500/20">
+                                  <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Write an alternate ending</p>
+                              </div>
+                              <div className="rounded-xl bg-white p-4 text-center shadow-sm transition-all hover:shadow-md dark:bg-slate-800/50">
+                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                                  <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Role-play a key scene</p>
+                              </div>
+                              <div className="rounded-xl bg-white p-4 text-center shadow-sm transition-all hover:shadow-md dark:bg-slate-800/50">
+                                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/20">
+                                  <Star className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                                </div>
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Create character fan art</p>
+                              </div>
                             </div>
                           </div>
                         </motion.div>
@@ -1160,16 +1078,13 @@ export default function StoryBookPage() {
                   <AppSkeletonCard />
                 </div>
               ) : (
-                <div className="flex min-h-125 flex-col items-center justify-center p-8 text-center">
+                <div className="flex min-h-125 flex-col items-center justify-center p-8 text-center bg-white dark:bg-slate-800/50 rounded-3xl">
                   <div className="mb-4 rounded-full bg-indigo-100 p-4 dark:bg-indigo-500/20">
                     <BookOpen className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-white">
-                    Select a Story
-                  </h3>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-white">Select a Story</h3>
                   <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    Choose a story from the library to view its contents and
-                    activities.
+                    Choose a story from the library to view its contents and activities.
                   </p>
                 </div>
               )}
