@@ -28,16 +28,20 @@ export interface SchoolStoryContent {
 
 export interface SchoolCatalogProduct extends SchoolStoryContent {
   isSelectedForSchool?: boolean;
+  isSelectedForFamily?: boolean;
   schoolSelection?: Record<string, unknown> | null;
+  familySelection?: Record<string, unknown> | null;
   catalogPublication?: Record<string, unknown> | null;
 }
 
 export interface ProductPlanSummary {
-  planKey: string;
+  key: string;
+  name?: string;
   maxBooks: number | null;
   usedBooks: number;
   remainingBooks: number | null;
   isUnlimited: boolean;
+  features: string[];
 }
 
 export interface SchoolCatalogResponse {
@@ -273,28 +277,6 @@ const dedupePublishedContents = (contents: SchoolStoryContent[]) => {
   return [...contentMap.values()];
 };
 
-const getRelatedContentIds = (content: SchoolStoryContent) => {
-  const value = content.relatedContentIds;
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
-};
-
-const dedupeCatalogProducts = (products: SchoolCatalogProduct[]) => {
-  const contentPacks = products.filter((item) => item.type === "CONTENT_PACK");
-  if (contentPacks.length === 0) return products;
-
-  const relatedIds = new Set(
-    contentPacks.flatMap((item) => getRelatedContentIds(item)),
-  );
-
-  return products.filter((item) => {
-    if (item.type === "CONTENT_PACK") return true;
-    if (item.type === "STORY" && relatedIds.has(item._id)) return false;
-    return item.type === "STORY";
-  });
-};
-
 const normalizeContent = (value: unknown): SchoolStoryContent | null => {
   if (!isRecord(value)) return null;
 
@@ -337,7 +319,10 @@ const normalizeCatalogProduct = (value: unknown): SchoolCatalogProduct | null =>
     ...content,
     isSelectedForSchool:
       typeof value.isSelectedForSchool === "boolean" ? value.isSelectedForSchool : false,
+    isSelectedForFamily:
+      typeof value.isSelectedForFamily === "boolean" ? value.isSelectedForFamily : false,
     schoolSelection: isRecord(value.schoolSelection) ? value.schoolSelection : null,
+    familySelection: isRecord(value.familySelection) ? value.familySelection : null,
     catalogPublication: isRecord(value.catalogPublication) ? value.catalogPublication : null,
   };
 };
@@ -371,16 +356,22 @@ const normalizeProductPlan = (value: unknown): ProductPlanSummary | null => {
         : Math.max(maxBooks - usedBooks, 0);
 
   const rawPlanKey =
-    typeof value.planKey === "string"
-      ? value.planKey
-      : typeof value.tier === "string"
-        ? value.tier
-        : typeof value.key === "string"
-          ? value.key
+    typeof value.key === "string"
+      ? value.key
+      : typeof value.planKey === "string"
+        ? value.planKey
+        : typeof value.tier === "string"
+          ? value.tier
           : "free";
 
   return {
-    planKey: rawPlanKey,
+    key: rawPlanKey,
+    name:
+      typeof value.name === "string"
+        ? value.name
+        : typeof value.title === "string"
+          ? value.title
+          : undefined,
     maxBooks,
     usedBooks,
     remainingBooks,
@@ -388,6 +379,7 @@ const normalizeProductPlan = (value: unknown): ProductPlanSummary | null => {
       typeof value.isUnlimited === "boolean"
         ? value.isUnlimited
         : maxBooks === null || maxBooks === Number.POSITIVE_INFINITY,
+    features: toStringArray(value.features),
   };
 };
 
@@ -537,12 +529,9 @@ export const getSchoolCatalogProducts = async (): Promise<SchoolCatalogResponse>
         : [];
 
   return {
-    products: dedupeCatalogProducts(
-      products
-        .map((item) => normalizeCatalogProduct(item))
-        .filter((item): item is SchoolCatalogProduct => item !== null)
-        .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
-    ),
+    products: products
+      .map((item) => normalizeCatalogProduct(item))
+      .filter((item): item is SchoolCatalogProduct => item !== null),
     plan: normalizeProductPlan(record.plan),
   };
 };
@@ -559,12 +548,9 @@ export const getSchoolSelectedProducts = async (): Promise<SchoolCatalogResponse
         : [];
 
   return {
-    products: dedupeCatalogProducts(
-      products
-        .map((item) => normalizeCatalogProduct(item))
-        .filter((item): item is SchoolCatalogProduct => item !== null)
-        .filter((item) => item.type === "STORY" || item.type === "CONTENT_PACK"),
-    ),
+    products: products
+      .map((item) => normalizeCatalogProduct(item))
+      .filter((item): item is SchoolCatalogProduct => item !== null),
     plan: normalizeProductPlan(record.plan),
   };
 };

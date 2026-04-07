@@ -91,7 +91,7 @@ export default function FamilyLibraryPage() {
 
   const selectedIds = useMemo(() => new Set(selectedProducts.map((item) => item._id)), [selectedProducts]);
   const bundleTitle = selectedBundle?.story?.content?.title ?? selectedBundle?.contentPack?.title ?? "Family bundle";
-  const currentPlan = getSchoolPlanSnapshot({ tier: plan?.planKey });
+  const currentPlan = getSchoolPlanSnapshot({ tier: plan?.key });
   const planUsageLabel = plan?.isUnlimited
     ? "Unlimited books"
     : plan?.maxBooks !== null && plan?.maxBooks !== undefined
@@ -201,7 +201,7 @@ export default function FamilyLibraryPage() {
                         <AppActionButton onClick={() => void openBundle(item._id)} tone="ghost" size="sm">
                           {openingId === item._id ? "Opening..." : "Preview"}
                         </AppActionButton>
-                        {selectedIds.has(item._id) ? (
+                        {item.isSelectedForFamily || selectedIds.has(item._id) ? (
                           <AppActionButton disabled tone="success" size="sm">
                             <CheckCircle2 size={16} />
                             <span>Added</span>

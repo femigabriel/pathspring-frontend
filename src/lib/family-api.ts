@@ -194,28 +194,6 @@ const normalizeCatalogProduct = (value: unknown): SchoolCatalogProduct | null =>
   };
 };
 
-const getRelatedContentIds = (content: SchoolCatalogProduct) => {
-  const value = content.relatedContentIds;
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
-};
-
-const dedupeCatalogProducts = (products: SchoolCatalogProduct[]) => {
-  const contentPacks = products.filter((item) => item.type === "CONTENT_PACK");
-  if (contentPacks.length === 0) return products;
-
-  const relatedIds = new Set(
-    contentPacks.flatMap((item) => getRelatedContentIds(item)),
-  );
-
-  return products.filter((item) => {
-    if (item.type === "CONTENT_PACK") return true;
-    if (item.type === "STORY" && relatedIds.has(item._id)) return false;
-    return item.type === "STORY";
-  });
-};
-
 const normalizeBundleNode = (value: unknown) => {
   if (!isRecord(value) || !isRecord(value.content)) return null;
 
@@ -306,16 +284,22 @@ const normalizeProductPlan = (value: unknown): ProductPlanSummary | null => {
         : Math.max(maxBooks - usedBooks, 0);
 
   const rawPlanKey =
-    typeof value.planKey === "string"
-      ? value.planKey
-      : typeof value.tier === "string"
-        ? value.tier
-        : typeof value.key === "string"
-          ? value.key
+    typeof value.key === "string"
+      ? value.key
+      : typeof value.planKey === "string"
+        ? value.planKey
+        : typeof value.tier === "string"
+          ? value.tier
           : "free";
 
   return {
-    planKey: rawPlanKey,
+    key: rawPlanKey,
+    name:
+      typeof value.name === "string"
+        ? value.name
+        : typeof value.title === "string"
+          ? value.title
+          : undefined,
     maxBooks,
     usedBooks,
     remainingBooks,
@@ -323,6 +307,7 @@ const normalizeProductPlan = (value: unknown): ProductPlanSummary | null => {
       typeof value.isUnlimited === "boolean"
         ? value.isUnlimited
         : maxBooks === null || maxBooks === Number.POSITIVE_INFINITY,
+    features: toStringArray(value.features),
   };
 };
 
@@ -385,11 +370,9 @@ export const getFamilyCatalogProducts = async (): Promise<FamilyCatalogResponse>
         : [];
 
   return {
-    products: dedupeCatalogProducts(
-      products
-        .map((product) => normalizeCatalogProduct(product))
-        .filter((product): product is SchoolCatalogProduct => product !== null),
-    ),
+    products: products
+      .map((product) => normalizeCatalogProduct(product))
+      .filter((product): product is SchoolCatalogProduct => product !== null),
     plan: normalizeProductPlan(record.plan),
   };
 };
@@ -406,11 +389,9 @@ export const getFamilySelectedProducts = async (): Promise<FamilyCatalogResponse
         : [];
 
   return {
-    products: dedupeCatalogProducts(
-      products
-        .map((product) => normalizeCatalogProduct(product))
-        .filter((product): product is SchoolCatalogProduct => product !== null),
-    ),
+    products: products
+      .map((product) => normalizeCatalogProduct(product))
+      .filter((product): product is SchoolCatalogProduct => product !== null),
     plan: normalizeProductPlan(record.plan),
   };
 };

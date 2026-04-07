@@ -50,7 +50,7 @@ export default function FamilyDashboardPage() {
     void load();
   }, []);
 
-  const currentPlan = getSchoolPlanSnapshot({ tier: plan?.planKey });
+  const currentPlan = getSchoolPlanSnapshot({ tier: plan?.key });
 
   return (
     <FamilyShell>
