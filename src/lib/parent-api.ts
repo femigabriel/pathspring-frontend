@@ -47,6 +47,18 @@ export interface CreateParentLinkInput {
   isPrimaryContact?: boolean;
 }
 
+export interface ParentMessage {
+  id: string;
+  subject?: string;
+  body?: string;
+  fromUserId?: string;
+  toUserId?: string;
+  studentUserId?: string;
+  readAt?: string;
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -201,4 +213,38 @@ export const createParentLink = async (input: CreateParentLinkInput) =>
   parentRequest("/api/v1/parents", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+
+export const getParentMessages = async (params?: { limit?: number; skip?: number }) => {
+  const search = new URLSearchParams();
+  if (typeof params?.limit === "number") search.set("limit", String(params.limit));
+  if (typeof params?.skip === "number") search.set("skip", String(params.skip));
+  const query = search.toString();
+
+  const payload = await parentRequest<unknown>(`/api/v1/parents/messages${query ? `?${query}` : ""}`);
+  const record = isRecord(payload) ? payload : {};
+  const messages = Array.isArray(record.messages)
+    ? record.messages
+    : Array.isArray(record.data)
+      ? record.data
+      : [];
+
+  return messages
+    .filter((message): message is Record<string, unknown> => isRecord(message))
+    .map((message) => ({
+      ...message,
+      id: typeof (message.id ?? message._id) === "string" ? String(message.id ?? message._id) : "",
+      subject: typeof message.subject === "string" ? message.subject : undefined,
+      body: typeof message.body === "string" ? message.body : undefined,
+      fromUserId: typeof message.fromUserId === "string" ? message.fromUserId : undefined,
+      toUserId: typeof message.toUserId === "string" ? message.toUserId : undefined,
+      studentUserId: typeof message.studentUserId === "string" ? message.studentUserId : undefined,
+      readAt: typeof message.readAt === "string" ? message.readAt : undefined,
+      createdAt: typeof message.createdAt === "string" ? message.createdAt : undefined,
+    })) as ParentMessage[];
+};
+
+export const markParentMessageRead = async (messageId: string) =>
+  parentRequest(`/api/v1/parents/messages/${messageId}/read`, {
+    method: "PATCH",
   });

@@ -10,54 +10,74 @@ import {
   createBillingPortalSession,
   getBillingPlans,
   type BillingPlanDefinition,
+  type BillingPlanKey,
 } from "@/src/lib/billing-api";
 
-const fallbackPlan: BillingPlanDefinition = {
-  key: "family_starter",
-  title: "Family Starter",
-  subtitle: "A home reading plan for independent families using PathSpring.",
-  description: "A home reading plan for independent families using PathSpring.",
-  maxBooks: null,
-  isUnlimited: false,
-  features: [
-    "Create and manage child profiles",
-    "Add books to your family library",
-    "Track progress and submissions at home",
-  ],
+const fallbackPlans: BillingPlanDefinition[] = [
+  {
+    key: "family_starter",
+    title: "Family Starter",
+    subtitle: "A home reading plan for independent families using PathSpring.",
+    description: "A home reading plan for independent families using PathSpring.",
+    maxBooks: 20,
+    isUnlimited: false,
+    features: [
+      "Create and manage child profiles",
+      "Add books to your family library",
+      "Track progress and submissions at home",
+    ],
+  },
+  {
+    key: "family_premium",
+    title: "Family Premium",
+    subtitle: "For families who want full library access at home.",
+    description: "Full family access with unlimited reading and the richest home experience.",
+    maxBooks: null,
+    isUnlimited: true,
+    features: [
+      "Full library access (unlimited)",
+      "Family reading access",
+      "Monthly new content",
+    ],
+  },
+];
+
+const familyPlanStyles: Record<string, { gradient: string; badge?: string }> = {
+  family_starter: {
+    gradient: "from-sky-500 to-cyan-500",
+    badge: "Starter",
+  },
+  family_premium: {
+    gradient: "from-amber-500 to-orange-500",
+    badge: "Premium",
+  },
 };
 
 export default function FamilyBillingPage() {
-  const [plan, setPlan] = useState<BillingPlanDefinition | null>(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [plans, setPlans] = useState<BillingPlanDefinition[]>([]);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     void getBillingPlans()
-      .then((items) => {
-        setPlan(items.find((item) => item.key === "family_starter") ?? null);
-      })
-      .catch(() => setPlan(null));
+      .then((items) => setPlans(items.filter((item) => item.key.startsWith("family_"))))
+      .catch(() => setPlans([]));
   }, []);
 
-  const activePlan = plan ?? fallbackPlan;
-  const limitLabel = plan?.isUnlimited
-    ? "Unlimited books"
-    : typeof plan?.maxBooks === "number"
-      ? `${plan.maxBooks} books included`
-      : "";
+  const activePlans = plans.length ? plans : fallbackPlans;
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (planKey: string) => {
     setError("");
-    setCheckoutLoading(true);
+    setCheckoutLoading(planKey);
 
     try {
-      const session = await createBillingCheckoutSession("family_starter");
+      const session = await createBillingCheckoutSession(planKey as BillingPlanKey);
       window.location.href = session.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start family checkout.");
     } finally {
-      setCheckoutLoading(false);
+      setCheckoutLoading(null);
     }
   };
 
@@ -93,7 +113,6 @@ export default function FamilyBillingPage() {
             <div className="mt-5 flex flex-wrap gap-2">
               <AppBadge label="Family mode" tone="cyan" />
               <AppBadge label="Stripe billing" tone="amber" />
-              {limitLabel ? <AppBadge label={limitLabel} tone="emerald" /> : null}
             </div>
           </div>
         </section>
@@ -106,40 +125,67 @@ export default function FamilyBillingPage() {
 
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <article className="rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-white/5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">
-              {activePlan.title}
-            </p>
-            <h2 className="mt-2 text-3xl font-black text-slate-900 dark:text-white">One home reading plan for your family library</h2>
-            <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {activePlan.subtitle ??
-                activePlan.description ??
-                "This plan is built for independent families who want PathSpring at home, with child profiles, a family library, and progress tracking in one place."}
-            </p>
-            {limitLabel ? (
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                {limitLabel}
-              </p>
-            ) : null}
+            <div className="space-y-6">
+              {activePlans.map((plan) => {
+                const style = familyPlanStyles[plan.key] ?? { gradient: "from-slate-500 to-slate-600" };
+                const limitLabel = plan.isUnlimited
+                  ? "Unlimited books"
+                  : typeof plan.maxBooks === "number"
+                    ? `${plan.maxBooks} books included`
+                    : "";
 
-            <div className="mt-6 space-y-3">
-              {activePlan.features.map((feature) => (
-                <div key={feature} className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 text-emerald-500" size={16} />
-                  <p className="text-sm text-slate-700 dark:text-slate-300">{feature}</p>
-                </div>
-              ))}
-            </div>
+                return (
+                  <div key={plan.key} className="rounded-[1.6rem] border border-slate-200/60 bg-white/95 p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className={`text-sm font-semibold uppercase tracking-[0.18em] text-slate-600 dark:text-slate-300`}>
+                          {plan.title}
+                        </p>
+                        <p className="mt-2 text-xl font-black text-slate-900 dark:text-white">{plan.subtitle ?? plan.description ?? "Family reading plan"}</p>
+                      </div>
+                      {style.badge ? (
+                        <span className={`rounded-full bg-gradient-to-r ${style.gradient} px-3 py-1 text-xs font-semibold text-white`}>
+                          {style.badge}
+                        </span>
+                      ) : null}
+                    </div>
+                    {limitLabel ? (
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                        {limitLabel}
+                      </p>
+                    ) : null}
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <AppActionButton tone="primary" size="lg" onClick={() => void handleCheckout()} disabled={checkoutLoading}>
-                <BookHeart size={16} />
-                {checkoutLoading ? "Starting checkout..." : "Subscribe to Family Starter"}
-                <ArrowRight size={16} />
-              </AppActionButton>
-              <AppActionButton tone="secondary" size="lg" onClick={() => void handlePortal()} disabled={portalLoading}>
-                <CreditCard size={16} />
-                {portalLoading ? "Opening portal..." : "Manage Billing"}
-              </AppActionButton>
+                    <div className="mt-4 space-y-3">
+                      {plan.features.map((feature) => (
+                        <div key={feature} className="flex items-start gap-3">
+                          <CheckCircle2 className="mt-0.5 text-emerald-500" size={16} />
+                          <p className="text-sm text-slate-700 dark:text-slate-300">{feature}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      <AppActionButton
+                        tone="primary"
+                        size="lg"
+                        onClick={() => void handleCheckout(plan.key)}
+                        disabled={checkoutLoading === plan.key}
+                      >
+                        <BookHeart size={16} />
+                        {checkoutLoading === plan.key ? "Starting checkout..." : `Subscribe to ${plan.title}`}
+                        <ArrowRight size={16} />
+                      </AppActionButton>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="flex flex-wrap gap-3">
+                <AppActionButton tone="secondary" size="lg" onClick={() => void handlePortal()} disabled={portalLoading}>
+                  <CreditCard size={16} />
+                  {portalLoading ? "Opening portal..." : "Manage Billing"}
+                </AppActionButton>
+              </div>
             </div>
           </article>
 

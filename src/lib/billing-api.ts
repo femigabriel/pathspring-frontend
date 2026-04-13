@@ -8,7 +8,8 @@ export type BillingPlanKey =
   | "school_starter"
   | "school_growth"
   | "school_premium"
-  | "family_starter";
+  | "family_starter"
+  | "family_premium";
 
 export interface BillingPlanDefinition {
   key: string;
@@ -147,6 +148,33 @@ const billingRequest = async <T>(path: string, init?: RequestInit) => {
   return payload as T;
 };
 
+const billingPublicRequest = async <T>(path: string, init?: RequestInit) => {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  const text = await response.text();
+  const payload = parseJsonSafely(text);
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error(formatRetryAfterMessage(response.headers.get("Retry-After")));
+    }
+
+    if (response.status === 400) {
+      throw new Error(extractMessage(payload, "Please check the request and try again."));
+    }
+
+    throw new Error(extractMessage(payload, `Request failed with status ${response.status}`));
+  }
+
+  return payload as T;
+};
+
 export const createBillingCheckoutSession = async (planKey: BillingPlanKey) =>
   billingRequest<CheckoutSessionResponse>("/api/v1/billing/checkout", {
     method: "POST",
@@ -160,6 +188,22 @@ export const createBillingPortalSession = async () =>
 
 export const getBillingPlans = async () => {
   const payload = await billingRequest<unknown>("/api/v1/billing/plans");
+  const record = isRecord(payload) ? payload : {};
+  const plans = Array.isArray(record.plans)
+    ? record.plans
+    : Array.isArray(record.data)
+      ? record.data
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+  return plans
+    .map((plan) => normalizeBillingPlan(plan))
+    .filter((plan): plan is BillingPlanDefinition => plan !== null);
+};
+
+export const getPublicBillingPlans = async () => {
+  const payload = await billingPublicRequest<unknown>("/api/v1/billing/plans");
   const record = isRecord(payload) ? payload : {};
   const plans = Array.isArray(record.plans)
     ? record.plans

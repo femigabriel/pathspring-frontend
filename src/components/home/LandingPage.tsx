@@ -24,6 +24,7 @@ import {
   Target,
 } from "lucide-react";
 import ThemeToggle from "@/src/components/admin/layout/ThemeToggle";
+import { getPublicBillingPlans, type BillingPlanDefinition } from "@/src/lib/billing-api";
 
 const platformFeatures = [
   {
@@ -164,52 +165,98 @@ const workflowSteps = [
   },
 ];
 
-const plans = [
+const fallbackPlans: BillingPlanDefinition[] = [
   {
+    key: "school_starter",
     title: "School Starter",
+    subtitle: "For smaller schools getting started.",
+    description: "A clean starting plan for schools that want reading, assignments, and teacher tools in one place.",
+    maxBooks: 20,
+    isUnlimited: false,
+    features: ["School catalog access", "Teacher dashboard", "Assignments and notifications"],
+  },
+  {
+    key: "school_growth",
+    title: "School Growth",
+    subtitle: "For growing school programs.",
+    description: "Built for schools expanding classroom reading, tracking, and stronger learning routines.",
+    maxBooks: 50,
+    isUnlimited: false,
+    features: ["Everything in Starter", "Better scaling for active classes", "Stronger reading operations"],
+  },
+  {
+    key: "school_premium",
+    title: "School Premium",
+    subtitle: "For full school rollout.",
+    description: "The fullest school plan for teams that want the strongest PathSpring experience across the school.",
+    maxBooks: null,
+    isUnlimited: true,
+    features: ["Everything in Growth", "Best fit for large rollout", "Premium school experience"],
+  },
+  {
+    key: "family_starter",
+    title: "Family Starter",
+    subtitle: "For independent families.",
+    description: "Create child profiles, build a home library, and track reading progress together as a family.",
+    maxBooks: 20,
+    isUnlimited: false,
+    features: ["Family library", "Child profiles", "At-home reading progress"],
+  },
+  {
+    key: "family_premium",
+    title: "Family Premium",
+    subtitle: "For unlimited family access.",
+    description: "Unlock the full home library with unlimited reading for every child.",
+    maxBooks: null,
+    isUnlimited: true,
+    features: ["Unlimited family library", "Family reading access", "Monthly new content"],
+  },
+];
+
+type PlanBadgeColor = "violet" | "cyan" | "emerald" | "amber";
+
+const planDisplayMeta: Record<string, { audience: string; badge: string; badgeColor: PlanBadgeColor; gradient: string; cta: string; href: string }> = {
+  school_starter: {
     audience: "For smaller schools",
     badge: "School Plan",
     badgeColor: "cyan",
     gradient: "from-cyan-500 to-blue-500",
-    description: "A clean starting plan for schools that want reading, assignments, and teacher tools in one place.",
-    features: ["School catalog access", "Teacher dashboard", "Assignments and notifications"],
     cta: "Register Your School",
     href: "/register?role=school",
   },
-  {
-    title: "School Growth",
+  school_growth: {
     audience: "For growing school programs",
     badge: "Most Popular",
     badgeColor: "violet",
     gradient: "from-violet-500 to-fuchsia-500",
-    description: "Built for schools expanding classroom reading, tracking, and stronger learning routines.",
-    features: ["Everything in Starter", "Better scaling for active classes", "Stronger reading operations"],
     cta: "Start School Setup",
     href: "/register?role=school",
   },
-  {
-    title: "School Premium",
+  school_premium: {
     audience: "For full school rollout",
     badge: "Top Tier",
     badgeColor: "emerald",
     gradient: "from-emerald-500 to-teal-500",
-    description: "The fullest school plan for teams that want the strongest PathSpring experience across the school.",
-    features: ["Everything in Growth", "Best fit for large rollout", "Premium school experience"],
     cta: "Launch Premium School",
     href: "/register?role=school",
   },
-  {
-    title: "Family Starter",
+  family_starter: {
     audience: "For independent families",
     badge: "Family Plan",
     badgeColor: "amber",
     gradient: "from-amber-500 to-orange-500",
-    description: "Create child profiles, build a home library, and track reading progress together as a family.",
-    features: ["Family library", "Child profiles", "At-home reading progress"],
     cta: "Register as Family",
     href: "/family/register",
   },
-];
+  family_premium: {
+    audience: "For families who want it all",
+    badge: "Family Premium",
+    badgeColor: "amber",
+    gradient: "from-amber-500 to-orange-500",
+    cta: "Register as Family",
+    href: "/family/register",
+  },
+};
 
 const stats = [
   { value: "10K+", label: "Active Stories", icon: BookOpen },
@@ -221,6 +268,7 @@ const stats = [
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [billingPlans, setBillingPlans] = useState<BillingPlanDefinition[]>([]);
   const heroRef = useRef<HTMLElement>(null);
   
   const { scrollYProgress } = useScroll();
@@ -232,6 +280,12 @@ export default function LandingPage() {
     handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    void getPublicBillingPlans()
+      .then((items) => setBillingPlans(items))
+      .catch(() => setBillingPlans([]));
   }, []);
 
   const navLinks = useMemo(
@@ -251,6 +305,11 @@ export default function LandingPage() {
     emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
     amber: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
   } as const;
+
+  const planOrder = ["school_starter", "school_growth", "school_premium", "family_starter", "family_premium"];
+  const visiblePlans = (billingPlans.length ? billingPlans : fallbackPlans)
+    .filter((plan) => Boolean(planDisplayMeta[plan.key]))
+    .sort((a, b) => planOrder.indexOf(a.key) - planOrder.indexOf(b.key));
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
@@ -576,9 +635,16 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="mt-16 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {plans.map((plan, idx) => (
+            {visiblePlans.map((plan, idx) => {
+              const meta = planDisplayMeta[plan.key];
+              const planDescription =
+                plan.description ??
+                plan.subtitle ??
+                "A reading plan tailored for this audience.";
+
+              return (
               <motion.div
-                key={plan.title}
+                key={plan.key}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: idx * 0.08 }}
@@ -586,21 +652,29 @@ export default function LandingPage() {
                 whileHover={{ y: -8 }}
                 className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-2xl dark:border-white/10 dark:bg-white/5"
               >
-                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${plan.gradient}`} />
+                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${meta.gradient}`} />
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      {plan.audience}
+                      {meta.audience}
                     </p>
                     <h3 className="mt-3 text-2xl font-bold">{plan.title}</h3>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${badgeColorMap[plan.badgeColor as keyof typeof badgeColorMap]}`}>
-                    {plan.badge}
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${badgeColorMap[meta.badgeColor]}`}>
+                    {meta.badge}
                   </span>
                 </div>
 
                 <p className="mt-4 min-h-[4.5rem] text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  {plan.description}
+                  {planDescription}
+                </p>
+
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                  {plan.isUnlimited
+                    ? "Unlimited books"
+                    : typeof plan.maxBooks === "number"
+                      ? `Up to ${plan.maxBooks} books`
+                      : "Book limit varies"}
                 </p>
 
                 <div className="mt-6 space-y-3">
@@ -613,14 +687,14 @@ export default function LandingPage() {
                 </div>
 
                 <Link
-                  href={plan.href}
-                  className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${plan.gradient} px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all group-hover:scale-[1.01]`}
+                  href={meta.href}
+                  className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${meta.gradient} px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all group-hover:scale-[1.01]`}
                 >
-                  {plan.cta}
+                  {meta.cta}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </motion.div>
-            ))}
+            )})}
           </div>
         </div>
       </section>

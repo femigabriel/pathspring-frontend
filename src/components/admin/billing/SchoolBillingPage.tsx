@@ -34,31 +34,7 @@ import {
 } from "@/src/lib/billing-api";
 import { getSchoolPlanSnapshot } from "@/src/lib/school-plan";
 import { useTheme } from "@/src/contexts/ThemeContext";
-
-// School plan features only
-const schoolPlanFeatures: Record<string, string[]> = {
-  school_starter: [
-    "Up to 20 story products",
-    "Student + teacher access",
-    "Assignments to classes or students",
-    "Basic progress tracking",
-    "Monthly new content drops",
-  ],
-  school_growth: [
-    "Everything in Starter",
-    "Up to 50 story products",
-    "Class reading sessions",
-    "Richer reporting for teachers",
-    "Stronger classroom flow + tracking",
-  ],
-  school_premium: [
-    "Everything in Growth",
-    "Full library access (unlimited)",
-    "Advanced analytics",
-    "Premium school experience",
-    "Priority support",
-  ],
-};
+import { getBillingPlanCopy } from "@/src/lib/billing-plan-copy";
 
 const schoolPlanPrices: Record<string, { monthly: string; yearly: string; monthlyUsd?: string }> = {
   school_starter: { monthly: "₦10,000", yearly: "₦100,000", monthlyUsd: "$12" },
@@ -110,6 +86,7 @@ export default function SchoolBillingPage() {
   }, []);
 
   const displayedPlans = ["school_starter", "school_growth", "school_premium"];
+  const planByKey = new Map(plans.map((plan) => [plan.key, plan]));
 
   const handleCheckout = async (planKey: BillingPlanKey) => {
     setError("");
@@ -241,12 +218,21 @@ export default function SchoolBillingPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {displayedPlans.map((planKey, index) => {
             const Icon = schoolPlanIcons[planKey] || Building2;
-            const features = schoolPlanFeatures[planKey] || [];
+            const planData = planByKey.get(planKey);
+            const planCopy = getBillingPlanCopy(planKey);
+            const features = planData?.features?.length
+              ? planData.features
+              : planCopy?.features ?? [];
             const price = schoolPlanPrices[planKey]?.[billingInterval] || "Contact us";
             const usdPrice = schoolPlanPrices[planKey]?.monthlyUsd;
             const isCurrentPlan = currentPlan.key === planKey;
             const color = schoolPlanColors[planKey] || "from-cyan-500 to-blue-500";
             const gradientBg = schoolPlanGradients[planKey] || "";
+            const limitLabel = planData?.isUnlimited
+              ? "Unlimited story products"
+              : typeof planData?.maxBooks === "number"
+                ? `Up to ${planData.maxBooks} story products`
+                : "";
 
             return (
               <motion.article
@@ -291,10 +277,19 @@ export default function SchoolBillingPage() {
 
                   {/* Title */}
                   <h3 className={`text-2xl font-bold ${isDark ? "text-white" : "text-slate-800"}`}>
-                    {planKey === "school_starter" && "School Starter"}
-                    {planKey === "school_growth" && "School Growth"}
-                    {planKey === "school_premium" && "School Premium"}
+                    {planData?.title ??
+                      planCopy?.title ??
+                      (planKey === "school_starter"
+                        ? "School Starter"
+                        : planKey === "school_growth"
+                          ? "School Growth"
+                          : "School Premium")}
                   </h3>
+                  {limitLabel ? (
+                    <p className={`mt-2 text-xs font-semibold uppercase tracking-[0.16em] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      {limitLabel}
+                    </p>
+                  ) : null}
 
                   {/* Price */}
                   <div className="mt-3 mb-2">
@@ -413,18 +408,29 @@ export default function SchoolBillingPage() {
               </thead>
               <tbody>
                 {[
-                  { label: "Monthly Price", icon: CreditCard, getValue: (p: string) => schoolPlanPrices[p]?.monthly || "-" },
-                  { label: "Yearly Price (Save 15%)", icon: Zap, getValue: (p: string) => schoolPlanPrices[p]?.yearly || "-" },
-                  { label: "Story Products", icon: BookOpen, getValue: (p: string) => p === "school_premium" ? "♾️ Unlimited" : p === "school_growth" ? "Up to 50" : "Up to 20" },
-                  { label: "Student + Teacher Access", icon: Users, getValue: () => "✓" },
-                  { label: "Assignments", icon: Target, getValue: () => "✓" },
-                  { label: "Class Reading Sessions", icon: Users, getValue: (p: string) => p !== "school_starter" ? "✓" : "—" },
-                  { label: "Progress Tracking", icon: TrendingUp, getValue: (p: string) => p === "school_starter" ? "Basic" : "Advanced" },
-                  { label: "Reporting for Teachers", icon: BarChart3, getValue: (p: string) => p !== "school_starter" ? "✓" : "—" },
-                  { label: "Advanced Analytics", icon: Star, getValue: (p: string) => p === "school_premium" ? "✓" : "—" },
-                  { label: "Monthly New Content", icon: Sparkles, getValue: () => "✓" },
-                  { label: "Priority Support", icon: ShieldCheck, getValue: (p: string) => p === "school_premium" ? "✓" : "—" },
-                ].map((row, idx) => (
+  { label: "Monthly Price", icon: CreditCard, getValue: (p: string) => schoolPlanPrices[p]?.monthly || "-" },
+  { label: "Yearly Price (Save 15%)", icon: Zap, getValue: (p: string) => schoolPlanPrices[p]?.yearly || "-" },
+  {
+    label: "Story Products",
+    icon: BookOpen,
+    getValue: (p: string) => {
+      const plan = planByKey.get(p);
+      if (plan?.isUnlimited) return "Unlimited";
+      if (typeof plan?.maxBooks === "number") return `Up to ${plan.maxBooks}`;
+      return "-";
+    },
+  },
+  {
+    label: "Key Features",
+    icon: Sparkles,
+    getValue: (p: string) => {
+      const plan = planByKey.get(p);
+      const planCopy = getBillingPlanCopy(p);
+      const features = plan?.features?.length ? plan.features : planCopy?.features ?? [];
+      return features.length ? features.slice(0, 4).join(", ") : "-";
+    },
+  },
+].map((row, idx) => (
                   <tr key={idx} className={`border-b ${isDark ? "border-slate-700/50" : "border-slate-100"} hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors`}>
                     <td className={`py-3 px-4 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
                       <div className="flex items-center gap-2">
@@ -432,18 +438,26 @@ export default function SchoolBillingPage() {
                         <span className="font-medium">{row.label}</span>
                       </div>
                     </td>
-                    {displayedPlans.map((planKey) => (
-                      <td key={planKey} className="text-center py-3 px-4">
-                        <span className={
-                          row.getValue(planKey) === "✓" ? "text-emerald-500 font-medium" :
-                          row.getValue(planKey) === "—" ? "text-slate-400" :
-                          row.getValue(planKey).includes("Unlimited") ? "text-purple-500 font-semibold" :
-                          "text-slate-700 dark:text-slate-300"
-                        }>
-                          {row.getValue(planKey)}
-                        </span>
-                      </td>
-                    ))}
+                    {displayedPlans.map((planKey) => {
+  const value = row.getValue(planKey);
+  const isMuted = value === "-";
+  const isUnlimited = typeof value === "string" && value.toLowerCase().includes("unlimited");
+  return (
+    <td key={planKey} className="text-center py-3 px-4">
+      <span
+        className={
+          isMuted
+            ? "text-slate-400"
+            : isUnlimited
+              ? "text-purple-500 font-semibold"
+              : "text-slate-700 dark:text-slate-300"
+        }
+      >
+        {value}
+      </span>
+    </td>
+  );
+})}
                   </tr>
                 ))}
               </tbody>
@@ -519,3 +533,5 @@ export default function SchoolBillingPage() {
     </div>
   );
 }
+
+

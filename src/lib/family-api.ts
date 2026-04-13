@@ -50,6 +50,17 @@ export interface FamilyProgressPayload {
   struggleAreas?: string[];
 }
 
+export interface StartFamilyReadingTogetherInput {
+  childId: string;
+  contentId: string;
+}
+
+export interface SyncFamilyReadingTogetherInput {
+  currentChapter?: number;
+  currentPage?: number;
+  status?: "scheduled" | "active" | "paused" | "completed";
+}
+
 export interface CreateFamilyChildPayload {
   fullName: string;
   gradeLevel: string;
@@ -457,4 +468,46 @@ export const getFamilyChildOverview = async (childId: string) => {
       ? overview.recentProgress.filter(isRecord)
       : [],
   } satisfies FamilyChildOverview;
+};
+
+export const startFamilyReadingTogether = async (input: StartFamilyReadingTogetherInput) =>
+  familyRequest("/api/v1/family/reading-together/start", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const syncFamilyReadingTogether = async (
+  sessionId: string,
+  input: SyncFamilyReadingTogetherInput,
+) =>
+  familyRequest(`/api/v1/family/reading-together/${sessionId}/sync`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+
+export const getActiveFamilyReadingTogetherSession = async () => {
+  const payload = await familyRequest<unknown>("/api/v1/family/reading-together/active");
+  return isRecord(payload) ? payload : {};
+};
+
+export const getFamilyChildProgressDigest = async (
+  childId: string,
+  period: "week" | "month" | "term" = "week",
+) => {
+  const payload = await familyRequest<unknown>(
+    `/api/v1/family/children/${childId}/progress-digest?period=${encodeURIComponent(period)}`,
+  );
+  return isRecord(payload) ? payload : {};
+};
+
+export const getFamilyChildRecommendations = async (childId: string) => {
+  const payload = await familyRequest<unknown>(`/api/v1/family/children/${childId}/recommendations`);
+  const record = isRecord(payload) ? payload : {};
+  const recommendations = Array.isArray(record.recommendations)
+    ? record.recommendations
+    : Array.isArray(record.data)
+      ? record.data
+      : [];
+
+  return recommendations.filter(isRecord);
 };

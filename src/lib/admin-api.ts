@@ -162,6 +162,36 @@ export interface TeacherDashboardData {
   lowScoreStudents: TeacherLowScoreItem[];
 }
 
+export interface ParentMessageableContact {
+  id: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  studentUserId?: string;
+  studentName?: string;
+  classroomName?: string;
+  [key: string]: unknown;
+}
+
+export interface ParentMessageInput {
+  toUserId: string;
+  studentUserId?: string;
+  subject: string;
+  body: string;
+}
+
+export interface ParentMessage {
+  id: string;
+  subject?: string;
+  body?: string;
+  fromUserId?: string;
+  toUserId?: string;
+  studentUserId?: string;
+  readAt?: string;
+  createdAt?: string;
+  [key: string]: unknown;
+}
+
 interface RequestResult<T> {
   data: T;
   path: string;
@@ -656,3 +686,93 @@ export const getTeacherDashboard = async (): Promise<TeacherDashboardData> => {
     ]).map(normalizeTeacherLowScore),
   };
 };
+
+export const getSchoolStudentProgress = async (studentId: string) => {
+  const { data } = await requestJson<unknown>(`/api/v1/school/students/${studentId}/progress`);
+  return isRecord(data) ? data : {};
+};
+
+export const getSchoolReadingReport = async (params?: {
+  classroomId?: string;
+  fromDate?: string;
+  toDate?: string;
+}) => {
+  const search = new URLSearchParams();
+  if (params?.classroomId?.trim()) search.set("classroomId", params.classroomId.trim());
+  if (params?.fromDate?.trim()) search.set("fromDate", params.fromDate.trim());
+  if (params?.toDate?.trim()) search.set("toDate", params.toDate.trim());
+  const query = search.toString();
+
+  const { data } = await requestJson<unknown>(
+    `/api/v1/school/reports/reading${query ? `?${query}` : ""}`,
+  );
+  return isRecord(data) ? data : {};
+};
+
+export const getMessageableParents = async (params?: { classroomId?: string }) => {
+  const search = new URLSearchParams();
+  if (params?.classroomId?.trim()) search.set("classroomId", params.classroomId.trim());
+  const query = search.toString();
+  const { data } = await requestJson<unknown>(
+    `/api/v1/parents/messageable${query ? `?${query}` : ""}`,
+  );
+
+  const items = pickArray<Record<string, unknown>>(data, ["contacts", "parents", "data", "results"]);
+  return items.map((item) => ({
+    ...item,
+    id: typeof (item.id ?? item._id) === "string" ? String(item.id ?? item._id) : "",
+    fullName:
+      typeof item.fullName === "string"
+        ? item.fullName
+        : typeof item.name === "string"
+          ? item.name
+          : "",
+    email: typeof item.email === "string" ? item.email : undefined,
+    phone: typeof item.phone === "string" ? item.phone : undefined,
+    studentUserId:
+      typeof item.studentUserId === "string"
+        ? item.studentUserId
+        : typeof item.studentId === "string"
+          ? item.studentId
+          : undefined,
+    studentName: typeof item.studentName === "string" ? item.studentName : undefined,
+    classroomName: typeof item.classroomName === "string" ? item.classroomName : undefined,
+  })) as ParentMessageableContact[];
+};
+
+export const sendParentMessage = async (input: ParentMessageInput) => {
+  const { data } = await requestJson<unknown>("/api/v1/parents/messages", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return isRecord(data) ? data : {};
+};
+
+export const getParentMessages = async (params?: { limit?: number; skip?: number }) => {
+  const search = new URLSearchParams();
+  if (typeof params?.limit === "number") search.set("limit", String(params.limit));
+  if (typeof params?.skip === "number") search.set("skip", String(params.skip));
+  const query = search.toString();
+
+  const { data } = await requestJson<unknown>(
+    `/api/v1/parents/messages${query ? `?${query}` : ""}`,
+  );
+
+  const items = pickArray<Record<string, unknown>>(data, ["messages", "data", "results"]);
+  return items.map((item) => ({
+    ...item,
+    id: typeof (item.id ?? item._id) === "string" ? String(item.id ?? item._id) : "",
+    subject: typeof item.subject === "string" ? item.subject : undefined,
+    body: typeof item.body === "string" ? item.body : undefined,
+    fromUserId: typeof item.fromUserId === "string" ? item.fromUserId : undefined,
+    toUserId: typeof item.toUserId === "string" ? item.toUserId : undefined,
+    studentUserId: typeof item.studentUserId === "string" ? item.studentUserId : undefined,
+    readAt: typeof item.readAt === "string" ? item.readAt : undefined,
+    createdAt: typeof item.createdAt === "string" ? item.createdAt : undefined,
+  })) as ParentMessage[];
+};
+
+export const markParentMessageRead = async (messageId: string) =>
+  requestJson<unknown>(`/api/v1/parents/messages/${messageId}/read`, {
+    method: "PATCH",
+  });

@@ -156,6 +156,17 @@ export interface RegeneratePlatformStoryInput {
   clearCoverImage?: boolean;
 }
 
+export interface GeneratePlatformBatchInput {
+  generateImages?: boolean;
+  briefs: Array<Record<string, unknown>>;
+}
+
+export interface PlatformReviewInput {
+  status: "approved" | "rejected" | "pending_changes";
+  reviewNotes?: string;
+  qualityFlags?: string[];
+}
+
 class ApiRequestError extends Error {
   status: number;
 
@@ -627,4 +638,47 @@ export const getPlatformSchools = async () => {
 
     throw error;
   }
+};
+
+export const generatePlatformContentBatch = async (input: GeneratePlatformBatchInput) => {
+  const payload = await platformRequest<unknown>("/api/v1/platform/content/generate/batch", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return isRecord(payload) ? payload : {};
+};
+
+export const getPlatformReviewQueue = async (params?: {
+  status?: string;
+  limit?: number;
+  skip?: number;
+}) => {
+  const search = new URLSearchParams();
+  if (params?.status?.trim()) search.set("status", params.status.trim());
+  if (typeof params?.limit === "number") search.set("limit", String(params.limit));
+  if (typeof params?.skip === "number") search.set("skip", String(params.skip));
+  const query = search.toString();
+
+  const payload = await platformRequest<unknown>(
+    `/api/v1/platform/content/review-queue${query ? `?${query}` : ""}`,
+  );
+  return isRecord(payload) ? payload : {};
+};
+
+export const reviewPlatformContent = async (contentId: string, input: PlatformReviewInput) => {
+  const payload = await platformRequest<unknown>(`/api/v1/platform/content/${contentId}/review`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  return isRecord(payload) ? payload : {};
+};
+
+export const getPlatformSchoolOnboarding = async (schoolId: string) => {
+  const payload = await platformRequest<unknown>(`/api/v1/platform/schools/${schoolId}/onboarding`);
+  return isRecord(payload) ? payload : {};
+};
+
+export const getPlatformOnboardingOverview = async () => {
+  const payload = await platformRequest<unknown>("/api/v1/platform/schools/onboarding-overview");
+  return isRecord(payload) ? payload : {};
 };
